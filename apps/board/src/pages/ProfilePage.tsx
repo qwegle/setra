@@ -120,7 +120,7 @@ export function ProfilePage() {
 		<div className="mx-auto max-w-2xl space-y-6 p-6">
 			<PageHeader
 				title="Profile"
-				description="Manage your account settings and preferences"
+				subtitle="Manage your account settings and preferences"
 			/>
 
 			{/* Avatar & Identity */}

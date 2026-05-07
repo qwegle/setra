@@ -25,7 +25,6 @@ import {
 	Sparkles,
 	SplitSquareHorizontal,
 	Target,
-	User,
 	X,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -75,18 +74,6 @@ const moreNav = [
 	{ to: "/clone", label: "Clone", icon: Copy },
 ];
 
-const sseStatusDot: Record<SSEStatus, string> = {
-	connected: "bg-accent-green",
-	connecting: "bg-accent-yellow animate-pulse",
-	disconnected: "bg-accent-red",
-};
-
-const sseStatusLabel: Record<SSEStatus, string> = {
-	connected: "live",
-	connecting: "connecting…",
-	disconnected: "reconnecting…",
-};
-
 function navLinkClass({ isActive }: { isActive: boolean }): string {
 	return cn(
 		"flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
@@ -126,18 +113,16 @@ function NavSection({
 }
 
 function SidebarContent({
-	sseStatus,
 	onItemClick,
 	showCloseButton = false,
 	onClose,
 }: {
-	sseStatus: SSEStatus;
 	onItemClick?: () => void;
 	showCloseButton?: boolean;
 	onClose?: () => void;
 }) {
 	const { selectedCompany } = useCompany();
-	const { isAdmin } = useAuth();
+	const { isAdmin, user } = useAuth();
 	const location = useLocation();
 	const { data: pendingApprovals = [] } = useQuery({
 		queryKey: ["sidebar-pending-approvals", selectedCompany?.id ?? null],
@@ -234,35 +219,37 @@ function SidebarContent({
 				)}
 			</nav>
 
-			<div className="space-y-3 border-t border-border/30 px-4 py-3">
+			<div className="border-t border-border/30 px-3 py-3">
 				<NavLink
 					to="/profile"
 					onClick={onItemClick}
 					className={({ isActive }) =>
 						cn(
-							"flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors",
+							"flex items-center gap-3 rounded-lg px-2 py-2 transition-colors",
 							isActive
-								? "bg-accent-blue/10 text-accent-blue"
-								: "text-muted-foreground/70 hover:text-foreground",
+								? "bg-accent-blue/10"
+								: "hover:bg-muted/50",
 						)
 					}
 				>
-					<User className="h-3.5 w-3.5" />
-					<span>Profile</span>
+					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-blue/20 text-xs font-semibold text-accent-blue">
+						{user?.name
+							? user.name
+									.split(/\s+/)
+									.map((p) => p[0]?.toUpperCase())
+									.slice(0, 2)
+									.join("")
+							: user?.email?.[0]?.toUpperCase() ?? "?"}
+					</div>
+					<div className="min-w-0 flex-1">
+						<p className="truncate text-sm font-medium text-foreground">
+							{user?.name || user?.email || "Account"}
+						</p>
+						<p className="truncate text-[11px] capitalize text-muted-foreground/60">
+							{user?.role ?? "member"}
+						</p>
+					</div>
 				</NavLink>
-				<a
-					href="https://github.com/qwegle/setra#readme"
-					target="_blank"
-					rel="noreferrer"
-					className="flex items-center gap-2 text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
-				>
-					<ExternalLink className="h-3.5 w-3.5" />
-					<span>Help &amp; Docs</span>
-				</a>
-				<div className="flex items-center gap-2 text-xs text-muted-foreground/60">
-					<span className={cn("status-dot", sseStatusDot[sseStatus])} />
-					<span>{sseStatusLabel[sseStatus]}</span>
-				</div>
 			</div>
 		</>
 	);
@@ -286,7 +273,7 @@ export function Sidebar({
 	return (
 		<>
 			<aside className="fixed inset-y-0 left-[72px] z-30 hidden w-56 flex-col border-r border-border/50 bg-ground-900/80 backdrop-blur-xl md:flex">
-				<SidebarContent sseStatus={sseStatus} />
+				<SidebarContent />
 			</aside>
 			<AnimatePresence>
 				{mobileOpen ? (
@@ -308,7 +295,6 @@ export function Sidebar({
 							transition={{ type: "tween", duration: 0.2 }}
 						>
 							<SidebarContent
-								sseStatus={sseStatus}
 								onItemClick={() => onMobileOpenChange?.(false)}
 								showCloseButton
 								onClose={() => onMobileOpenChange?.(false)}
