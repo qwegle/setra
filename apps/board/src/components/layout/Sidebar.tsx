@@ -16,6 +16,7 @@ import {
 	Settings,
 	ShieldCheck,
 	Target,
+	User,
 	X,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -191,6 +192,21 @@ function SidebarContent({
 			</nav>
 
 			<div className="space-y-3 border-t border-border/30 px-4 py-3">
+				<NavLink
+					to="/profile"
+					onClick={onItemClick}
+					className={({ isActive }) =>
+						cn(
+							"flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors",
+							isActive
+								? "bg-accent-blue/10 text-accent-blue"
+								: "text-muted-foreground/70 hover:text-foreground",
+						)
+					}
+				>
+					<User className="h-3.5 w-3.5" />
+					<span>Profile</span>
+				</NavLink>
 				<a
 					href="https://github.com/qwegle/setra#readme"
 					target="_blank"

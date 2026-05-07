@@ -31,6 +31,7 @@ import { MultiViewPage } from "./pages/MultiViewPage";
 import { OrgPage } from "./pages/OrgUnifiedPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { PluginManagerPage } from "./pages/PluginManagerPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { RoutinesPage } from "./pages/RoutinesPage";
 import { SearchPage } from "./pages/SearchPage";
@@ -88,6 +89,7 @@ export default function App() {
 					<Route path="/health" element={<HealthPage />} />
 					<Route path="/settings/company" element={<CompanySettingsPage />} />
 					<Route path="/settings/instance" element={<InstanceSettingsPage />} />
+					<Route path="/profile" element={<ProfilePage />} />
 					<Route path="/environments" element={<EnvironmentsPage />} />
 					<Route
 						path="/workspaces"

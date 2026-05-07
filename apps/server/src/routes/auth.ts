@@ -179,3 +179,70 @@ authRoute.get("/me", async (c) => {
 
 authRoute.use("/logout", requireAuth());
 authRoute.post("/logout", (c) => c.json({ ok: true }));
+
+// ── Profile update ──────────────────────────────────────────────────────
+authRoute.use("/profile", requireAuth());
+authRoute.put("/profile", async (c) => {
+	const userId = c.get("userId") as string | undefined;
+	if (!userId) return c.json({ error: "Unauthorized" }, 401);
+	const body = await c.req.json().catch(() => null);
+	const name = typeof body?.name === "string" ? body.name.trim() : undefined;
+	const avatarUrl =
+		typeof body?.avatarUrl === "string" ? body.avatarUrl : undefined;
+
+	const db = getRawDb();
+	if (name !== undefined) {
+		db.prepare("UPDATE users SET name = ? WHERE id = ?").run(name, userId);
+	}
+	if (avatarUrl !== undefined) {
+		// Store avatar as a user setting (avatar_url column may not exist yet)
+		try {
+			db.prepare("ALTER TABLE users ADD COLUMN avatar_url TEXT").run();
+		} catch {
+			// column already exists
+		}
+		db.prepare("UPDATE users SET avatar_url = ? WHERE id = ?").run(
+			avatarUrl,
+			userId,
+		);
+	}
+	return c.json({ ok: true });
+});
+
+// ── Change password ─────────────────────────────────────────────────────
+authRoute.use("/change-password", requireAuth());
+authRoute.post("/change-password", async (c) => {
+	const userId = c.get("userId") as string | undefined;
+	if (!userId) return c.json({ error: "Unauthorized" }, 401);
+	const body = await c.req.json().catch(() => null);
+	const currentPassword =
+		typeof body?.currentPassword === "string" ? body.currentPassword : "";
+	const newPassword =
+		typeof body?.newPassword === "string" ? body.newPassword : "";
+
+	if (!currentPassword || !newPassword) {
+		return c.json(
+			{ error: "currentPassword and newPassword are required" },
+			400,
+		);
+	}
+	if (newPassword.length < 8) {
+		return c.json({ error: "New password must be at least 8 characters" }, 400);
+	}
+
+	const db = getRawDb();
+	const user = db
+		.prepare("SELECT password_hash FROM users WHERE id = ? LIMIT 1")
+		.get(userId) as { password_hash: string } | undefined;
+	if (!user) return c.json({ error: "User not found" }, 404);
+
+	const valid = await comparePassword(currentPassword, user.password_hash);
+	if (!valid) return c.json({ error: "Current password is incorrect" }, 401);
+
+	const hash = await hashPassword(newPassword);
+	db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
+		hash,
+		userId,
+	);
+	return c.json({ ok: true });
+});
