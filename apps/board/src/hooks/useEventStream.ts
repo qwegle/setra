@@ -35,10 +35,24 @@ export function useEventStream(): SSEStatus {
 	const qc = useQueryClient();
 	const [status, setStatus] = useState<SSEStatus>("connecting");
 	const esRef = useRef<EventSource | null>(null);
+	const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
 	useEffect(() => {
 		let cancelled = false;
 		let retryHandle: ReturnType<typeof setTimeout> | null = null;
+
+		// Debounced invalidation to avoid rapid-fire re-renders during active agents
+		function debouncedInvalidate(key: string, queryKeys: string[][], delay = 1000) {
+			if (debounceTimers.current[key]) {
+				clearTimeout(debounceTimers.current[key]);
+			}
+			debounceTimers.current[key] = setTimeout(() => {
+				for (const qk of queryKeys) {
+					void qc.invalidateQueries({ queryKey: qk });
+				}
+				delete debounceTimers.current[key];
+			}, delay);
+		}
 
 		function connect() {
 			if (cancelled) return;
@@ -48,29 +62,23 @@ export function useEventStream(): SSEStatus {
 			es.onopen = () => setStatus("connected");
 
 			es.addEventListener("issue:updated", () => {
-				void qc.invalidateQueries({ queryKey: ["issues"] });
-				void qc.invalidateQueries({ queryKey: ["projects"] });
+				debouncedInvalidate("issues", [["issues"], ["projects"]]);
 			});
 			es.addEventListener("agent:updated", () => {
-				void qc.invalidateQueries({ queryKey: ["agents"] });
-				void qc.invalidateQueries({ queryKey: ["agents-roster"] });
+				debouncedInvalidate("agents", [["agents"], ["agents-roster"]]);
 			});
 			es.addEventListener("agent:status_changed", () => {
-				void qc.invalidateQueries({ queryKey: ["agents"] });
-				void qc.invalidateQueries({ queryKey: ["agents-roster"] });
+				debouncedInvalidate("agents-status", [["agents"], ["agents-roster"]]);
 			});
 			es.addEventListener("agent:bulk_paused", () => {
-				void qc.invalidateQueries({ queryKey: ["agents"] });
-				void qc.invalidateQueries({ queryKey: ["agents-roster"] });
-				void qc.invalidateQueries({ queryKey: ["budget"] });
+				debouncedInvalidate("agents-bulk", [["agents"], ["agents-roster"], ["budget"]]);
 			});
 			es.addEventListener("agent:bulk_resumed", () => {
-				void qc.invalidateQueries({ queryKey: ["agents"] });
-				void qc.invalidateQueries({ queryKey: ["agents-roster"] });
+				debouncedInvalidate("agents-resumed", [["agents"], ["agents-roster"]]);
 			});
 			es.addEventListener("run:updated", (e: MessageEvent) => {
 				const data = safeParse(e);
-				void qc.invalidateQueries({ queryKey: ["agents"] });
+				debouncedInvalidate("run-updated", [["agents"]], 2000);
 				if (data.agentId) {
 					void qc.invalidateQueries({ queryKey: ["agent-runs", data.agentId] });
 					void qc.invalidateQueries({
@@ -111,8 +119,7 @@ export function useEventStream(): SSEStatus {
 				void qc.invalidateQueries({ queryKey: ["agents"] });
 			});
 			es.addEventListener("collab:message", () => {
-				void qc.invalidateQueries({ queryKey: ["collab-messages"] });
-				void qc.invalidateQueries({ queryKey: ["collab-channels"] });
+				debouncedInvalidate("collab", [["collab-messages"], ["collab-channels"]]);
 			});
 
 			es.onerror = () => {
@@ -126,6 +133,11 @@ export function useEventStream(): SSEStatus {
 		return () => {
 			cancelled = true;
 			if (retryHandle) clearTimeout(retryHandle);
+			// Clear all debounce timers
+			for (const timer of Object.values(debounceTimers.current)) {
+				clearTimeout(timer);
+			}
+			debounceTimers.current = {};
 			esRef.current?.close();
 		};
 	}, [qc]);

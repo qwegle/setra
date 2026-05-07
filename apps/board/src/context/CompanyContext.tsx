@@ -23,6 +23,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useMemo,
 	useState,
 } from "react";
 import { api } from "../lib/api";
@@ -221,23 +222,39 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 	const selectedCompany =
 		serverCompanies.find((c) => c.id === selectedCompanyId) ?? null;
 
+	const contextValue = useMemo(
+		() => ({
+			companies: serverCompanies,
+			selectedCompanyId,
+			selectedCompany,
+			setSelectedCompanyId,
+			switchCompany,
+			switchState,
+			addCompany,
+			removeCompany,
+			reorderCompanies,
+			refresh: () => void refetch(),
+			loading: isLoading,
+			loadError: isError,
+		}),
+		[
+			serverCompanies,
+			selectedCompanyId,
+			selectedCompany,
+			setSelectedCompanyId,
+			switchCompany,
+			switchState,
+			addCompany,
+			removeCompany,
+			reorderCompanies,
+			refetch,
+			isLoading,
+			isError,
+		],
+	);
+
 	return (
-		<CompanyContext.Provider
-			value={{
-				companies: serverCompanies,
-				selectedCompanyId,
-				selectedCompany,
-				setSelectedCompanyId,
-				switchCompany,
-				switchState,
-				addCompany,
-				removeCompany,
-				reorderCompanies,
-				refresh: () => void refetch(),
-				loading: isLoading,
-				loadError: isError,
-			}}
-		>
+		<CompanyContext.Provider value={contextValue}>
 			{children}
 		</CompanyContext.Provider>
 	);

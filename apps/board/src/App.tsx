@@ -30,7 +30,6 @@ import { McpPage } from "./pages/McpPage";
 import { MultiViewPage } from "./pages/MultiViewPage";
 import { OrgPage } from "./pages/OrgUnifiedPage";
 import { OverviewPage } from "./pages/OverviewPage";
-import { PluginManagerPage } from "./pages/PluginManagerPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { RoutinesPage } from "./pages/RoutinesPage";
@@ -104,8 +103,7 @@ export default function App() {
 						element={<Navigate to="/org?tab=agents" replace />}
 					/>
 					<Route path="/org" element={<OrgPage />} />
-					<Route path="/plugins" element={<PluginManagerPage />} />
-					<Route path="/search" element={<SearchPage />} />
+						<Route path="/search" element={<SearchPage />} />
 					<Route path="/files" element={<FilesPage />} />
 
 					{/* Legacy redirects for trimmed routes */}
