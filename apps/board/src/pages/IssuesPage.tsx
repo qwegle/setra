@@ -537,7 +537,7 @@ export function IssuesPage() {
 					}
 					onIssueClick={(id) => navigate(`/issues/${id}`)}
 				/>
-			) : issues.length === 0 ? (
+			) : issues.length === 0 && !creating ? (
 				<div className="p-4 flex-1 overflow-y-auto">
 					<EmptyState
 						icon={<ClipboardList className="h-8 w-8" />}
@@ -573,7 +573,7 @@ export function IssuesPage() {
 								const statusIssues = filteredIssues.filter(
 									(issue) => issue.status === status,
 								);
-								if (statusIssues.length === 0) return null;
+								if (statusIssues.length === 0 && creating !== status) return null;
 								const isCollapsed = collapsedStatuses[status] === true;
 								return (
 									<div key={status} className="space-y-3">
