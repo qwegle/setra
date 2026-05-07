@@ -6,8 +6,10 @@ import {
 	ChevronLeft,
 	ExternalLink,
 	Loader2,
+	MessageSquare,
 	Plus,
 	Save,
+	Send,
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -16,6 +18,7 @@ import { AgentRunCard } from "../components/AgentRunCard";
 import { AgentRunLogViewer } from "../components/AgentRunLogViewer";
 import { type EnvVar, EnvVarEditor } from "../components/EnvVarEditor";
 import { Card } from "../components/ui";
+import { useAuth } from "../context/AuthContext";
 import {
 	type AgentBudgetPolicy,
 	type AgentDetail,
@@ -34,6 +37,7 @@ import {
 
 type TabId =
 	| "dashboard"
+	| "chat"
 	| "instructions"
 	| "configuration"
 	| "skills"
@@ -43,6 +47,7 @@ type TabId =
 
 const TABS: { id: TabId; label: string }[] = [
 	{ id: "dashboard", label: "Dashboard" },
+	{ id: "chat", label: "Chat" },
 	{ id: "instructions", label: "Instructions" },
 	{ id: "configuration", label: "Configuration" },
 	{ id: "skills", label: "Skills" },
@@ -244,6 +249,9 @@ export function AgentDetailPage() {
 			{/* Tab content */}
 			{activeTab === "dashboard" && (
 				<DashboardTab agent={agent} agentId={agentId} />
+			)}
+			{activeTab === "chat" && (
+				<ChatTab agent={agent} agentId={agentId} />
 			)}
 			{activeTab === "instructions" && (
 				<InstructionsTab agent={agent} agentId={agentId} />
@@ -1558,6 +1566,218 @@ function BudgetTab({ agentId }: { agentId: string }) {
 					</div>
 				</Section>
 			)}
+		</div>
+	);
+}
+
+// ─── Chat Tab ───────────────────────────────────────────────────────────────
+
+interface ChatMessage {
+	id: string;
+	agentSlug: string;
+	channel: string;
+	body: string;
+	threadId: string | null;
+	createdAt: string;
+	messageKind?: string | null;
+}
+
+function ChatTab({
+	agent,
+	agentId,
+}: { agent: AgentDetail; agentId: string }) {
+	const { user } = useAuth();
+	const queryClient = useQueryClient();
+	const [input, setInput] = useState("");
+	const [sending, setSending] = useState(false);
+	const scrollRef = useRef<HTMLDivElement>(null);
+	const inputRef = useRef<HTMLTextAreaElement>(null);
+	const channel = `agent-chat:${agentId}`;
+
+	const { data: messages = [], isLoading } = useQuery({
+		queryKey: ["agent-chat", agentId],
+		queryFn: () => api.collaboration.messages(channel, 100),
+		refetchInterval: 5_000,
+	});
+
+	// Auto-scroll on new messages
+	useEffect(() => {
+		if (scrollRef.current) {
+			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+		}
+	}, [messages.length]);
+
+	// Focus input on mount
+	useEffect(() => {
+		inputRef.current?.focus();
+	}, []);
+
+	const sendMessage = useCallback(async () => {
+		const text = input.trim();
+		if (!text || sending) return;
+		setSending(true);
+		try {
+			await api.collaboration.post({
+				channel,
+				body: text,
+				agentSlug: "human",
+			});
+			setInput("");
+			await queryClient.invalidateQueries({ queryKey: ["agent-chat", agentId] });
+		} finally {
+			setSending(false);
+			inputRef.current?.focus();
+		}
+	}, [input, sending, channel, agentId, queryClient]);
+
+	const handleKeyDown = useCallback(
+		(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+			if (e.key === "Enter" && !e.shiftKey) {
+				e.preventDefault();
+				void sendMessage();
+			}
+		},
+		[sendMessage],
+	);
+
+	const agentName = agent.role ?? agent.slug ?? "Agent";
+
+	function isAgentMessage(msg: ChatMessage) {
+		return msg.agentSlug !== "human" && msg.agentSlug !== user?.email;
+	}
+
+	function senderInitials(msg: ChatMessage) {
+		if (isAgentMessage(msg)) {
+			return agentName.slice(0, 2).toUpperCase();
+		}
+		if (user?.name) {
+			return user.name
+				.split(/\s+/)
+				.map((p) => p[0]?.toUpperCase())
+				.slice(0, 2)
+				.join("");
+		}
+		return user?.email?.[0]?.toUpperCase() ?? "?";
+	}
+
+	function senderName(msg: ChatMessage) {
+		if (isAgentMessage(msg)) return agentName;
+		return user?.name || user?.email || "You";
+	}
+
+	if (isLoading) {
+		return (
+			<div className="h-[calc(100vh-280px)] min-h-[400px] glass rounded-xl animate-pulse" />
+		);
+	}
+
+	return (
+		<div className="flex flex-col h-[calc(100vh-280px)] min-h-[400px] glass rounded-xl border border-border/30 overflow-hidden">
+			{/* Messages area */}
+			<div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+				{messages.length === 0 ? (
+					<div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+						<div className="p-3 rounded-2xl bg-setra-600/10 border border-setra-600/20">
+							<MessageSquare className="w-8 h-8 text-setra-400" />
+						</div>
+						<p className="text-sm text-muted-foreground">
+							Start a conversation with {agentName}
+						</p>
+						<p className="text-xs text-muted-foreground/50 max-w-sm">
+							Send messages, instructions, or follow-up questions.
+							The agent will see your messages when it starts its next task.
+						</p>
+					</div>
+				) : (
+					messages.map((msg) => {
+						const fromAgent = isAgentMessage(msg);
+						return (
+							<div
+								key={msg.id}
+								className={cn(
+									"flex gap-3 max-w-[85%]",
+									fromAgent ? "mr-auto" : "ml-auto flex-row-reverse",
+								)}
+							>
+								{/* Avatar */}
+								<div
+									className={cn(
+										"flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+										fromAgent
+											? "bg-setra-600/20 text-setra-400"
+											: "bg-accent-blue/20 text-accent-blue",
+									)}
+								>
+									{senderInitials(msg)}
+								</div>
+								{/* Bubble */}
+								<div
+									className={cn(
+										"rounded-xl px-4 py-2.5 text-sm leading-relaxed",
+										fromAgent
+											? "bg-card/60 border border-border/30 text-foreground"
+											: "bg-setra-600/15 border border-setra-600/20 text-foreground",
+									)}
+								>
+									<div className="flex items-center gap-2 mb-1">
+										<span className="text-xs font-medium text-muted-foreground">
+											{senderName(msg)}
+										</span>
+										<span className="text-[10px] text-muted-foreground/40">
+											{new Date(msg.createdAt).toLocaleTimeString([], {
+												hour: "2-digit",
+												minute: "2-digit",
+											})}
+										</span>
+									</div>
+									<p className="whitespace-pre-wrap break-words">{msg.body}</p>
+								</div>
+							</div>
+						);
+					})
+				)}
+			</div>
+
+			{/* Input area */}
+			<div className="border-t border-border/30 p-3">
+				<div className="flex items-end gap-2">
+					<textarea
+						ref={inputRef}
+						value={input}
+						onChange={(e) => setInput(e.target.value)}
+						onKeyDown={handleKeyDown}
+						placeholder={`Message ${agentName}...`}
+						rows={1}
+						className="flex-1 resize-none rounded-lg border border-border/50 bg-card/40 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-setra-500/50 max-h-32 overflow-y-auto"
+						style={{ minHeight: "40px" }}
+						onInput={(e) => {
+							const el = e.currentTarget;
+							el.style.height = "auto";
+							el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+						}}
+					/>
+					<button
+						type="button"
+						onClick={() => void sendMessage()}
+						disabled={!input.trim() || sending}
+						className={cn(
+							"flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
+							input.trim() && !sending
+								? "bg-setra-600 text-white hover:bg-setra-500"
+								: "bg-muted/30 text-muted-foreground/40 cursor-not-allowed",
+						)}
+					>
+						{sending ? (
+							<Loader2 className="w-4 h-4 animate-spin" />
+						) : (
+							<Send className="w-4 h-4" />
+						)}
+					</button>
+				</div>
+				<p className="text-[10px] text-muted-foreground/40 mt-1.5 px-1">
+					Press Enter to send · Shift+Enter for new line
+				</p>
+			</div>
 		</div>
 	);
 }
