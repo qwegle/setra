@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/charmbracelet/bubbletea v1.3.4
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/qwegle/setra/pkg v0.0.0
 )
 
 require (

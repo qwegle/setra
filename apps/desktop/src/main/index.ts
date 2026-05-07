@@ -13,7 +13,6 @@ import {
 	dialog,
 	ipcMain,
 	nativeTheme,
-	protocol,
 	shell,
 } from "electron";
 import log from "electron-log/main";
@@ -514,12 +513,6 @@ void app.whenReady().then(async () => {
 
 	// Start the embedded API server (production only — dev uses external server)
 	await startEmbeddedServer();
-
-	// Register setra:// as a privileged protocol so it can load local files
-	protocol.registerFileProtocol(PROTOCOL_SCHEME, (request, callback) => {
-		const url = request.url.replace(`${PROTOCOL_SCHEME}://`, "");
-		callback({ path: join(__dirname, "..", "renderer", url) });
-	});
 
 	registerGlobalIpcHandlers();
 	registerPlotsHandlers();

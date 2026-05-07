@@ -141,11 +141,28 @@ const config: Configuration = {
 	// ────────────────────────────────────────────────────────────────────────
 	mac: {
 		target: [
-			{ target: "dmg", arch: ["universal"] },
-			{ target: "zip", arch: ["universal"] },
+			{
+				target: "dmg",
+				arch: [
+					process.env["CI"]
+						? "universal"
+						: process.arch === "arm64"
+							? "arm64"
+							: "x64",
+				],
+			},
+			{
+				target: "zip",
+				arch: [
+					process.env["CI"]
+						? "universal"
+						: process.arch === "arm64"
+							? "arm64"
+							: "x64",
+				],
+			},
 		],
-		// "universal" is built from arm64 + x64 via --universal flag in CI
-		artifactName: "setra-${version}-mac-universal.${ext}",
+		artifactName: "setra-${version}-mac-${arch}.${ext}",
 
 		category: "public.app-category.developer-tools",
 		icon: "resources/icon.icns",

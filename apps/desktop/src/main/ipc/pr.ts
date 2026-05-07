@@ -106,7 +106,7 @@ export function registerPrHandlers(): void {
 		},
 	);
 
-	// pr:start-review — spawn a review agent (stub: returns system prompt info)
+	// pr:start-review — spawn a code review agent via agent-runner
 	ipcMain.handle(
 		"pr:start-review",
 		async (_event, ownerRepo: string, prNumber: number) => {
@@ -114,31 +114,63 @@ export function registerPrHandlers(): void {
 			if (!token) throw new Error("No GITHUB_TOKEN configured");
 			const [owner, repo] = ownerRepo.split("/");
 
-			// Fetch diff to include in agent context
+			// Fetch diff and file list for agent context
+			let diff = "";
 			let fileCount = 0;
 			try {
 				const files = (await ghFetch(
 					`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/files`,
 					token,
-				)) as Array<{ filename: string }>;
+				)) as Array<{ filename: string; patch?: string }>;
 				fileCount = files.length;
+				diff = files
+					.map(
+						(f) => `--- ${f.filename}\n${f.patch ?? "(binary or too large)"}`,
+					)
+					.join("\n\n");
 			} catch {
-				// non-fatal
+				// non-fatal — agent can still review with limited context
 			}
 
-			return [
-				`🔍 Review agent started for ${ownerRepo}#${prNumber}`,
-				`📂 ${fileCount} file(s) changed`,
+			const systemPrompt = [
+				`You are a senior code reviewer analyzing PR #${prNumber} in ${ownerRepo}.`,
+				`Review this PR thoroughly: check logic, security, performance, and style.`,
+				`Post inline comments for specific issues and submit a final review.`,
 				``,
-				`System prompt: You are a senior code reviewer. Review this PR thoroughly:`,
-				`check logic, security, performance, style. Post inline comments for specific`,
-				`issues and submit a final review.`,
-				``,
-				`Tools available: pr_get_diff, pr_post_comment, pr_submit_review`,
-				``,
-				`To run a live agent, integrate PR_REVIEW_TOOLS from @setra/agent-runner`,
-				`with your agent adapter and provide GITHUB_TOKEN in the environment.`,
+				`## Changed Files (${fileCount})`,
+				diff || "(Unable to fetch diff)",
 			].join("\n");
+
+			// Dispatch via Go agent-runner HTTP API if available
+			const runnerPort = process.env["SETRA_RUNNER_PORT"] ?? "3142";
+			try {
+				const res = await fetch(`http://localhost:${runnerPort}/api/spawn`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						adapter: "claude",
+						prompt: systemPrompt,
+						workdir: process.cwd(),
+					}),
+				});
+				if (res.ok) {
+					const data = (await res.json()) as { id: string };
+					return {
+						status: "running",
+						runId: data.id,
+						message: `Review agent spawned for ${ownerRepo}#${prNumber} (${fileCount} files)`,
+					};
+				}
+			} catch {
+				// Runner not available — fall through to manual mode
+			}
+
+			// Fallback: return the prompt for manual review
+			return {
+				status: "manual",
+				message: `Agent runner not available. Review prompt generated for ${ownerRepo}#${prNumber} (${fileCount} files).`,
+				prompt: systemPrompt,
+			};
 		},
 	);
 }
