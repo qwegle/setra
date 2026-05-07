@@ -3,23 +3,32 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
 	Activity,
 	Bot,
+	ChevronDown,
 	Coins,
+	Copy,
 	ExternalLink,
 	FolderKanban,
 	FolderTree,
 	Heart,
+	Inbox,
 	LayoutDashboard,
 	LayoutGrid,
 	type LucideIcon,
 	MessageSquare,
+	Network,
 	Plug,
+	Puzzle,
+	RefreshCw,
+	Search,
 	Settings,
 	ShieldCheck,
+	Sparkles,
+	SplitSquareHorizontal,
 	Target,
 	X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCompany } from "../../context/CompanyContext";
@@ -52,6 +61,17 @@ const settingsNav = [
 	{ to: "/settings", label: "Settings", icon: Settings },
 	{ to: "/costs", label: "Costs & Budget", icon: Coins },
 	{ to: "/health", label: "Health", icon: Heart },
+];
+
+const moreNav = [
+	{ to: "/org", label: "Organization", icon: Network },
+	{ to: "/skills", label: "Skills", icon: Sparkles },
+	{ to: "/inbox", label: "Inbox", icon: Inbox },
+	{ to: "/routines", label: "Routines", icon: RefreshCw },
+	{ to: "/search", label: "Search", icon: Search },
+	{ to: "/multi-view", label: "Multi-View", icon: SplitSquareHorizontal },
+	{ to: "/plugins", label: "Plugins", icon: Puzzle },
+	{ to: "/clone", label: "Clone", icon: Copy },
 ];
 
 const sseStatusDot: Record<SSEStatus, string> = {
@@ -117,12 +137,16 @@ function SidebarContent({
 }) {
 	const { selectedCompany } = useCompany();
 	const { isAdmin } = useAuth();
+	const location = useLocation();
 	const { data: pendingApprovals = [] } = useQuery({
 		queryKey: ["sidebar-pending-approvals", selectedCompany?.id ?? null],
 		queryFn: () => api.approvals.list("pending"),
 		enabled: Boolean(selectedCompany?.id),
 		refetchInterval: 10_000,
 	});
+
+	const isMoreRouteActive = moreNav.some((item) => location.pathname.startsWith(item.to));
+	const [moreOpen, setMoreOpen] = useState(isMoreRouteActive);
 
 	// Members see a trimmed Team section (no Agents)
 	const memberTeamNav = teamNav.filter((item) => item.to !== "/agents");
@@ -188,6 +212,25 @@ function SidebarContent({
 					items={isAdmin ? settingsNav : memberSettingsNav}
 					onItemClick={onItemClick}
 				/>
+
+				<button
+					type="button"
+					onClick={() => setMoreOpen((v) => !v)}
+					className="flex w-full items-center gap-1 px-3 pb-1 pt-3 text-left"
+				>
+					<span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+						More
+					</span>
+					<ChevronDown
+						className={cn(
+							"h-3 w-3 text-zinc-500 transition-transform",
+							moreOpen && "rotate-180",
+						)}
+					/>
+				</button>
+				{moreOpen && (
+					<NavSection items={moreNav} onItemClick={onItemClick} />
+				)}
 			</nav>
 
 			<div className="space-y-3 border-t border-border/30 px-4 py-3">
