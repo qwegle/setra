@@ -20,6 +20,7 @@ import {
 	Shield,
 	Sparkles,
 	Terminal,
+	Zap,
 } from "lucide-react";
 import {
 	type ChangeEvent,
@@ -49,7 +50,12 @@ type ServerSettings = {
 	defaultModel: string;
 	smallModel: string;
 	budget: { dailyUsd: number; perRunUsd: number; alertAt: number };
-	governance: { deployMode: string; autoApprove: boolean; reviewRisk: string };
+	governance: {
+		deployMode: string;
+		autoApprove: boolean;
+		reviewRisk: string;
+		approvalActions?: string[];
+	};
 	autonomy?: { autoDispatchEnabled: boolean; maxParallelRuns: number };
 	appearance?: {
 		theme: "dark" | "light" | "system";
@@ -155,6 +161,7 @@ const tabs = [
 	{ id: "aiProviders", label: "AI Providers", icon: Cpu },
 	{ id: "secrets", label: "Secrets", icon: Key },
 	{ id: "governance", label: "Governance", icon: Shield },
+	{ id: "autonomy", label: "Autonomy", icon: Zap },
 	{ id: "appearance", label: "Appearance", icon: Palette },
 ] as const;
 
@@ -466,7 +473,10 @@ function renderModelOptions(
 
 export function SettingsPage() {
 	const [saved, setSaved] = useState(false);
-	const [activeTab, setActiveTab] = useState<TabId>("general");
+	const urlTab = new URLSearchParams(window.location.search).get("tab");
+	const initialTab =
+		urlTab && tabs.some((t) => t.id === urlTab) ? (urlTab as TabId) : "general";
+	const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 	const providersHydratedRef = useRef(false);
 	const qc = useQueryClient();
 	const { selectedCompany, selectedCompanyId } = useCompany();
@@ -596,6 +606,14 @@ export function SettingsPage() {
 		"autonomy.maxParallelRuns",
 		7,
 	);
+	const [approvalActions, setApprovalActions] = useLocalSetting<
+		Record<string, boolean>
+	>("autonomy.approvalActions", {
+		task_start: true,
+		pr_merge: true,
+		agent_hire: true,
+		deploy: true,
+	});
 	const [fontSize, setFontSize] = useLocalSetting<number>(
 		"appearance:fontSize",
 		13,
@@ -930,7 +948,16 @@ export function SettingsPage() {
 					webSearchEnabled,
 					defaultModel,
 					smallModel,
-					governance: { deployMode, autoApprove, reviewRisk },
+					governance: {
+						deployMode,
+						autoApprove,
+						reviewRisk,
+						approvalActions: autoApprove
+							? []
+							: Object.entries(approvalActions)
+									.filter(([, v]) => v)
+									.map(([k]) => k),
+					},
 					autonomy: { autoDispatchEnabled, maxParallelRuns },
 					appearance: {
 						theme,
@@ -942,11 +969,15 @@ export function SettingsPage() {
 				}),
 			});
 
-			if (selectedCompanyId) {
-				await request(`/companies/${selectedCompanyId}/logo`, {
-					method: "POST",
-					body: JSON.stringify({ logo: companyLogo }),
-				});
+			if (selectedCompanyId && companyLogo) {
+				try {
+					await request(`/companies/${selectedCompanyId}/logo`, {
+						method: "POST",
+						body: JSON.stringify({ logo: companyLogo }),
+					});
+				} catch {
+					// Logo save is non-critical — don't fail the whole save
+				}
 			}
 
 			if (continuousModeAll) {
@@ -1608,20 +1639,75 @@ export function SettingsPage() {
 							<option value="high">High only</option>
 						</Select>
 					</div>
+				</div>
+			</Card>
+		</div>
+	);
+
+	const approvalActionLabels: Record<string, { label: string; desc: string }> =
+		{
+			task_start: {
+				label: "Task Start",
+				desc: "Require approval before agents begin working on assigned tasks.",
+			},
+			pr_merge: {
+				label: "PR Merge",
+				desc: "Require approval before agents merge pull requests.",
+			},
+			agent_hire: {
+				label: "Agent Hiring",
+				desc: "Require approval when an agent (e.g. CEO) creates new agents.",
+			},
+			deploy: {
+				label: "Deployment",
+				desc: "Require approval before agents deploy code to production.",
+			},
+		};
+
+	const autonomyCards = (
+		<div className="space-y-6">
+			<Card>
+				<div className="space-y-6">
+					<SectionIntro
+						icon={Zap}
+						title="Auto-Approve"
+						description="Control which actions agents can perform without human approval."
+					/>
 					<SettingToggle
-						id="auto-approve-reviews"
-						label="Auto-approve reviews"
-						description="Skip the review queue for low-risk items."
+						id="auto-approve-all"
+						label="Auto-approve everything"
+						description="Skip the approval queue for all agent actions. When off, you can choose which actions need approval."
 						checked={autoApprove}
 						onChange={setAutoApprove}
 					/>
+					{!autoApprove && (
+						<div className="space-y-3 rounded-lg border border-zinc-800 p-4">
+							<p className="text-xs font-medium text-muted-foreground">
+								Require approval for:
+							</p>
+							{Object.entries(approvalActionLabels).map(
+								([key, { label, desc }]) => (
+									<SettingToggle
+										key={key}
+										id={`approval-${key}`}
+										label={label}
+										description={desc}
+										checked={approvalActions[key] ?? true}
+										onChange={(v) =>
+											setApprovalActions({ ...approvalActions, [key]: v })
+										}
+									/>
+								),
+							)}
+						</div>
+					)}
 				</div>
 			</Card>
 			<Card>
 				<div className="space-y-6">
 					<SectionIntro
 						icon={Sparkles}
-						title="Autonomous dispatch"
+						title="Autonomous Dispatch"
 						description="Configure whether Setra automatically picks up backlog items and how many runs can happen at once."
 					/>
 					<SettingToggle
@@ -1915,6 +2001,9 @@ export function SettingsPage() {
 				break;
 			case "governance":
 				content = governanceCards;
+				break;
+			case "autonomy":
+				content = autonomyCards;
 				break;
 			case "appearance":
 				content = appearanceCards;

@@ -66,6 +66,8 @@ function AppShellInner() {
 	function handleClose() {
 		localStorage.setItem(ONBOARDING_DISMISSED_KEY, "1");
 		closeOnboarding();
+		// After first onboarding, guide user to configure AI provider keys
+		navigate("/settings?tab=aiProviders");
 	}
 
 	return (

@@ -6,6 +6,8 @@ import {
 	Coins,
 	FolderKanban,
 	FolderOpen,
+	GitBranch,
+	Globe,
 	Pencil,
 	Plus,
 	ScrollText,
@@ -526,6 +528,33 @@ export function ProjectsPage() {
 											<AlertTriangle className="h-4 w-4" aria-hidden="true" />
 											<span>
 												Workspace missing — code actions need a workspace path.
+											</span>
+										</div>
+									)}
+									{project.repoUrl && (
+										<div className="flex items-center gap-2 truncate md:col-span-2">
+											<Globe
+												className="h-4 w-4 text-zinc-500"
+												aria-hidden="true"
+											/>
+											<a
+												href={project.repoUrl}
+												target="_blank"
+												rel="noreferrer"
+												className="truncate font-mono text-xs text-setra-400 hover:underline"
+											>
+												{project.repoUrl.replace(/^https?:\/\//, "")}
+											</a>
+										</div>
+									)}
+									{project.defaultBranch && (
+										<div className="flex items-center gap-2 truncate">
+											<GitBranch
+												className="h-4 w-4 text-zinc-500"
+												aria-hidden="true"
+											/>
+											<span className="font-mono text-xs">
+												{project.defaultBranch}
 											</span>
 										</div>
 									)}
