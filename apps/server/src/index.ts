@@ -56,9 +56,12 @@ import { createLogger } from "./lib/logger.js";
 import { jobQueue } from "./lib/queue.js";
 import { registerRunQueueProcessor } from "./lib/run-orchestrator.js";
 import { seedLocalSkillsCatalog } from "./lib/skills-catalog.js";
+import { inputSanitizer } from "./middleware/input-sanitizer.js";
 import { rateLimit } from "./middleware/rate-limit.js";
+import { requestLogger } from "./middleware/request-logger.js";
 import { requireAuth } from "./middleware/require-auth.js";
 import { requireCompany } from "./middleware/require-company.js";
+import { securityHeaders } from "./middleware/security-headers.js";
 import { activityRoute } from "./routes/activity.js";
 import { agentEventsRoute } from "./routes/agent-events.js";
 import { agentsRoute } from "./routes/agents.js";
@@ -142,6 +145,9 @@ export async function createApp(
 		}),
 	);
 	app.use("*", rateLimit({ windowMs: 60_000, max: 120 }));
+	app.use("*", securityHeaders());
+	app.use("*", requestLogger());
+	app.use("*", inputSanitizer());
 
 	// SSE (real-time board events)
 

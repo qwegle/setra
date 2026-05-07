@@ -62,6 +62,9 @@ export function verifyToken(token: string): TokenPayload {
 	) {
 		throw new Error("Invalid token payload");
 	}
+	if (payload.exp && payload.exp < Date.now()) {
+		throw new Error("Token expired");
+	}
 	return payload;
 }
 
@@ -82,4 +85,30 @@ export async function comparePassword(
 	return (
 		stored.length === derived.length && crypto.timingSafeEqual(stored, derived)
 	);
+}
+
+/**
+ * Refresh a token if it's within the refresh window (last 25% of lifetime).
+ * Returns new token or null if not eligible for refresh.
+ */
+export function refreshToken(token: string): string | null {
+	try {
+		const payload = verifyToken(token);
+		if (!payload.exp) return null;
+
+		const remaining = payload.exp - Date.now();
+		const refreshWindow = TOKEN_EXPIRY_MS * 0.25;
+
+		if (remaining > 0 && remaining < refreshWindow) {
+			return generateToken({
+				userId: payload.userId,
+				email: payload.email,
+				companyId: payload.companyId,
+				role: payload.role,
+			});
+		}
+		return null;
+	} catch {
+		return null;
+	}
 }

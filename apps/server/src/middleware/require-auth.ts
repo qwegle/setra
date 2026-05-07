@@ -38,8 +38,12 @@ export function requireAuth(): MiddlewareHandler {
 			c.set("userRole", payload.role);
 			c.set("authMode", "jwt");
 			return next();
-		} catch {
-			return c.json({ error: "Invalid token" }, 401);
+		} catch (err) {
+			const msg =
+				err instanceof Error && err.message === "Token expired"
+					? "Token expired"
+					: "Invalid token";
+			return c.json({ error: msg }, 401);
 		}
 	};
 }
