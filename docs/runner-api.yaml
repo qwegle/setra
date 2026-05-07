@@ -1,0 +1,191 @@
+openapi: 3.1.0
+info:
+  title: Setra Agent Runner API
+  description: |
+    Go-based agent runner HTTP API for managing PTY-spawned AI agent processes.
+    Runs on port 3142 by default (configurable via SETRA_RUNNER_PORT).
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:3142
+    description: Local agent runner
+
+paths:
+  /health:
+    get:
+      summary: Runner health check
+      responses:
+        "200":
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  activeRuns:
+                    type: integer
+                  registeredAdapters:
+                    type: integer
+                  availableAdapters:
+                    type: array
+                    items:
+                      type: string
+
+  /adapters:
+    get:
+      summary: List registered adapters
+      responses:
+        "200":
+          description: Adapter list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    displayName:
+                      type: string
+                    available:
+                      type: boolean
+                    defaultModel:
+                      type: string
+                    models:
+                      type: array
+                      items:
+                        type: string
+
+  /spawn:
+    post:
+      summary: Spawn an agent process
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [runId, adapter, task]
+              properties:
+                runId:
+                  type: string
+                adapter:
+                  type: string
+                  enum: [claude, gemini, codex, ollama]
+                task:
+                  type: string
+                model:
+                  type: string
+                workDir:
+                  type: string
+                systemPrompt:
+                  type: string
+                mcpConfigPath:
+                  type: string
+                maxTokens:
+                  type: integer
+                timeoutSec:
+                  type: integer
+                env:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        "202":
+          description: Agent spawned (async)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [spawned]
+                  adapter:
+                    type: string
+        "400":
+          description: Invalid request
+        "503":
+          description: Adapter not available
+
+  /stop:
+    post:
+      summary: Stop a running agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [runId]
+              properties:
+                runId:
+                  type: string
+      responses:
+        "200":
+          description: Stopped
+        "404":
+          description: Run not found
+
+  /output:
+    get:
+      summary: Get output from a running agent
+      parameters:
+        - name: runId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current output
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  output:
+                    type: string
+        "404":
+          description: Run not found
+
+  /input:
+    post:
+      summary: Send input to a running agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [runId, input]
+              properties:
+                runId:
+                  type: string
+                input:
+                  type: string
+      responses:
+        "200":
+          description: Input sent
+        "404":
+          description: Run not found
+
+  /active:
+    get:
+      summary: Count active runs
+      responses:
+        "200":
+          description: Active run count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activeRuns:
+                    type: integer

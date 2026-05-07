@@ -1,0 +1,808 @@
+openapi: 3.1.0
+info:
+  title: Setra Platform API
+  description: |
+    REST API for the Setra multi-agent AI orchestration platform.
+    All authenticated endpoints require a Bearer token in the Authorization header
+    and a company ID in the X-Company-ID header.
+  version: 0.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: Qwegle
+    url: https://github.com/qwegle/setra
+
+servers:
+  - url: http://localhost:3141
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: Authentication and user management
+  - name: Agents
+    description: Agent roster and lifecycle management
+  - name: Projects
+    description: Project management
+  - name: Issues
+    description: Issue tracking
+  - name: Runs
+    description: Agent run execution and monitoring
+  - name: Models
+    description: LLM model configuration
+  - name: Costs
+    description: Cost tracking and budgets
+  - name: Companies
+    description: Company/tenant management
+  - name: Health
+    description: Platform health and status
+  - name: Files
+    description: Project file management
+  - name: Settings
+    description: Platform settings and configuration
+  - name: MCP
+    description: MCP server management
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT token from /api/auth/login
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        role:
+          type: string
+          enum: [ceo, cto, developer, designer, qa, devops, security, pm, data]
+        status:
+          type: string
+          enum: [idle, running, error, stopped, paused]
+        model:
+          type: string
+        adapter:
+          type: string
+          enum: [claude, gemini, codex, ollama]
+        isActive:
+          type: boolean
+        systemPrompt:
+          type: string
+        totalRuns:
+          type: integer
+        totalCostUsd:
+          type: number
+          format: float
+        createdAt:
+          type: string
+          format: date-time
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        repoUrl:
+          type: string
+        branch:
+          type: string
+        status:
+          type: string
+          enum: [active, archived]
+        createdAt:
+          type: string
+          format: date-time
+
+    Issue:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, review, done, blocked]
+        priority:
+          type: string
+          enum: [critical, high, medium, low]
+        projectId:
+          type: string
+          format: uuid
+        assigneeId:
+          type: string
+          format: uuid
+
+    Run:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        agentId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        issueId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, running, completed, failed, cancelled, timeout]
+        model:
+          type: string
+        adapter:
+          type: string
+        costUsd:
+          type: number
+          format: float
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+
+    CostSummary:
+      type: object
+      properties:
+        totalUsd:
+          type: number
+          format: float
+        todayUsd:
+          type: number
+          format: float
+        budgetCapUsd:
+          type: number
+          format: float
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+
+    Model:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        isLocal:
+          type: boolean
+
+    Company:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, error]
+        uptime:
+          type: number
+        version:
+          type: string
+        activeRuns:
+          type: integer
+
+    TokenPayload:
+      type: object
+      properties:
+        token:
+          type: string
+        userId:
+          type: string
+        email:
+          type: string
+        companyId:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, member]
+
+  parameters:
+    companyId:
+      name: X-Company-ID
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ── Auth ──────────────────────────────────────────
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                name:
+                  type: string
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPayload"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPayload"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user info
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+
+  # ── Health ────────────────────────────────────────
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Platform health check
+      security: []
+      responses:
+        "200":
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ── Agents ────────────────────────────────────────
+  /api/agents/roster:
+    get:
+      tags: [Agents]
+      summary: List all agents
+      parameters:
+        - $ref: "#/components/parameters/companyId"
+      responses:
+        "200":
+          description: Agent roster
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agent"
+
+  /api/agents/roster/{id}:
+    get:
+      tags: [Agents]
+      summary: Get agent details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+        "404":
+          description: Agent not found
+    put:
+      tags: [Agents]
+      summary: Update agent configuration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                model:
+                  type: string
+                adapter:
+                  type: string
+                systemPrompt:
+                  type: string
+                isActive:
+                  type: boolean
+      responses:
+        "200":
+          description: Agent updated
+    delete:
+      tags: [Agents]
+      summary: Remove agent from roster
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agent removed
+
+  /api/agents/dispatch:
+    post:
+      tags: [Agents]
+      summary: Dispatch agent to work on an issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agentId, issueId]
+              properties:
+                agentId:
+                  type: string
+                  format: uuid
+                issueId:
+                  type: string
+                  format: uuid
+                model:
+                  type: string
+                priority:
+                  type: string
+                  enum: [normal, high, critical]
+      responses:
+        "200":
+          description: Agent dispatched
+        "400":
+          description: Invalid request
+
+  /api/agents/runs:
+    get:
+      tags: [Runs]
+      summary: List agent runs
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+        - name: agentId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [queued, running, completed, failed]
+      responses:
+        "200":
+          description: List of runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Run"
+
+  /api/agents/runs/{id}/stop:
+    post:
+      tags: [Runs]
+      summary: Stop a running agent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Run stopped
+
+  # ── Projects ──────────────────────────────────────
+  /api/projects:
+    get:
+      tags: [Projects]
+      summary: List projects
+      responses:
+        "200":
+          description: Projects list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      tags: [Projects]
+      summary: Create a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                repoUrl:
+                  type: string
+                branch:
+                  type: string
+      responses:
+        "201":
+          description: Project created
+
+  /api/projects/{id}:
+    get:
+      tags: [Projects]
+      summary: Get project details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /api/projects/{id}/issues:
+    get:
+      tags: [Issues]
+      summary: List issues for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Issues list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Issue"
+
+  # ── Issues ────────────────────────────────────────
+  /api/issues:
+    get:
+      tags: [Issues]
+      summary: List all issues
+      responses:
+        "200":
+          description: Issues list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Issue"
+    post:
+      tags: [Issues]
+      summary: Create an issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, projectId]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                priority:
+                  type: string
+                  enum: [critical, high, medium, low]
+                projectId:
+                  type: string
+                assigneeId:
+                  type: string
+      responses:
+        "201":
+          description: Issue created
+
+  # ── Models ────────────────────────────────────────
+  /api/models:
+    get:
+      tags: [Models]
+      summary: List configured LLM models
+      responses:
+        "200":
+          description: Models list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Model"
+
+  /api/models/available-models:
+    get:
+      tags: [Models]
+      summary: List all available models from all providers
+      responses:
+        "200":
+          description: Available models
+
+  # ── Costs ─────────────────────────────────────────
+  /api/costs/summary:
+    get:
+      tags: [Costs]
+      summary: Get cost summary
+      responses:
+        "200":
+          description: Cost summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CostSummary"
+
+  /api/costs/budgets:
+    get:
+      tags: [Costs]
+      summary: List budget configurations
+      responses:
+        "200":
+          description: Budget list
+
+  # ── Companies ─────────────────────────────────────
+  /api/companies:
+    get:
+      tags: [Companies]
+      summary: List companies for current user
+      security: []
+      responses:
+        "200":
+          description: Companies list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Company"
+    post:
+      tags: [Companies]
+      summary: Create a new company
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+      responses:
+        "201":
+          description: Company created
+
+  # ── Settings ──────────────────────────────────────
+  /api/settings:
+    get:
+      tags: [Settings]
+      summary: Get platform settings
+      responses:
+        "200":
+          description: Current settings
+    put:
+      tags: [Settings]
+      summary: Update settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Settings updated
+
+  # ── MCP Servers ───────────────────────────────────
+  /api/mcp/servers:
+    get:
+      tags: [MCP]
+      summary: List MCP tool servers
+      responses:
+        "200":
+          description: MCP servers list
+    post:
+      tags: [MCP]
+      summary: Add MCP server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, command]
+              properties:
+                name:
+                  type: string
+                command:
+                  type: string
+                args:
+                  type: array
+                  items:
+                    type: string
+                env:
+                  type: object
+      responses:
+        "201":
+          description: MCP server added
+
+  # ── Files ─────────────────────────────────────────
+  /api/projects/{projectId}/files/search:
+    get:
+      tags: [Files]
+      summary: Search project files
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+
+  # ── Git ───────────────────────────────────────────
+  /api/projects/{projectId}/git/status:
+    get:
+      tags: [Files]
+      summary: Get git status for project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Git status
+
+  /api/projects/{projectId}/git/log:
+    get:
+      tags: [Files]
+      summary: Get git log for project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Git log entries
