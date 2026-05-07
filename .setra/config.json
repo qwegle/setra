@@ -1,0 +1,8 @@
+{
+	"setup": [".setra/setup.sh"],
+	"teardown": [".setra/teardown.sh"],
+	"mcpServers": ["setra-core"],
+	"defaultAgent": "claude",
+	"autoCheckpoint": true,
+	"checkpointInterval": 300
+}

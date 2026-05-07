@@ -1,0 +1,26 @@
+# docker-compose.yml — self-host setra (API + Board)
+# Usage:  docker compose up -d
+# Data:   persisted at ./data → mounted to /root/.setra inside container
+
+version: "3.9"
+
+services:
+  setra:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: setra:latest
+    container_name: setra
+    restart: unless-stopped
+    ports:
+      - "3141:3141"   # control-plane API
+      - "5173:5173"   # board UI
+    environment:
+      SETRA_PORT: "3141"
+      BOARD_PORT: "5173"
+      # Provide your keys here OR set them via the UI Settings page.
+      # ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+      # OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      # GEMINI_API_KEY: "${GEMINI_API_KEY}"
+    volumes:
+      - ./data:/root/.setra

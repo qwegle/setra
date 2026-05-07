@@ -1,0 +1,21 @@
+╭──────────────────────────────────────────────────────────────────╮
+│  Gemini CLI  ●  gemini-2.5-pro                                  │
+╰──────────────────────────────────────────────────────────────────╯
+
+> Reading project structure...
+  Listed 34 files in src/
+
+> Implementing the requested feature...
+  Modified: src/api/routes.ts
+  Created:  src/api/handlers/userHandler.ts
+
+> Running tests...
+  ✓ All 12 tests passed
+
+Implementation complete.
+
+──────────────────────────────────────────────────────────────────
+  Model:          gemini-2.5-pro
+  Tokens used:    5,678 (input: 4,500 / output: 1,178)
+  Estimated cost: $0.0023
+──────────────────────────────────────────────────────────────────

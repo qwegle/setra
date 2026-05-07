@@ -1,0 +1,75 @@
+{
+	"name": "@setra/cli",
+	"version": "0.1.0",
+	"description": "Run AI coding agents anywhere, remember everything.",
+	"keywords": [
+		"ai",
+		"agents",
+		"cli",
+		"coding",
+		"setra",
+		"claude",
+		"gemini",
+		"copilot"
+	],
+	"homepage": "https://setra.sh",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/nitikeshq/setra",
+		"directory": "apps/cli"
+	},
+	"license": "Apache-2.0",
+	"type": "module",
+	"bin": {
+		"setra": "./dist/index.js"
+	},
+	"files": ["dist", "README.md"],
+	"scripts": {
+		"dev": "tsx watch src/index.tsx",
+		"build": "tsup src/index.tsx --format esm --dts --clean && chmod +x dist/index.js",
+		"typecheck": "tsc --noEmit",
+		"typecheck:strict": "tsc --noEmit",
+		"clean": "rm -rf dist",
+		"prepublishOnly": "pnpm run build",
+		"release": "pnpm run build && npm publish --access public"
+	},
+	"dependencies": {
+		"@setra/agent-runner": "workspace:*",
+		"@setra/commands": "workspace:*",
+		"@setra/company": "workspace:*",
+		"@setra/core": "workspace:^",
+		"@setra/db": "workspace:*",
+		"@setra/memory": "workspace:*",
+		"@setra/monitor": "workspace:*",
+		"@setra/security": "workspace:*",
+		"@setra/shared": "workspace:*",
+		"@setra/skills": "workspace:*",
+		"@setra/types": "workspace:*",
+		"chalk": "^5.3.0",
+		"commander": "^12.1.0",
+		"date-fns": "^3.6.0",
+		"drizzle-orm": "^0.38.3",
+		"execa": "^9.6.1",
+		"ink": "^5.0.1",
+		"ink-spinner": "^5.0.0",
+		"ink-use-stdout-dimensions": "^1.0.5",
+		"ora": "^5.4.1",
+		"react": "^18.3.0",
+		"zod": "^3.24.1",
+		"zustand": "^5.0.3"
+	},
+	"devDependencies": {
+		"@setra/typescript-config": "workspace:*",
+		"@types/react": "^18.3.0",
+		"tsup": "^8.3.0",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.3"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	}
+}

@@ -1,0 +1,120 @@
+name: Benchmarks
+
+on:
+  schedule:
+    # Every Monday at 09:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: 'Number of benchmark runs per variant (default: 3)'
+        required: false
+        default: '3'
+
+concurrency:
+  group: benchmarks
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed to post commit comment
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build setra CLI
+        run: pnpm build --filter=@setra/cli
+
+      - name: Run benchmarks
+        id: bench
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.BENCHMARK_ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.BENCHMARK_OPENAI_API_KEY }}
+          BENCH_RUNS: ${{ github.event.inputs.runs || '3' }}
+        run: |
+          chmod +x scripts/setra-benchmark.sh
+          bash scripts/setra-benchmark.sh
+          echo "results_json<<EOF" >> "$GITHUB_OUTPUT"
+          cat benchmark-results/results.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.run_id }}
+          path: benchmark-results/
+          retention-days: 90
+
+      # ── Regression check ───────────────────────────────────────────────────
+      - name: Check for cost regression
+        id: regression
+        run: |
+          node - <<'JS'
+          const fs = require('fs');
+          const results = JSON.parse(fs.readFileSync('benchmark-results/results.json', 'utf8'));
+
+          // Load baseline if it exists (committed in repo)
+          let baseline = null;
+          try {
+            baseline = JSON.parse(fs.readFileSync('scripts/benchmark-baseline.json', 'utf8'));
+          } catch {}
+
+          if (!baseline) {
+            console.log('No baseline found — skipping regression check');
+            process.exit(0);
+          }
+
+          const delta = (results.avg_cost_usd - baseline.avg_cost_usd) / baseline.avg_cost_usd;
+          console.log(`Cost delta: ${(delta * 100).toFixed(2)}%`);
+
+          if (delta > 0.10) {
+            console.log('::warning::Cost regression > 10% detected!');
+            fs.writeFileSync('benchmark-results/regression.txt',
+              `REGRESSION DETECTED: ${(delta * 100).toFixed(2)}% cost increase vs baseline`);
+            process.exitCode = 1;
+          }
+          JS
+
+      # ── Post summary as commit comment ────────────────────────────────────
+      - name: Post results comment
+        uses: peter-evans/commit-comment@v3
+        with:
+          body: |
+            ## 📊 Weekly Benchmark Results — ${{ github.run_id }}
+
+            <details>
+            <summary>Full results</summary>
+
+            ```json
+            ${{ steps.bench.outputs.results_json }}
+            ```
+
+            </details>
+
+            Run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ${{ steps.regression.outcome == 'failure' && '⚠️ **Cost regression > 10% detected. Review required.**' || '✅ No regression detected.' }}
+
+      # ── Update baseline if no regression ──────────────────────────────────
+      - name: Update benchmark baseline
+        if: steps.regression.outcome == 'success'
+        run: |
+          cp benchmark-results/results.json scripts/benchmark-baseline.json
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/benchmark-baseline.json
+          git diff --staged --quiet || git commit -m "chore: update benchmark baseline [skip ci]"
+          git push

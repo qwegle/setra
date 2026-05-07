@@ -1,0 +1,4 @@
+**/dist/**
+apps/board/dist/**
+apps/server/skills/catalog.json
+

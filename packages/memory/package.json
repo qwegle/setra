@@ -1,0 +1,38 @@
+{
+	"name": "@setra/memory",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Cross-session semantic memory for setra AI agents \u2014 100% offline via local WASM embeddings",
+	"license": "Apache-2.0",
+	"type": "module",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts",
+			"require": "./dist/index.cjs"
+		}
+	},
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"scripts": {
+		"build": "tsup",
+		"typecheck": "tsc --noEmit",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"better-sqlite3": "^11.7.0",
+		"@xenova/transformers": "^2.17.2"
+	},
+	"devDependencies": {
+		"@setra/typescript-config": "workspace:*",
+		"@types/better-sqlite3": "^7.6.12",
+		"tsup": "^8.3.0",
+		"typescript": "^5.7.3"
+	},
+	"tsup": {
+		"entry": ["src/index.ts"],
+		"format": ["esm", "cjs"],
+		"dts": true,
+		"clean": true
+	}
+}

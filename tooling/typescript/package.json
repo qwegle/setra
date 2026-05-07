@@ -1,0 +1,12 @@
+{
+	"name": "@setra/typescript-config",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Shared TypeScript compiler config for setra packages",
+	"license": "Apache-2.0",
+	"exports": {
+		"./base.json": "./base.json",
+		"./react.json": "./react.json"
+	},
+	"files": ["base.json", "react.json"]
+}

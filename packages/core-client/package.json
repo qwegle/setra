@@ -1,0 +1,32 @@
+{
+	"name": "@setra/core-client",
+	"version": "0.1.0",
+	"private": false,
+	"description": "setra.sh typed client SDK — works in browser, Node.js, and TUI",
+	"license": "Apache-2.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsup src/index.ts --format esm --dts --clean",
+		"dev": "tsup src/index.ts --format esm --dts --watch",
+		"typecheck": "tsc --noEmit",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"@setra/types": "workspace:*",
+		"zod": "^3.24.1"
+	},
+	"devDependencies": {
+		"@setra/typescript-config": "workspace:*",
+		"@types/node": "^22.10.5",
+		"tsup": "^8.3.0",
+		"typescript": "^5.7.3"
+	}
+}

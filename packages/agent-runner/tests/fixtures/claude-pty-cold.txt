@@ -1,0 +1,29 @@
+╭─────────────────────────────────────────────────────────────────╮
+│ claude (claude-sonnet-4-6)                                      │
+╰─────────────────────────────────────────────────────────────────╯
+
+● Reading the project structure.
+
+⎿  Read src/index.ts (78 lines)
+
+● Working on the first turn of a cold run (no cache warm yet).
+
+⎿  Wrote src/feature.ts (200 lines)
+⎿  Ran npm test
+
+  PASS src/feature.test.ts
+
+╭─────────────────────────────────────────────────────────────────╮
+│                          Cost Summary                           │
+╰─────────────────────────────────────────────────────────────────╯
+
+  Total cost:            $0.1847
+  Total duration (API):  22.341s
+  Total duration (wall):  67.003s
+  Turns:                 5
+
+  Token usage:
+    Input:               45,000
+    Output:              3,200
+    Cache read:          0
+    Cache write:         45,000

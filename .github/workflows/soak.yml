@@ -1,0 +1,49 @@
+name: Soak Stability
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      duration_sec:
+        description: "Soak duration in seconds"
+        required: false
+        default: "1200"
+
+jobs:
+  soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run soak
+        run: |
+          DURATION="${{ github.event.inputs.duration_sec || '1200' }}"
+          pnpm exec tsx scripts/slo/soak.ts --duration-sec="$DURATION" --output=benchmark-results/soak.json
+
+      - name: Assert soak SLO thresholds
+        run: |
+          pnpm exec tsx scripts/slo/assert-soak.ts \
+            --file=benchmark-results/soak.json \
+            --min-availability=99 \
+            --max-error-rate=1 \
+            --max-p95-ms=500 \
+            --max-memory-growth-pct=30 \
+            --max-memory-growth-mb=250
+
+      - name: Upload soak report
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-report-${{ github.run_id }}
+          path: benchmark-results/soak.json
+

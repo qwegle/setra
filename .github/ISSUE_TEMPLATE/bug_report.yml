@@ -1,0 +1,97 @@
+name: Bug Report
+description: Something isn't working right
+title: "[bug]: "
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. The more detail you give, the faster it gets fixed.
+
+  - type: input
+    id: version
+    attributes:
+      label: setra version
+      description: Run `setra --version` or check the About screen.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux (x64)
+        - Linux (arm64)
+        - Windows (x64)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: How did you install setra?
+      options:
+        - DMG / installer download
+        - Built from source
+        - Homebrew / package manager
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what actually happened?
+      placeholder: |
+        1. I ran `setra run --task "..."`
+        2. Expected: agent completed the task
+        3. Got: crash with error message below
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction steps
+      description: The smallest set of steps that reliably produces the bug.
+      placeholder: |
+        1. Create a new git repo with a single TypeScript file
+        2. Run `setra run --task "add types"`
+        3. Observe crash
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / error output
+      description: Paste logs here. The app writes logs to `~/.setra/logs/`.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else that might help — screenshots, config, env.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this isn't a duplicate
+          required: true
+        - label: I'm on the latest version of setra
+          required: false

@@ -1,0 +1,1510 @@
+{
+	"version": "6",
+	"dialect": "sqlite",
+	"id": "85f82822-8e6e-4140-926b-098a35ff4bf5",
+	"prevId": "00000000-0000-0000-0000-000000000000",
+	"tables": {
+		"agent_templates": {
+			"name": "agent_templates",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"agent": {
+					"name": "agent",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"model": {
+					"name": "model",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"system_prompt": {
+					"name": "system_prompt",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"tools": {
+					"name": "tools",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"context_inject": {
+					"name": "context_inject",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"estimated_cost_tier": {
+					"name": "estimated_cost_tier",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false,
+					"default": "'medium'"
+				},
+				"is_builtin": {
+					"name": "is_builtin",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {
+				"agent_templates_name_unique": {
+					"name": "agent_templates_name_unique",
+					"columns": ["name"],
+					"isUnique": true
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"app_settings": {
+			"name": "app_settings",
+			"columns": {
+				"key": {
+					"name": "key",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"value": {
+					"name": "value",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"chunks": {
+			"name": "chunks",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": true
+				},
+				"run_id": {
+					"name": "run_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"sequence": {
+					"name": "sequence",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"content": {
+					"name": "content",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"chunk_type": {
+					"name": "chunk_type",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'output'"
+				},
+				"recorded_at": {
+					"name": "recorded_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {
+				"uniq_chunks_run_seq": {
+					"name": "uniq_chunks_run_seq",
+					"columns": ["run_id", "sequence"],
+					"isUnique": true
+				},
+				"idx_chunks_run_sequence": {
+					"name": "idx_chunks_run_sequence",
+					"columns": ["run_id", "sequence"],
+					"isUnique": false
+				}
+			},
+			"foreignKeys": {
+				"chunks_run_id_runs_id_fk": {
+					"name": "chunks_run_id_runs_id_fk",
+					"tableFrom": "chunks",
+					"tableTo": "runs",
+					"columnsFrom": ["run_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"grounds": {
+			"name": "grounds",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"host": {
+					"name": "host",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"port": {
+					"name": "port",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 22
+				},
+				"username": {
+					"name": "username",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"auth_type": {
+					"name": "auth_type",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"key_path": {
+					"name": "key_path",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"tmux_prefix": {
+					"name": "tmux_prefix",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'setra'"
+				},
+				"status": {
+					"name": "status",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'unknown'"
+				},
+				"last_ping_at": {
+					"name": "last_ping_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"notes": {
+					"name": "notes",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"marks": {
+			"name": "marks",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"run_id": {
+					"name": "run_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"plot_id": {
+					"name": "plot_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"commit_hash": {
+					"name": "commit_hash",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"branch": {
+					"name": "branch",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"message": {
+					"name": "message",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"mark_type": {
+					"name": "mark_type",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'auto'"
+				},
+				"files_changed": {
+					"name": "files_changed",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"insertions": {
+					"name": "insertions",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"deletions": {
+					"name": "deletions",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {
+				"idx_marks_plot_id": {
+					"name": "idx_marks_plot_id",
+					"columns": ["plot_id"],
+					"isUnique": false
+				},
+				"idx_marks_run_id": {
+					"name": "idx_marks_run_id",
+					"columns": ["run_id"],
+					"isUnique": false
+				}
+			},
+			"foreignKeys": {
+				"marks_run_id_runs_id_fk": {
+					"name": "marks_run_id_runs_id_fk",
+					"tableFrom": "marks",
+					"tableTo": "runs",
+					"columnsFrom": ["run_id"],
+					"columnsTo": ["id"],
+					"onDelete": "set null",
+					"onUpdate": "no action"
+				},
+				"marks_plot_id_plots_id_fk": {
+					"name": "marks_plot_id_plots_id_fk",
+					"tableFrom": "marks",
+					"tableTo": "plots",
+					"columnsFrom": ["plot_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"path_runs": {
+			"name": "path_runs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"path_id": {
+					"name": "path_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"run_id": {
+					"name": "run_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"status": {
+					"name": "status",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'pending'"
+				},
+				"current_stage": {
+					"name": "current_stage",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"log": {
+					"name": "log",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"triggered_by": {
+					"name": "triggered_by",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'auto'"
+				},
+				"started_at": {
+					"name": "started_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				},
+				"ended_at": {
+					"name": "ended_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"duration_ms": {
+					"name": "duration_ms",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"path_runs_path_id_paths_id_fk": {
+					"name": "path_runs_path_id_paths_id_fk",
+					"tableFrom": "path_runs",
+					"tableTo": "paths",
+					"columnsFrom": ["path_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"path_runs_run_id_runs_id_fk": {
+					"name": "path_runs_run_id_runs_id_fk",
+					"tableFrom": "path_runs",
+					"tableTo": "runs",
+					"columnsFrom": ["run_id"],
+					"columnsTo": ["id"],
+					"onDelete": "set null",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"paths": {
+			"name": "paths",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"plot_id": {
+					"name": "plot_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"trigger": {
+					"name": "trigger",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"stages": {
+					"name": "stages",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"enabled": {
+					"name": "enabled",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"paths_plot_id_plots_id_fk": {
+					"name": "paths_plot_id_plots_id_fk",
+					"tableFrom": "paths",
+					"tableTo": "plots",
+					"columnsFrom": ["plot_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"plot_tools": {
+			"name": "plot_tools",
+			"columns": {
+				"plot_id": {
+					"name": "plot_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"tool_id": {
+					"name": "tool_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"enabled": {
+					"name": "enabled",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": true
+				},
+				"env_overrides": {
+					"name": "env_overrides",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"plot_tools_plot_id_plots_id_fk": {
+					"name": "plot_tools_plot_id_plots_id_fk",
+					"tableFrom": "plot_tools",
+					"tableTo": "plots",
+					"columnsFrom": ["plot_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"plot_tools_tool_id_tools_id_fk": {
+					"name": "plot_tools_tool_id_tools_id_fk",
+					"tableFrom": "plot_tools",
+					"tableTo": "tools",
+					"columnsFrom": ["tool_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {
+				"plot_tools_plot_id_tool_id_pk": {
+					"columns": ["plot_id", "tool_id"],
+					"name": "plot_tools_plot_id_tool_id_pk"
+				}
+			},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"plots": {
+			"name": "plots",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"project_id": {
+					"name": "project_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"worktree_path": {
+					"name": "worktree_path",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"branch": {
+					"name": "branch",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"base_branch": {
+					"name": "base_branch",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'main'"
+				},
+				"ground_id": {
+					"name": "ground_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"status": {
+					"name": "status",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'idle'"
+				},
+				"agent_template": {
+					"name": "agent_template",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"auto_checkpoint": {
+					"name": "auto_checkpoint",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": true
+				},
+				"checkpoint_interval_s": {
+					"name": "checkpoint_interval_s",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 300
+				},
+				"total_cost_usd": {
+					"name": "total_cost_usd",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"last_active_at": {
+					"name": "last_active_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"claimed_by_session_id": {
+					"name": "claimed_by_session_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {
+				"idx_plots_project_id": {
+					"name": "idx_plots_project_id",
+					"columns": ["project_id"],
+					"isUnique": false
+				},
+				"idx_plots_status": {
+					"name": "idx_plots_status",
+					"columns": ["status"],
+					"isUnique": false
+				}
+			},
+			"foreignKeys": {
+				"plots_project_id_projects_id_fk": {
+					"name": "plots_project_id_projects_id_fk",
+					"tableFrom": "plots",
+					"tableTo": "projects",
+					"columnsFrom": ["project_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"plots_ground_id_grounds_id_fk": {
+					"name": "plots_ground_id_grounds_id_fk",
+					"tableFrom": "plots",
+					"tableTo": "grounds",
+					"columnsFrom": ["ground_id"],
+					"columnsTo": ["id"],
+					"onDelete": "set null",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"projects": {
+			"name": "projects",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"repo_path": {
+					"name": "repo_path",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"remote_url": {
+					"name": "remote_url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"default_branch": {
+					"name": "default_branch",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'main'"
+				},
+				"total_cost_usd": {
+					"name": "total_cost_usd",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"total_runs": {
+					"name": "total_runs",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"last_active_at": {
+					"name": "last_active_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {
+				"projects_repo_path_unique": {
+					"name": "projects_repo_path_unique",
+					"columns": ["repo_path"],
+					"isUnique": true
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"runs": {
+			"name": "runs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"plot_id": {
+					"name": "plot_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"agent": {
+					"name": "agent",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"agent_version": {
+					"name": "agent_version",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"agent_binary": {
+					"name": "agent_binary",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"agent_args": {
+					"name": "agent_args",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"status": {
+					"name": "status",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'pending'"
+				},
+				"pty_pid": {
+					"name": "pty_pid",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"tmux_session": {
+					"name": "tmux_session",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"ground_id": {
+					"name": "ground_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"prompt_tokens": {
+					"name": "prompt_tokens",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"completion_tokens": {
+					"name": "completion_tokens",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"cache_read_tokens": {
+					"name": "cache_read_tokens",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"cache_write_tokens": {
+					"name": "cache_write_tokens",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"cost_usd": {
+					"name": "cost_usd",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": 0
+				},
+				"cost_confidence": {
+					"name": "cost_confidence",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'none'"
+				},
+				"outcome": {
+					"name": "outcome",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"error_message": {
+					"name": "error_message",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"exit_code": {
+					"name": "exit_code",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"started_at": {
+					"name": "started_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				},
+				"ended_at": {
+					"name": "ended_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {
+				"idx_runs_plot_id": {
+					"name": "idx_runs_plot_id",
+					"columns": ["plot_id"],
+					"isUnique": false
+				},
+				"idx_runs_status": {
+					"name": "idx_runs_status",
+					"columns": ["status"],
+					"isUnique": false
+				},
+				"idx_runs_started_at": {
+					"name": "idx_runs_started_at",
+					"columns": ["started_at"],
+					"isUnique": false
+				}
+			},
+			"foreignKeys": {
+				"runs_plot_id_plots_id_fk": {
+					"name": "runs_plot_id_plots_id_fk",
+					"tableFrom": "runs",
+					"tableTo": "plots",
+					"columnsFrom": ["plot_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"runs_ground_id_grounds_id_fk": {
+					"name": "runs_ground_id_grounds_id_fk",
+					"tableFrom": "runs",
+					"tableTo": "grounds",
+					"columnsFrom": ["ground_id"],
+					"columnsTo": ["id"],
+					"onDelete": "set null",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"team_messages": {
+			"name": "team_messages",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"channel": {
+					"name": "channel",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"from_agent": {
+					"name": "from_agent",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"to_agent": {
+					"name": "to_agent",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"content": {
+					"name": "content",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"message_type": {
+					"name": "message_type",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'task'"
+				},
+				"sequence": {
+					"name": "sequence",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"read_at": {
+					"name": "read_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"plot_id": {
+					"name": "plot_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {
+				"idx_team_messages_channel": {
+					"name": "idx_team_messages_channel",
+					"columns": ["channel"],
+					"isUnique": false
+				},
+				"idx_team_messages_sequence": {
+					"name": "idx_team_messages_sequence",
+					"columns": ["sequence"],
+					"isUnique": false
+				}
+			},
+			"foreignKeys": {
+				"team_messages_plot_id_plots_id_fk": {
+					"name": "team_messages_plot_id_plots_id_fk",
+					"tableFrom": "team_messages",
+					"tableTo": "plots",
+					"columnsFrom": ["plot_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"tools": {
+			"name": "tools",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"transport": {
+					"name": "transport",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"command": {
+					"name": "command",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"args": {
+					"name": "args",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"url": {
+					"name": "url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"env_vars": {
+					"name": "env_vars",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"is_builtin": {
+					"name": "is_builtin",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": false
+				},
+				"is_global": {
+					"name": "is_global",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": false
+				},
+				"health_status": {
+					"name": "health_status",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'unknown'"
+				},
+				"last_health_check": {
+					"name": "last_health_check",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {
+				"tools_name_unique": {
+					"name": "tools_name_unique",
+					"columns": ["name"],
+					"isUnique": true
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"traces": {
+			"name": "traces",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(lower(hex(randomblob(16))))"
+				},
+				"run_id": {
+					"name": "run_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"project_id": {
+					"name": "project_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"content": {
+					"name": "content",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"content_hash": {
+					"name": "content_hash",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"source_type": {
+					"name": "source_type",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'run_output'"
+				},
+				"vector_id": {
+					"name": "vector_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"is_synthetic": {
+					"name": "is_synthetic",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+				}
+			},
+			"indexes": {
+				"uniq_traces_hash_project": {
+					"name": "uniq_traces_hash_project",
+					"columns": ["content_hash", "project_id"],
+					"isUnique": true
+				},
+				"idx_traces_project": {
+					"name": "idx_traces_project",
+					"columns": ["project_id"],
+					"isUnique": false
+				},
+				"idx_traces_run": {
+					"name": "idx_traces_run",
+					"columns": ["run_id"],
+					"isUnique": false
+				}
+			},
+			"foreignKeys": {
+				"traces_run_id_runs_id_fk": {
+					"name": "traces_run_id_runs_id_fk",
+					"tableFrom": "traces",
+					"tableTo": "runs",
+					"columnsFrom": ["run_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"traces_project_id_projects_id_fk": {
+					"name": "traces_project_id_projects_id_fk",
+					"tableFrom": "traces",
+					"tableTo": "projects",
+					"columnsFrom": ["project_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		}
+	},
+	"views": {},
+	"enums": {},
+	"_meta": {
+		"schemas": {},
+		"tables": {},
+		"columns": {}
+	},
+	"internal": {
+		"indexes": {}
+	}
+}

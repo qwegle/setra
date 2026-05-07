@@ -1,0 +1,10 @@
+dist/
+*.local
+.env*
+node_modules/
+*.log
+coverage/
+*.test.*
+__tests__/
+src/
+tsconfig*.json

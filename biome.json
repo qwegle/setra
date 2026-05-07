@@ -1,0 +1,56 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignore": [
+			"**/dist/**",
+			"apps/board/dist/**",
+			"apps/server/skills/catalog.json",
+			"apps/landing/**",
+			"native/**",
+			"go/**"
+		]
+	},
+	"linter": {
+		"rules": {
+			"a11y": {
+				"useButtonType": "off",
+				"useKeyWithClickEvents": "off",
+				"useSemanticElements": "off",
+				"noLabelWithoutControl": "off",
+				"noAutofocus": "off",
+				"noSvgWithoutTitle": "off"
+			},
+			"complexity": {
+				"useLiteralKeys": "off",
+				"noForEach": "off",
+				"useOptionalChain": "off"
+			},
+			"correctness": {
+				"useExhaustiveDependencies": "off"
+			},
+			"performance": {
+				"noDelete": "off"
+			},
+			"style": {
+				"noUnusedTemplateLiteral": "off",
+				"noNonNullAssertion": "off",
+				"useTemplate": "off",
+				"useNodejsImportProtocol": "off",
+				"noUselessElse": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "off",
+				"noAssignInExpressions": "off",
+				"noArrayIndexKey": "off",
+				"noImplicitAnyLet": "off",
+				"noGlobalIsNan": "off",
+				"noControlCharactersInRegex": "off"
+			}
+		}
+	}
+}

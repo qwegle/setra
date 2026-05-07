@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.turbo/
+*.node
+apps/desktop/dist/
+apps/desktop/out/
+apps/cli/dist/
+packages/*/dist/
+*.db
+*.db-shm
+*.db-wal
+~/.setra/
+.env
+.env.local
+*.log
+
+# setra
+.setra/*.log
+.setra/cache/
+
+# Go
+bin/
+go/*/vendor/
+
+# Rust
+native/compute/target/

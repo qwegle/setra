@@ -1,0 +1,94 @@
+---
+
+---
+
+<section id="install" class="py-24 bg-gray-900/30">
+  <div class="max-w-4xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="text-4xl font-bold mb-4">Get started in seconds</h2>
+      <p class="text-lg text-gray-400">One command to install. Works on macOS, Linux, and Windows.</p>
+    </div>
+
+    <div class="space-y-6">
+      <!-- macOS / Linux -->
+      <div class="rounded-2xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-medium text-gray-300">macOS / Linux</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-accent-green/10 text-accent-green border border-accent-green/20">Recommended</span>
+          </div>
+          <button
+            onclick="navigator.clipboard.writeText('curl -fsSL https://setra.sh/install.sh | bash')"
+            class="text-xs text-gray-500 hover:text-white transition-colors px-2 py-1 rounded hover:bg-gray-800"
+          >
+            Copy
+          </button>
+        </div>
+        <div class="p-5">
+          <code class="text-sm font-mono text-setra-400">curl -fsSL https://setra.sh/install.sh | bash</code>
+        </div>
+      </div>
+
+      <!-- Windows -->
+      <div class="rounded-2xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+          <span class="text-sm font-medium text-gray-300">Windows (PowerShell)</span>
+          <button
+            onclick="navigator.clipboard.writeText('irm https://setra.sh/install.ps1 | iex')"
+            class="text-xs text-gray-500 hover:text-white transition-colors px-2 py-1 rounded hover:bg-gray-800"
+          >
+            Copy
+          </button>
+        </div>
+        <div class="p-5">
+          <code class="text-sm font-mono text-setra-400">irm https://setra.sh/install.ps1 | iex</code>
+        </div>
+      </div>
+
+      <!-- Homebrew -->
+      <div class="rounded-2xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+          <span class="text-sm font-medium text-gray-300">Homebrew</span>
+          <button
+            onclick="navigator.clipboard.writeText('brew install qwegle/tap/setra')"
+            class="text-xs text-gray-500 hover:text-white transition-colors px-2 py-1 rounded hover:bg-gray-800"
+          >
+            Copy
+          </button>
+        </div>
+        <div class="p-5">
+          <code class="text-sm font-mono text-setra-400">brew install qwegle/tap/setra</code>
+        </div>
+      </div>
+
+      <!-- Go install -->
+      <div class="rounded-2xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+          <span class="text-sm font-medium text-gray-300">Go Install</span>
+          <button
+            onclick="navigator.clipboard.writeText('go install github.com/qwegle/setra/go/cli/cmd/setra@latest')"
+            class="text-xs text-gray-500 hover:text-white transition-colors px-2 py-1 rounded hover:bg-gray-800"
+          >
+            Copy
+          </button>
+        </div>
+        <div class="p-5">
+          <code class="text-sm font-mono text-setra-400">go install github.com/qwegle/setra/go/cli/cmd/setra@latest</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick start -->
+    <div class="mt-12 text-center">
+      <h3 class="text-xl font-semibold mb-6">Then start building</h3>
+      <div class="max-w-lg mx-auto rounded-2xl border border-gray-800 bg-gray-900/80 p-6 font-mono text-sm text-left">
+        <div><span class="text-gray-500">$</span> <span class="text-gray-300">setra init</span></div>
+        <div><span class="text-gray-500">$</span> <span class="text-gray-300">setra start --tui</span></div>
+        <div class="mt-2 text-gray-500"># Or choose your preferred interface:</div>
+        <div><span class="text-gray-500">$</span> <span class="text-gray-300">setra start --cli</span> <span class="text-gray-600"># Command line</span></div>
+        <div><span class="text-gray-500">$</span> <span class="text-gray-300">setra start --web</span> <span class="text-gray-600"># Web dashboard</span></div>
+        <div><span class="text-gray-500">$</span> <span class="text-gray-300">setra start --desktop</span> <span class="text-gray-600"># Electron app</span></div>
+      </div>
+    </div>
+  </div>
+</section>

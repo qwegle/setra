@@ -1,0 +1,55 @@
+{
+	"name": "setra",
+	"version": "0.1.0",
+	"private": true,
+	"description": "A field for AI agents. Run them anywhere, remember everything.",
+	"license": "Apache-2.0",
+	"packageManager": "pnpm@9.15.0",
+	"engines": {
+		"node": ">=20.0.0",
+		"pnpm": ">=9.0.0"
+	},
+	"scripts": {
+		"dev": "concurrently --names \"board,server\" --prefix-colors \"blue,magenta\" \"pnpm --filter @setra/board dev\" \"pnpm --filter @setra/server dev\"",
+		"dev:everything": "turbo run dev --parallel",
+		"build": "turbo build",
+		"test": "bash scripts/restore-node-native.sh && vitest run",
+		"test:ci": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"typecheck": "turbo typecheck",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"format": "biome format --write .",
+		"verify": "pnpm typecheck && pnpm test:ci && pnpm lint",
+		"slo:rollback": "pnpm exec tsx scripts/slo/migration-rollback-smoke.ts",
+		"slo:restart": "pnpm exec tsx scripts/slo/restart-recovery-smoke.ts",
+		"slo:soak": "pnpm exec tsx scripts/slo/soak.ts --duration-sec=600 --output=benchmark-results/soak.json",
+		"slo:assert": "pnpm exec tsx scripts/slo/assert-soak.ts --file=benchmark-results/soak.json",
+		"slo:smoke": "pnpm run slo:rollback && pnpm run slo:restart",
+		"clean": "turbo clean && find . -name dist -not -path '*/node_modules/*' | xargs rm -rf",
+		"desktop": "turbo run dev --filter=@setra/desktop",
+		"cli": "turbo run dev --filter=@setra/cli",
+		"verify:platform": "bash scripts/verify-platform.sh",
+		"dev:all": "concurrently --names \"desktop,board,server,cli\" --prefix-colors \"cyan,blue,magenta,green\" \"pnpm --filter @setra/desktop dev\" \"pnpm --filter @setra/board dev\" \"pnpm --filter @setra/server dev\" \"pnpm --filter @setra/cli dev\"",
+		"dev:board": "concurrently --names \"board,server\" --prefix-colors \"blue,magenta\" \"pnpm --filter @setra/board dev\" \"pnpm --filter @setra/server dev\"",
+		"dev:desktop": "turbo run dev --filter=@setra/desktop",
+		"dev:cli": "pnpm --filter @setra/cli dev",
+		"dev:tui": "pnpm --filter @setra/cli exec tsx src/index.tsx tui",
+		"postinstall": "bash scripts/rebuild-native.sh || true"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@vitest/coverage-v8": "^2.1.9",
+		"concurrently": "^9.2.1",
+		"tsup": "^8.5.1",
+		"turbo": "^2.3.3",
+		"typescript": "^5.7.3",
+		"vitest": "^2.1.9"
+	},
+	"pnpm": {
+		"overrides": {
+			"typescript": "^5.7.3"
+		}
+	}
+}

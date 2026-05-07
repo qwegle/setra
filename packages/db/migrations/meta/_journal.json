@@ -1,0 +1,41 @@
+{
+	"version": "7",
+	"dialect": "sqlite",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "6",
+			"when": 1777657899808,
+			"tag": "0000_flat_starhawk",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "6",
+			"when": 1777739900000,
+			"tag": "0001_ticket_labels",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "6",
+			"when": 1777739901000,
+			"tag": "0002_db_grounds",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "6",
+			"when": 1777739902000,
+			"tag": "0003_kanban",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "6",
+			"when": 1746403200000,
+			"tag": "0004_enterprise_board",
+			"breakpoints": true
+		}
+	]
+}

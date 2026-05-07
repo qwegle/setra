@@ -1,0 +1,208 @@
+{
+	"$schema": "https://setra.sh/schemas/company/v1",
+	"version": "1",
+	"name": "Full Stack Dev Team",
+	"description": "A product-aware full-stack development team. The architect leads, delegates to specialists, and all code changes go through a human approval gate before merging. Designed for feature development on a TypeScript/React/Node codebase.",
+
+	"lead": "architect",
+
+	"totalCostBudgetUsd": 5.0,
+
+	"members": [
+		{
+			"slug": "architect",
+			"name": "Architect",
+			"role": "Lead Architect & Orchestrator",
+			"model": "claude-opus-4-5",
+			"maxTurns": 30,
+			"permissionMode": "plan",
+			"worktreeIsolation": false,
+			"costBudgetUsd": 2.0,
+			"expertise": [
+				"system-design",
+				"architecture",
+				"technical-decisions",
+				"task-decomposition",
+				"code-review",
+				"delegation"
+			],
+			"systemPrompt": "You are the lead architect for this development team. Your job is to:\n1. Understand the user's request fully before delegating\n2. Break it into concrete, independently-workable tasks\n3. Assign tasks to the right specialist via team_task\n4. Monitor progress and unblock teammates\n5. Do NOT write code yourself — delegate it\n6. Review completed work and request approvals via team_request_approval\n\nDelegation rules:\n- Frontend changes (React, CSS, components) → @fe\n- Backend changes (API, DB, server logic) → @be\n- Tests and QA → @qa\n- If a change spans FE + BE, create two linked tasks with depends_on\n\nWhen you receive the initial task:\n1. Post to #general explaining your plan\n2. Create tasks for each specialist\n3. Check in after each task is claimed\n4. When all tasks are done, review the diffs and submit for approval\n\nAlways check team_tasks before creating new tasks — avoid duplicates.",
+			"toolScope": {
+				"allowList": [],
+				"denyList": [
+					"Bash(rm*)",
+					"Bash(git push*)",
+					"mcp__setra-core__deploy_trigger"
+				],
+				"mcpServers": ["setra-core", "setra-team"]
+			}
+		},
+
+		{
+			"slug": "fe",
+			"name": "Frontend Engineer",
+			"role": "Frontend Engineer",
+			"model": "claude-sonnet-4-5",
+			"maxTurns": 15,
+			"permissionMode": "auto",
+			"worktreeIsolation": true,
+			"costBudgetUsd": 1.0,
+			"expertise": [
+				"React",
+				"TypeScript",
+				"TailwindCSS",
+				"accessibility",
+				"performance",
+				"UI-components",
+				"state-management",
+				"xterm.js"
+			],
+			"systemPrompt": "You are the frontend engineer. You write clean, accessible React + TypeScript.\n\nWorkflow:\n1. Claim your task with team_task action=claim\n2. Post status with team_status when you start and when you finish\n3. Write the code in your worktree — DO NOT push or merge yourself\n4. When done, post a summary to #frontend and use team_request_approval kind=merge\n5. Your branch will be diffed against main and shown to the human for review\n\nCode standards:\n- TypeScript strict mode — no `any`\n- Tailwind for styling — no inline styles\n- Accessible: ARIA labels, keyboard navigation\n- Components go in src/components/{ComponentName}/index.tsx\n- Tests go in src/components/{ComponentName}/ComponentName.test.tsx\n\nIf you're blocked by a missing API or type, post to #general tagging @be.",
+			"toolScope": {
+				"allowList": [
+					"Edit",
+					"Write",
+					"Read",
+					"Bash(npm*,npx*,node*,git status,git diff,git log)",
+					"Glob",
+					"Grep",
+					"mcp__setra-core__*",
+					"mcp__setra-team__*"
+				],
+				"denyList": ["Bash(git push*)", "Bash(git merge*)", "Bash(rm -rf*)"],
+				"mcpServers": ["setra-core", "setra-team", "filesystem"]
+			}
+		},
+
+		{
+			"slug": "be",
+			"name": "Backend Engineer",
+			"role": "Backend Engineer",
+			"model": "claude-sonnet-4-5",
+			"maxTurns": 15,
+			"permissionMode": "auto",
+			"worktreeIsolation": true,
+			"costBudgetUsd": 1.0,
+			"expertise": [
+				"Node.js",
+				"TypeScript",
+				"REST-APIs",
+				"SQLite",
+				"Drizzle-ORM",
+				"authentication",
+				"performance",
+				"security"
+			],
+			"systemPrompt": "You are the backend engineer. You write reliable, well-typed Node.js/TypeScript APIs.\n\nWorkflow:\n1. Claim your task with team_task action=claim\n2. Check existing DB schema before adding tables (read src/db/schema.ts first)\n3. Use Drizzle ORM — no raw SQL except for migrations\n4. When done, post a summary to #backend and use team_request_approval kind=merge\n5. Never push or merge directly\n\nCode standards:\n- All endpoints must be Zod-validated\n- Return consistent error shapes: { error: string, code: string }\n- New DB tables get a migration file in src/db/migrations/\n- Auth-required routes use the existing auth middleware\n- No secrets in code — use process.env with Zod validation\n\nFor any schema changes that affect the frontend, post to #general tagging @fe.",
+			"toolScope": {
+				"allowList": [
+					"Edit",
+					"Write",
+					"Read",
+					"Bash(npm*,node*,git status,git diff,git log,curl*)",
+					"Glob",
+					"Grep",
+					"mcp__setra-core__*",
+					"mcp__setra-team__*"
+				],
+				"denyList": [
+					"Bash(git push*)",
+					"Bash(git merge*)",
+					"Bash(rm -rf*)",
+					"Bash(sudo*)"
+				],
+				"mcpServers": ["setra-core", "setra-team", "filesystem"]
+			}
+		},
+
+		{
+			"slug": "qa",
+			"name": "QA Engineer",
+			"role": "QA Engineer",
+			"model": "claude-haiku-3-5",
+			"maxTurns": 10,
+			"permissionMode": "auto",
+			"worktreeIsolation": true,
+			"costBudgetUsd": 0.5,
+			"expertise": [
+				"testing",
+				"Vitest",
+				"Playwright",
+				"edge-cases",
+				"accessibility-testing",
+				"regression-prevention"
+			],
+			"systemPrompt": "You are the QA engineer. You write tests and find bugs.\n\nWorkflow:\n1. Wait for the architect to assign you a test task, or pick up a 'review' task\n2. Claim it with team_task action=claim\n3. Write Vitest unit tests and Playwright e2e tests\n4. Run the test suite: npm test\n5. If you find bugs, post to #general tagging @fe or @be with the failure details\n6. When all tests pass, post team_request_approval kind=merge for your test additions\n\nFocus areas:\n- Happy path tests first, then edge cases\n- Any user-facing change gets a Playwright smoke test\n- Check for accessibility violations (use playwright-axe)\n- Performance: flag if any component rerenders > 3x unnecessarily\n\nYou use claude-haiku for speed — your job is thorough testing, not complex reasoning.",
+			"toolScope": {
+				"allowList": [
+					"Edit",
+					"Write",
+					"Read",
+					"Bash(npm test,npm run test*,npx vitest*,npx playwright*,git status,git diff)",
+					"Glob",
+					"Grep",
+					"mcp__setra-team__*"
+				],
+				"denyList": [
+					"Bash(git push*)",
+					"Bash(git merge*)",
+					"Bash(npm install*)"
+				],
+				"mcpServers": ["setra-team"]
+			}
+		}
+	],
+
+	"channels": [
+		{
+			"slug": "general",
+			"name": "General",
+			"description": "Main coordination channel. Architect uses this to announce plans, assign work, and surface decisions. All agents are here.",
+			"type": "broadcast",
+			"members": ["architect", "fe", "be", "qa", "human"],
+			"observers": [],
+			"autoRoute": "cross-cutting concerns, architecture decisions, blocked work, final reviews",
+			"retentionHours": null
+		},
+		{
+			"slug": "frontend",
+			"name": "Frontend",
+			"description": "Frontend work: React components, CSS, accessibility, performance. FE posts progress here. Architect and QA observe.",
+			"type": "broadcast",
+			"members": ["fe", "architect"],
+			"observers": ["qa", "human"],
+			"autoRoute": "React components, TypeScript types for UI, CSS, accessibility, Tailwind",
+			"retentionHours": 48
+		},
+		{
+			"slug": "backend",
+			"name": "Backend",
+			"description": "Backend work: API routes, DB schema, auth, infrastructure. BE posts progress here.",
+			"type": "broadcast",
+			"members": ["be", "architect"],
+			"observers": ["qa", "human"],
+			"autoRoute": "API routes, database changes, Drizzle schema, authentication, Node.js",
+			"retentionHours": 48
+		},
+		{
+			"slug": "qa",
+			"name": "QA",
+			"description": "Test results, bug reports, coverage metrics. QA posts results here.",
+			"type": "broadcast",
+			"members": ["qa", "architect"],
+			"observers": ["fe", "be", "human"],
+			"autoRoute": "test failures, coverage reports, bug reports, accessibility violations",
+			"retentionHours": 48
+		},
+		{
+			"slug": "decisions",
+			"name": "Decisions",
+			"description": "Immutable record of human decisions and approvals. Only the architect posts here after human review.",
+			"type": "announce",
+			"members": ["architect", "human"],
+			"observers": ["fe", "be", "qa"],
+			"autoRoute": "approved merges, rejected PRs, human decisions, approval outcomes",
+			"retentionHours": null
+		}
+	]
+}

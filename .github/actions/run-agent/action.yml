@@ -1,0 +1,145 @@
+name: setra/run-agent
+description: "Run a setra AI agent on a plot and wait for completion"
+author: "Qwegle Technologies"
+branding:
+  icon: zap
+  color: purple
+
+inputs:
+  plot_id:
+    description: "The setra plot ID to run (e.g. plt_abc123)"
+    required: true
+  prompt:
+    description: "The prompt / task description for the agent"
+    required: true
+  api_key:
+    description: "setra API key (sk_live_... or sk_test_...)"
+    required: true
+  api_url:
+    description: "setra API base URL"
+    required: false
+    default: "https://api.setra.sh"
+  timeout_minutes:
+    description: "Maximum minutes to wait for run completion"
+    required: false
+    default: "30"
+  fail_on_timeout:
+    description: "Fail the step if the run times out (vs warn)"
+    required: false
+    default: "true"
+
+outputs:
+  run_id:
+    description: "The setra run ID"
+    value: ${{ steps.trigger.outputs.run_id }}
+  status:
+    description: "Final run status: completed | failed | timed_out | cancelled"
+    value: ${{ steps.poll.outputs.status }}
+  output_branch:
+    description: "The git branch created by the agent (if any)"
+    value: ${{ steps.poll.outputs.output_branch }}
+  pr_url:
+    description: "URL of the pull request created by the agent (if any)"
+    value: ${{ steps.poll.outputs.pr_url }}
+  cost_usd:
+    description: "Approximate LLM cost in USD"
+    value: ${{ steps.poll.outputs.cost_usd }}
+
+runs:
+  using: composite
+  steps:
+    - name: Trigger run
+      id: trigger
+      shell: bash
+      env:
+        SETRA_API_KEY: ${{ inputs.api_key }}
+        SETRA_API_URL: ${{ inputs.api_url }}
+        PLOT_ID: ${{ inputs.plot_id }}
+        PROMPT: ${{ inputs.prompt }}
+      run: |
+        echo "::group::Triggering setra run"
+
+        RESPONSE=$(curl -s -X POST \
+          "${SETRA_API_URL}/api/trpc/run.trigger" \
+          -H "Authorization: Bearer ${SETRA_API_KEY}" \
+          -H "Content-Type: application/json" \
+          -d "{\"json\":{\"plotId\":\"${PLOT_ID}\",\"prompt\":$(echo "${PROMPT}" | jq -Rs .)}}" \
+        )
+
+        echo "Raw response: ${RESPONSE}"
+
+        RUN_ID=$(echo "${RESPONSE}" | jq -r '.result.data.json.id // empty')
+
+        if [ -z "${RUN_ID}" ]; then
+          echo "::error::Failed to trigger setra run. Response: ${RESPONSE}"
+          exit 1
+        fi
+
+        echo "run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
+        echo "Triggered run: ${RUN_ID}"
+        echo "::endgroup::"
+
+    - name: Poll for completion
+      id: poll
+      shell: bash
+      env:
+        SETRA_API_KEY: ${{ inputs.api_key }}
+        SETRA_API_URL: ${{ inputs.api_url }}
+        RUN_ID: ${{ steps.trigger.outputs.run_id }}
+        TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
+        FAIL_ON_TIMEOUT: ${{ inputs.fail_on_timeout }}
+      run: |
+        echo "::group::Waiting for run ${RUN_ID}"
+
+        MAX_ATTEMPTS=$(( TIMEOUT_MINUTES * 6 ))  # poll every 10s
+        ATTEMPT=0
+        STATUS=""
+
+        while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+          ATTEMPT=$(( ATTEMPT + 1 ))
+          sleep 10
+
+          RESPONSE=$(curl -s \
+            "${SETRA_API_URL}/api/trpc/run.get?input=$(python3 -c "import urllib.parse,json; print(urllib.parse.quote(json.dumps({'json':{'runId':'${RUN_ID}'}})))")" \
+            -H "Authorization: Bearer ${SETRA_API_KEY}" \
+          )
+
+          STATUS=$(echo "${RESPONSE}" | jq -r '.result.data.json.status // empty')
+          echo "Attempt ${ATTEMPT}/${MAX_ATTEMPTS} — status: ${STATUS}"
+
+          case "${STATUS}" in
+            completed|failed|timed_out|cancelled)
+              break
+              ;;
+          esac
+        done
+
+        if [ -z "${STATUS}" ]; then
+          STATUS="timed_out"
+        fi
+
+        # Extract outputs
+        OUTPUT_BRANCH=$(echo "${RESPONSE}" | jq -r '.result.data.json.outputBranch // ""')
+        PR_URL=$(echo "${RESPONSE}" | jq -r '.result.data.json.prUrl // ""')
+        COST_USD=$(echo "${RESPONSE}" | jq -r '.result.data.json.costUsd // "0"')
+
+        echo "status=${STATUS}" >> "$GITHUB_OUTPUT"
+        echo "output_branch=${OUTPUT_BRANCH}" >> "$GITHUB_OUTPUT"
+        echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
+        echo "cost_usd=${COST_USD}" >> "$GITHUB_OUTPUT"
+
+        echo "Run ${RUN_ID} finished with status: ${STATUS}"
+        if [ -n "${PR_URL}" ]; then
+          echo "Pull request: ${PR_URL}"
+        fi
+        echo "::endgroup::"
+
+        if [ "${STATUS}" = "failed" ]; then
+          echo "::error::setra run ${RUN_ID} failed"
+          exit 1
+        fi
+
+        if [ "${STATUS}" = "timed_out" ] && [ "${FAIL_ON_TIMEOUT}" = "true" ]; then
+          echo "::error::setra run ${RUN_ID} timed out after ${TIMEOUT_MINUTES} minutes"
+          exit 1
+        fi

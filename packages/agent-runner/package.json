@@ -1,0 +1,135 @@
+{
+	"name": "@setra/agent-runner",
+	"version": "0.1.0",
+	"private": true,
+	"description": "PTY spawning, agent adapters, model registry, fallback chain, small-model utilities",
+	"license": "Apache-2.0",
+	"type": "module",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts",
+			"require": "./dist/index.cjs",
+			"default": "./dist/index.js"
+		},
+		"./adapter": {
+			"import": "./dist/adapter.js",
+			"types": "./dist/adapter.d.ts",
+			"require": "./dist/adapter.cjs",
+			"default": "./dist/adapter.js"
+		},
+		"./registry": {
+			"import": "./dist/registry.js",
+			"types": "./dist/registry.d.ts",
+			"require": "./dist/registry.cjs",
+			"default": "./dist/registry.js"
+		},
+		"./small-model": {
+			"import": "./dist/small-model.js",
+			"types": "./dist/small-model.d.ts",
+			"require": "./dist/small-model.cjs",
+			"default": "./dist/small-model.js"
+		},
+		"./fallback-chain": {
+			"import": "./dist/fallback-chain.js",
+			"types": "./dist/fallback-chain.d.ts",
+			"require": "./dist/fallback-chain.cjs",
+			"default": "./dist/fallback-chain.js"
+		},
+		"./compare-mode": {
+			"import": "./dist/compare-mode.js",
+			"types": "./dist/compare-mode.d.ts",
+			"require": "./dist/compare-mode.cjs",
+			"default": "./dist/compare-mode.js"
+		},
+		"./governance": {
+			"import": "./dist/governance.js",
+			"types": "./dist/governance.d.ts",
+			"require": "./dist/governance.cjs",
+			"default": "./dist/governance.js"
+		},
+		"./tools/pr-review": {
+			"import": "./dist/tools/pr-review.js",
+			"types": "./dist/tools/pr-review.d.ts",
+			"require": "./dist/tools/pr-review.cjs",
+			"default": "./dist/tools/pr-review.js"
+		},
+		"./tools/pr-review-executor": {
+			"import": "./dist/tools/pr-review-executor.js",
+			"types": "./dist/tools/pr-review-executor.d.ts",
+			"require": "./dist/tools/pr-review-executor.cjs",
+			"default": "./dist/tools/pr-review-executor.js"
+		},
+		"./tools/db-tools": {
+			"import": "./dist/tools/db-tools.js",
+			"types": "./dist/tools/db-tools.d.ts",
+			"require": "./dist/tools/db-tools.cjs",
+			"default": "./dist/tools/db-tools.js"
+		},
+		"./tools/db-executor": {
+			"import": "./dist/tools/db-executor.js",
+			"types": "./dist/tools/db-executor.d.ts",
+			"require": "./dist/tools/db-executor.cjs",
+			"default": "./dist/tools/db-executor.js"
+		},
+		"./ssh-safety": {
+			"import": "./dist/ssh-safety.js",
+			"types": "./dist/ssh-safety.d.ts",
+			"require": "./dist/ssh-safety.cjs",
+			"default": "./dist/ssh-safety.js"
+		},
+		"./pipeline": {
+			"import": "./dist/pipeline/index.js",
+			"types": "./dist/pipeline/index.d.ts",
+			"require": "./dist/pipeline/index.cjs",
+			"default": "./dist/pipeline/index.js"
+		},
+		"./adapters/ssh-ground": {
+			"import": "./dist/adapters/ssh-ground.js",
+			"types": "./dist/adapters/ssh-ground.d.ts",
+			"require": "./dist/adapters/ssh-ground.cjs",
+			"default": "./dist/adapters/ssh-ground.js"
+		}
+	},
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"scripts": {
+		"build": "tsup src/index.ts src/adapter.ts src/registry.ts src/small-model.ts src/fallback-chain.ts src/compare-mode.ts src/models-tokens.ts src/governance.ts src/ssh-safety.ts src/provider-availability.ts src/context-strategy.ts src/cost-tracker.ts src/types.ts src/pipeline/index.ts src/adapters/ssh-ground.ts src/adapters/claude.ts src/adapters/gemini.ts src/adapters/codex.ts src/adapters/openai-api.ts src/adapters/anthropic-api.ts src/adapters/aws-bedrock.ts src/adapters/azure-openai.ts src/adapters/gcp-vertex.ts src/adapters/ollama.ts src/adapters/amp.ts src/adapters/custom-openai.ts src/adapters/opencode.ts src/tools/db-executor.ts src/tools/db-tools.ts src/tools/kanban-tools.ts src/tools/pr-review.ts src/tools/pr-review-executor.ts src/tools/resend.ts src/tools/wiki-tools.ts --format esm,cjs --dts --clean",
+		"typecheck": "tsc --noEmit",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"@anthropic-ai/sdk": "^0.52.0",
+		"@setra/core": "workspace:*",
+		"@setra/db": "workspace:*",
+		"openai": "^4.77.0"
+	},
+	"devDependencies": {
+		"@setra/typescript-config": "workspace:*",
+		"typescript": "^5.7.3",
+		"mongodb": "^6.13.0",
+		"mssql": "^11.0.1",
+		"mysql2": "^3.11.5",
+		"pg": "^8.13.3"
+	},
+	"peerDependencies": {
+		"mongodb": ">=5",
+		"mssql": ">=10",
+		"mysql2": ">=3",
+		"pg": ">=8"
+	},
+	"peerDependenciesMeta": {
+		"mongodb": {
+			"optional": true
+		},
+		"mssql": {
+			"optional": true
+		},
+		"mysql2": {
+			"optional": true
+		},
+		"pg": {
+			"optional": true
+		}
+	}
+}
