@@ -753,6 +753,7 @@ export const api = {
 			name: string;
 			description?: string;
 			workspacePath?: string;
+			repoUrl?: string;
 			color?: string;
 			requirements?: string;
 			planStatus?: ProjectPlanStatus;
@@ -768,6 +769,7 @@ export const api = {
 				description?: string | null;
 				color?: string;
 				workspacePath?: string | null;
+				repoUrl?: string | null;
 				defaultBranch?: string | null;
 				requirements?: string | null;
 				planStatus?: ProjectPlanStatus;
