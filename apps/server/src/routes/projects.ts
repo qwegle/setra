@@ -146,6 +146,9 @@ projectsRoute.post("/", zValidator("json", CreateProjectSchema), async (c) => {
 		}
 	}
 
+	// User-supplied repoUrl takes precedence over auto-detected
+	if (body.repoUrl !== undefined) repoUrl = body.repoUrl ?? null;
+
 	projectsRepo.updateProjectMeta({
 		id,
 		companyId: targetCid,
@@ -277,6 +280,11 @@ projectsRoute.patch(
 			updates.repoUrl = repoUrl;
 			updates.defaultBranch = defaultBranch;
 			updates.gitInitialized = gitInitialized;
+		}
+
+		// User-supplied repoUrl takes precedence over auto-detected
+		if (body.repoUrl !== undefined) {
+			updates.repoUrl = body.repoUrl ?? null;
 		}
 
 		projectsRepo.updateProjectFields(id, updates);

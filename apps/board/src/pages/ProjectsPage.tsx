@@ -44,10 +44,12 @@ function ProjectFormFields({
 	name,
 	description,
 	workspacePath,
+	repoUrl,
 	requirements,
 	onNameChange,
 	onDescriptionChange,
 	onWorkspacePathChange,
+	onRepoUrlChange,
 	onRequirementsChange,
 	onBrowse,
 	folderInputRef,
@@ -57,10 +59,12 @@ function ProjectFormFields({
 	name: string;
 	description: string;
 	workspacePath: string;
+	repoUrl: string;
 	requirements: string;
 	onNameChange: (value: string) => void;
 	onDescriptionChange: (value: string) => void;
 	onWorkspacePathChange: (value: string) => void;
+	onRepoUrlChange: (value: string) => void;
 	onRequirementsChange: (value: string) => void;
 	onBrowse?: () => void;
 	folderInputRef?: RefObject<HTMLInputElement>;
@@ -154,6 +158,16 @@ function ProjectFormFields({
 					When set, agents working on this project stay scoped to this folder.
 				</p>
 			</div>
+			<Input
+				label="Repository URL"
+				value={repoUrl}
+				onChange={(e) => onRepoUrlChange(e.target.value)}
+				placeholder="https://github.com/org/repo"
+				className="font-mono"
+			/>
+			<p className="-mt-3 text-xs text-zinc-400">
+				Optional. Auto-detected from workspace git remote if not set.
+			</p>
 		</div>
 	);
 }
@@ -181,11 +195,13 @@ export function ProjectsPage() {
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [workspacePath, setWorkspacePath] = useState("");
+	const [repoUrl, setRepoUrl] = useState("");
 	const [requirements, setRequirements] = useState("");
 	const [editingProject, setEditingProject] = useState<Project | null>(null);
 	const [editName, setEditName] = useState("");
 	const [editDescription, setEditDescription] = useState("");
 	const [editWorkspacePath, setEditWorkspacePath] = useState("");
+	const [editRepoUrl, setEditRepoUrl] = useState("");
 	const [editRequirements, setEditRequirements] = useState("");
 	const [selectedRuleName, setSelectedRuleName] = useState<string | null>(null);
 	const [ruleName, setRuleName] = useState("global.md");
@@ -315,6 +331,7 @@ export function ProjectsPage() {
 				...(workspacePath.trim()
 					? { workspacePath: workspacePath.trim() }
 					: {}),
+				...(repoUrl.trim() ? { repoUrl: repoUrl.trim() } : {}),
 				...(requirements.trim() ? { requirements: requirements.trim() } : {}),
 			}),
 		onSuccess: () => {
@@ -323,6 +340,7 @@ export function ProjectsPage() {
 			setName("");
 			setDescription("");
 			setWorkspacePath("");
+			setRepoUrl("");
 			setRequirements("");
 		},
 	});
@@ -336,6 +354,7 @@ export function ProjectsPage() {
 				workspacePath: editWorkspacePath.trim()
 					? editWorkspacePath.trim()
 					: null,
+				repoUrl: editRepoUrl.trim() ? editRepoUrl.trim() : null,
 				requirements: editRequirements.trim() ? editRequirements.trim() : "",
 			});
 		},
@@ -379,6 +398,7 @@ export function ProjectsPage() {
 		setEditName(project.name);
 		setEditDescription(project.description ?? "");
 		setEditWorkspacePath(project.workspacePath ?? "");
+		setEditRepoUrl(project.repoUrl ?? "");
 		setEditRequirements(project.requirements ?? "");
 		resetRuleEditor();
 	}
@@ -393,6 +413,7 @@ export function ProjectsPage() {
 		setEditName("");
 		setEditDescription("");
 		setEditWorkspacePath("");
+		setEditRepoUrl("");
 		setEditRequirements("");
 		resetRuleEditor();
 	}
@@ -581,10 +602,12 @@ export function ProjectsPage() {
 					name={name}
 					description={description}
 					workspacePath={workspacePath}
+					repoUrl={repoUrl}
 					requirements={requirements}
 					onNameChange={setName}
 					onDescriptionChange={setDescription}
 					onWorkspacePathChange={setWorkspacePath}
+					onRepoUrlChange={setRepoUrl}
 					onRequirementsChange={setRequirements}
 					onBrowse={handleBrowse}
 					folderInputRef={folderInputRef}
@@ -623,10 +646,12 @@ export function ProjectsPage() {
 					name={editName}
 					description={editDescription}
 					workspacePath={editWorkspacePath}
+					repoUrl={editRepoUrl}
 					requirements={editRequirements}
 					onNameChange={setEditName}
 					onDescriptionChange={setEditDescription}
 					onWorkspacePathChange={setEditWorkspacePath}
+					onRepoUrlChange={setEditRepoUrl}
 					onRequirementsChange={setEditRequirements}
 					onBrowse={handleBrowse}
 					folderInputRef={folderInputRef}
