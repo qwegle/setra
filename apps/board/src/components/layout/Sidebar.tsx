@@ -17,7 +17,6 @@ import {
 	MessageSquare,
 	Network,
 	Plug,
-	Puzzle,
 	RefreshCw,
 	Search,
 	Settings,
@@ -70,7 +69,6 @@ const moreNav = [
 	{ to: "/routines", label: "Routines", icon: RefreshCw },
 	{ to: "/search", label: "Search", icon: Search },
 	{ to: "/multi-view", label: "Multi-View", icon: SplitSquareHorizontal },
-	{ to: "/plugins", label: "Plugins", icon: Puzzle },
 	{ to: "/clone", label: "Clone", icon: Copy },
 ];
 
@@ -122,7 +120,7 @@ function SidebarContent({
 	onClose?: () => void;
 }) {
 	const { selectedCompany } = useCompany();
-	const { isAdmin, user } = useAuth();
+	const { isAdmin } = useAuth();
 	const location = useLocation();
 	const { data: pendingApprovals = [] } = useQuery({
 		queryKey: ["sidebar-pending-approvals", selectedCompany?.id ?? null],
@@ -219,38 +217,6 @@ function SidebarContent({
 				)}
 			</nav>
 
-			<div className="border-t border-border/30 px-3 py-3">
-				<NavLink
-					to="/profile"
-					onClick={onItemClick}
-					className={({ isActive }) =>
-						cn(
-							"flex items-center gap-3 rounded-lg px-2 py-2 transition-colors",
-							isActive
-								? "bg-accent-blue/10"
-								: "hover:bg-muted/50",
-						)
-					}
-				>
-					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-blue/20 text-xs font-semibold text-accent-blue">
-						{user?.name
-							? user.name
-									.split(/\s+/)
-									.map((p) => p[0]?.toUpperCase())
-									.slice(0, 2)
-									.join("")
-							: user?.email?.[0]?.toUpperCase() ?? "?"}
-					</div>
-					<div className="min-w-0 flex-1">
-						<p className="truncate text-sm font-medium text-foreground">
-							{user?.name || user?.email || "Account"}
-						</p>
-						<p className="truncate text-[11px] capitalize text-muted-foreground/60">
-							{user?.role ?? "member"}
-						</p>
-					</div>
-				</NavLink>
-			</div>
 		</>
 	);
 }
