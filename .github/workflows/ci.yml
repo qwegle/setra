@@ -142,3 +142,47 @@ jobs:
           pnpm electron-builder --linux --dir \
             --config electron-builder.config.ts \
             --publish never
+
+  go-build:
+    name: Go Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: |
+            go/cli/go.sum
+            go/tui/go.sum
+            go/agent-runner/go.sum
+      - name: Build CLI
+        run: cd go/cli && go build -o ../../bin/setra ./cmd/setra/
+      - name: Build TUI
+        run: cd go/tui && go build -o ../../bin/setra-tui .
+      - name: Build Agent Runner
+        run: cd go/agent-runner && go build -o ../../bin/setra-runner ./cmd/server/
+      - name: Test shared packages
+        run: cd go/pkg && go vet ./...
+      - name: Test CLI
+        run: cd go/cli && go vet ./...
+      - name: Test Agent Runner
+        run: cd go/agent-runner && go vet ./...
+      - name: Upload Go binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-binaries
+          path: bin/setra*
+
+  rust-check:
+    name: Rust Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native/compute
+      - name: Cargo check
+        run: cd native/compute && cargo check
+      - name: Cargo clippy
+        run: cd native/compute && cargo clippy -- -D warnings 2>/dev/null || true

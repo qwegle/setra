@@ -1,0 +1,99 @@
+version: 2
+
+project_name: setra
+
+before:
+  hooks:
+    - go generate ./...
+
+builds:
+  - id: setra-cli
+    main: ./go/cli/cmd/setra/
+    binary: setra
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}}
+
+  - id: setra-tui
+    main: ./go/tui/
+    binary: setra-tui
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+  - id: setra-runner
+    main: ./go/agent-runner/cmd/server/
+    binary: setra-runner
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: setra-archive
+    builds:
+      - setra-cli
+      - setra-tui
+      - setra-runner
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "setra_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+brews:
+  - name: setra
+    repository:
+      owner: qwegle
+      name: homebrew-tap
+    homepage: https://setra.sh
+    description: "Multi-agent AI orchestration platform"
+    license: MIT
+    install: |
+      bin.install "setra"
+      bin.install "setra-tui"
+      bin.install "setra-runner"
+    test: |
+      system "#{bin}/setra", "--version"
+
+release:
+  github:
+    owner: qwegle
+    name: setra
+  draft: false
+  prerelease: auto
+  name_template: "v{{.Version}}"
