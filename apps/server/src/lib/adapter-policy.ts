@@ -1,18 +1,15 @@
 const CLOUD_ADAPTERS = new Set([
 	"anthropic-api",
 	"openai-api",
-	"gemini-api",
-	"openrouter",
-	"groq",
+	"aws-bedrock",
+	"azure-openai",
+	"gcp-vertex",
+	"custom-openai",
 	"claude",
 	"codex",
 	"gemini",
-	"claude-local",
-	"codex-local",
-	"gemini-local",
-	"claude_local",
-	"codex_local",
-	"gemini_local",
+	"amp",
+	"opencode",
 ]);
 
 export function normalizeAdapterId(
@@ -22,9 +19,12 @@ export function normalizeAdapterId(
 		.trim()
 		.toLowerCase()
 		.replaceAll("_", "-");
-	if (normalized === "claude-local") return "anthropic-api";
-	if (normalized === "codex-local") return "openai-api";
-	if (normalized === "gemini-local") return "gemini-api";
+	// Legacy aliases from old UI
+	if (normalized === "claude-local") return "claude";
+	if (normalized === "codex-local") return "codex";
+	if (normalized === "gemini-local") return "gemini";
+	if (normalized === "openrouter") return "custom-openai";
+	if (normalized === "groq") return "custom-openai";
 	return normalized;
 }
 

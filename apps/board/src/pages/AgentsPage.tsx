@@ -785,15 +785,27 @@ function HireAgentModal({
 					label="Runner"
 					value={adapterType}
 					onChange={(event) => setAdapterType(event.target.value)}
-					helperText="How the agent executes tasks. Use Auto or pick a specific CLI."
+					helperText="How the agent executes tasks. Auto picks the best available runner."
 				>
-					<option value="auto">Auto (recommended)</option>
-					<option value="claude_local">Claude Code (CLI)</option>
-					<option value="codex_local">Codex (OpenAI CLI)</option>
-					<option value="gemini_local">Gemini (Google CLI)</option>
-					<option value="openrouter">OpenRouter (API)</option>
-					<option value="groq">Groq (API)</option>
-					<option value="ollama">Ollama (Local)</option>
+					<option value="auto">⚡ Auto (recommended)</option>
+					<optgroup label="CLI Agents">
+						<option value="claude">Claude Code</option>
+						<option value="codex">Codex (OpenAI)</option>
+						<option value="gemini">Gemini CLI</option>
+						<option value="amp">Amp (Sourcegraph)</option>
+						<option value="opencode">OpenCode</option>
+					</optgroup>
+					<optgroup label="Cloud API">
+						<option value="anthropic-api">Anthropic API</option>
+						<option value="openai-api">OpenAI API</option>
+						<option value="aws-bedrock">AWS Bedrock</option>
+						<option value="azure-openai">Azure OpenAI</option>
+						<option value="gcp-vertex">GCP Vertex AI</option>
+						<option value="custom-openai">Custom OpenAI-compat</option>
+					</optgroup>
+					<optgroup label="Local / Self-hosted">
+						<option value="ollama">Ollama</option>
+					</optgroup>
 				</Select>
 
 				{hireMutation.isError && (
