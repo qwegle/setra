@@ -563,7 +563,7 @@ export function IssuesPage() {
 				</div>
 			) : (
 				<div className="p-4 flex-1 overflow-y-auto">
-					{filteredIssues.length === 0 ? (
+					{filteredIssues.length === 0 && !creating ? (
 						<div className="glass rounded-xl border border-border/40 px-4 py-6 text-sm text-muted-foreground">
 							No tasks match the current filters.
 						</div>
