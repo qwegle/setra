@@ -75,7 +75,24 @@ authRoute.post("/register", async (c) => {
 		return c.json({ error: "Failed to resolve company" }, 500);
 	}
 
-	const role = isFirstUser ? "owner" : "member";
+	// Check for pending invite for this email
+	const invite = db
+		.prepare(
+			`SELECT id, company_id, role FROM company_invites
+			 WHERE email = ? AND status = 'pending' AND expires_at > datetime('now')
+			 ORDER BY sent_at DESC LIMIT 1`,
+		)
+		.get(email) as
+		| { id: string; company_id: string; role: string }
+		| undefined;
+
+	const targetCompany = invite
+		? { id: invite.company_id }
+		: company;
+	const role = isFirstUser
+		? "owner"
+		: (invite?.role as "admin" | "member") ?? "member";
+
 	const passwordHash = await hashPassword(password);
 	const user = db
 		.prepare(
@@ -83,20 +100,40 @@ authRoute.post("/register", async (c) => {
 			 VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 			 RETURNING id, email, name, company_id, role`,
 		)
-		.get(crypto.randomUUID(), email, passwordHash, name, company.id, role) as {
+		.get(
+			crypto.randomUUID(),
+			email,
+			passwordHash,
+			name,
+			targetCompany.id,
+			role,
+		) as {
 		id: string;
 		email: string;
 		name: string | null;
 		company_id: string;
 		role: "owner" | "admin" | "member";
 	};
+
+	// Create company_members row so user appears in the team
+	db.prepare(
+		`INSERT OR IGNORE INTO company_members (id, company_id, name, email, role, joined_at)
+		 VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
+	).run(user.id, targetCompany.id, name ?? email, email, role);
+
+	// Mark invite as accepted
+	if (invite) {
+		db.prepare(
+			`UPDATE company_invites SET status = 'accepted' WHERE id = ?`,
+		).run(invite.id);
+	}
 	const token = generateToken({
 		userId: user.id,
 		email: user.email,
 		companyId: user.company_id,
 		role: user.role,
 	});
-	return c.json({ token, user: sanitizeUser(user), company }, 201);
+	return c.json({ token, user: sanitizeUser(user), company: targetCompany }, 201);
 });
 
 authRoute.post("/login", async (c) => {

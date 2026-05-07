@@ -143,6 +143,45 @@ companyRoute.post(
 		const cid = getCompanyId(c);
 		const body = c.req.valid("json");
 		const row = await companyRepo.createInvite(body.email, cid, body.role);
+
+		// Try sending invite email via Resend if API key is configured
+		const settings = getStoreSettings(cid) as Record<string, unknown>;
+		const resendKey =
+			(settings?.resendApiKey as string) ||
+			process.env["RESEND_API_KEY"] ||
+			"";
+		if (resendKey) {
+			try {
+				const companyName =
+					(settings?.companyName as string) || "Setra";
+				await fetch("https://api.resend.com/emails", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${resendKey}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						from: `${companyName} <onboarding@resend.dev>`,
+						to: body.email,
+						subject: `You're invited to join ${companyName} on Setra`,
+						html: `<h2>You've been invited!</h2>
+<p><strong>${companyName}</strong> has invited you to join their workspace on Setra as a <strong>${row.role}</strong>.</p>
+<p>To accept this invite:</p>
+<ol>
+<li>Install the Setra app on your system</li>
+<li>Register with this email: <strong>${body.email}</strong></li>
+<li>You'll be automatically added to the workspace</li>
+</ol>
+<p>This invite expires in 7 days.</p>
+<hr/>
+<p style="color:#666;font-size:12px">Sent via Setra — AI-powered enterprise platform</p>`,
+					}),
+				});
+			} catch {
+				// best-effort — don't fail the invite
+			}
+		}
+
 		return c.json(row, 201);
 	},
 );
