@@ -204,6 +204,8 @@ export function HealthPage() {
 		}
 	}, [data, autoGcEnabled, gcMutation]);
 
+	const appMem = useMemo(() => getAppMemory(), [data]); // re-read each poll cycle
+
 	if (isLoading) {
 		return (
 			<div className="space-y-5 animate-pulse p-6">
@@ -250,7 +252,6 @@ export function HealthPage() {
 				? "warn"
 				: "ok";
 
-	const appMem = useMemo(() => getAppMemory(), [data]); // re-read each poll cycle
 	const appMemLevel = appMem
 		? appMem.percent > 80
 			? "danger"

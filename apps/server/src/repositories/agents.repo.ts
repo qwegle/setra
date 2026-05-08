@@ -61,7 +61,7 @@ export const STALE_STATUS_EXPR = sql<string>`
 export function listRosterByCompany(companyId: string): AgentRosterRow[] {
 	return getRawDb()
 		.prepare(
-			`SELECT * FROM agent_roster WHERE company_id = ? ORDER BY created_at ASC`,
+			`SELECT * FROM agent_roster WHERE company_id = ? OR company_id IS NULL ORDER BY created_at ASC`,
 		)
 		.all(companyId) as AgentRosterRow[];
 }
