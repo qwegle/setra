@@ -346,7 +346,9 @@ export function insertCompanyRoster(_params: {
 export function getCompanyRosterById(id: string, companyId: string) {
 	// agent_roster is canonical. Look up by agent_roster.id with company_id check.
 	return getRawDb()
-		.prepare(`SELECT id FROM agent_roster WHERE id = ? AND (company_id = ? OR company_id IS NULL)`)
+		.prepare(
+			`SELECT id FROM agent_roster WHERE id = ? AND (company_id = ? OR company_id IS NULL)`,
+		)
 		.get(id, companyId);
 }
 
@@ -425,7 +427,9 @@ export function getCompanyRosterWithTemplate(
 export function deleteCompanyRoster(id: string, companyId: string): void {
 	// Roster delete now removes the agent_roster row (canonical) with company_id check.
 	getRawDb()
-		.prepare(`DELETE FROM agent_roster WHERE id = ? AND (company_id = ? OR company_id IS NULL)`)
+		.prepare(
+			`DELETE FROM agent_roster WHERE id = ? AND (company_id = ? OR company_id IS NULL)`,
+		)
 		.run(id, companyId);
 }
 
