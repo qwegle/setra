@@ -2237,11 +2237,16 @@ export const companySettings = {
 export interface AdapterConfig {
 	id: string;
 	name: string;
+	enabled: boolean;
+	kind: "cli" | "api" | "local";
 	isConfigured: boolean;
-	status: "ok" | "error" | "unconfigured";
+	status: "ok" | "disabled" | "unconfigured";
 	models: string[];
+	defaultModel?: string | null | undefined;
 	apiKeyHint?: string | null | undefined;
 	baseUrl?: string | null | undefined;
+	signupUrl?: string | null | undefined;
+	apiKeyEnvVar?: string | null | undefined;
 }
 
 export const instanceSettings = {
