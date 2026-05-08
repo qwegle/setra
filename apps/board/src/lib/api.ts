@@ -352,6 +352,7 @@ export interface Agent {
 	slug: string;
 	displayName: string;
 	role: string;
+	adapterType?: string;
 	model: string | null;
 	status: AgentStatus;
 	currentIssueId: string | null;

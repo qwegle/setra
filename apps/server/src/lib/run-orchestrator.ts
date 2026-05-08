@@ -21,6 +21,7 @@ import {
 	storeRuntimeMemory,
 } from "./prompt-builder.js";
 import { jobQueue } from "./queue.js";
+import { resolveAutoAdapter } from "./resolve-auto-adapter.js";
 import { withRetry } from "./retry.js";
 import { onRunCompleted } from "./run-lifecycle.js";
 import {
@@ -639,6 +640,18 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		return;
 	}
 	let adapterId = normalizeAdapterId(agent.adapter_type);
+
+	// If the agent was stored as "auto" (or is empty/unknown), resolve it now
+	// using global preferred adapter or cost-priority fallback.
+	let resolvedModel: string | null = null;
+	if (!adapterId || adapterId === "auto") {
+		const resolved = resolveAutoAdapter("auto", agent.model_id, companyId);
+		if (resolved.adapter) {
+			adapterId = resolved.adapter;
+			resolvedModel = resolved.model;
+		}
+	}
+
 	const supported = new Set([
 		"anthropic-api",
 		"openai-api",
@@ -715,6 +728,7 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 	let model =
 		run.agent_version ??
 		agent.model_id ??
+		resolvedModel ??
 		defaultModel[adapterId] ??
 		"claude-haiku-4-5";
 	const prefixToAdapter: Record<string, string> = {
