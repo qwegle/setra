@@ -8,23 +8,26 @@ import { adapterConfigs, featureFlags, plugins } from "../db/schema.js";
 // ─── Adapter Configs ─────────────────────────────────────────────────────────
 
 const DEFAULT_ADAPTERS = [
-	{ id: "claude", name: "Claude (Anthropic)", type: "llm" },
-	{ id: "openai", name: "OpenAI", type: "llm" },
+	{ id: "claude", name: "Claude Code (Anthropic)", type: "llm" },
+	{ id: "codex", name: "Codex CLI (OpenAI)", type: "llm" },
+	{ id: "openai", name: "OpenAI API", type: "llm" },
+	{ id: "gemini", name: "Gemini CLI (Google)", type: "llm" },
+	{ id: "amp", name: "Amp (Sourcegraph)", type: "llm" },
 	{ id: "ollama", name: "Ollama (local)", type: "llm" },
 	{ id: "openrouter", name: "OpenRouter", type: "llm" },
-	{ id: "gemini", name: "Google Gemini", type: "llm" },
 	{ id: "opencode", name: "OpenCode", type: "coding" },
 ];
 
 export async function seedAdapters() {
 	const existing = await db
 		.select({ id: adapterConfigs.id })
-		.from(adapterConfigs)
-		.limit(1);
-	if (existing.length > 0) return;
+		.from(adapterConfigs);
+	const existingIds = new Set(existing.map((r) => r.id));
+	const missing = DEFAULT_ADAPTERS.filter((a) => !existingIds.has(a.id));
+	if (missing.length === 0) return;
 
 	await db.insert(adapterConfigs).values(
-		DEFAULT_ADAPTERS.map((a) => ({
+		missing.map((a) => ({
 			id: a.id,
 			name: a.name,
 			type: a.type,
