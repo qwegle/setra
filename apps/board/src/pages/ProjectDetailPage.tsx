@@ -168,6 +168,38 @@ export function ProjectDetailPage() {
 	const [breakResult, setBreakResult] = useState<ProjectBreakResponse | null>(
 		null,
 	);
+	const [breakCountdown, setBreakCountdown] = useState(0);
+	const [toastMessage, setToastMessage] = useState<{
+		type: "success" | "error" | "info";
+		text: string;
+	} | null>(null);
+
+	// Auto-dismiss toasts after 5 seconds
+	useEffect(() => {
+		if (!toastMessage) return;
+		const t = setTimeout(() => setToastMessage(null), 5000);
+		return () => clearTimeout(t);
+	}, [toastMessage]);
+
+	// Break countdown timer
+	useEffect(() => {
+		if (!breakResult) return;
+		const endsAt = new Date(breakResult.endsAt).getTime();
+		const tick = () => {
+			const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+			setBreakCountdown(remaining);
+			if (remaining <= 0) {
+				setBreakResult(null);
+				setToastMessage({
+					type: "info",
+					text: "☕ Break is over — agents are back to work!",
+				});
+			}
+		};
+		tick();
+		const interval = setInterval(tick, 1000);
+		return () => clearInterval(interval);
+	}, [breakResult]);
 
 	const projectQuery = useQuery<Project>({
 		queryKey: ["project", projectId],
@@ -295,18 +327,49 @@ export function ProjectDetailPage() {
 	const refreshAgentMutation = useMutation({
 		mutationFn: (agentRosterId: string) =>
 			api.refreshAgentContext(agentRosterId),
-		onSuccess: (result) => setRefreshResult(result),
+		onSuccess: (result) => {
+			setRefreshResult(result);
+			setToastMessage({
+				type: "success",
+				text: `🧠 Context refreshed — pruned ${result.pruned} items, ${result.remaining} remaining`,
+			});
+		},
+		onError: () =>
+			setToastMessage({
+				type: "error",
+				text: "Failed to refresh agent context. Please try again.",
+			}),
 	});
 	const refreshProjectMutation = useMutation({
 		mutationFn: () => api.refreshProjectContext(projectId),
-		onSuccess: (result) => setRefreshResult(result),
+		onSuccess: (result) => {
+			setRefreshResult(result);
+			setToastMessage({
+				type: "success",
+				text: `🧠 All agents refreshed — pruned ${result.pruned} items, ${result.remaining} remaining`,
+			});
+		},
+		onError: () =>
+			setToastMessage({
+				type: "error",
+				text: "Failed to refresh project context. Please try again.",
+			}),
 	});
 	const startBreakMutation = useMutation({
 		mutationFn: () => api.startBreak(projectId),
 		onSuccess: async (result) => {
 			setBreakResult(result);
+			setToastMessage({
+				type: "success",
+				text: `☕ Break started for ${result.agents.length} agent${result.agents.length > 1 ? "s" : ""} — 2 minutes of fun chat!`,
+			});
 			await qc.invalidateQueries({ queryKey: ["project-agents", projectId] });
 		},
+		onError: () =>
+			setToastMessage({
+				type: "error",
+				text: "Failed to start break. Are there agents assigned to this project?",
+			}),
 	});
 	const addSecretMutation = useMutation({
 		mutationFn: () =>
@@ -382,9 +445,12 @@ export function ProjectDetailPage() {
 							variant="secondary"
 							onClick={() => startBreakMutation.mutate()}
 							loading={startBreakMutation.isPending}
+							disabled={!!breakResult}
 							icon={<Coffee className="h-4 w-4" />}
 						>
-							Take a break
+							{breakResult
+								? `On break (${Math.floor(breakCountdown / 60)}:${String(breakCountdown % 60).padStart(2, "0")})`
+								: "Take a break"}
 						</Button>
 					</>
 				}
@@ -409,13 +475,56 @@ export function ProjectDetailPage() {
 				))}
 			</div>
 
-			{refreshResult ? <RefreshSummary result={refreshResult} /> : null}
-			{breakResult ? (
-				<div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
-					Break started for {breakResult.agents.length} agents until{" "}
-					{new Date(breakResult.endsAt).toLocaleTimeString()}.
+			{/* Toast notification */}
+			{toastMessage && (
+				<div
+					className={cn(
+						"animate-slide-in-up flex items-center gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg",
+						toastMessage.type === "success" &&
+							"border-accent-green/30 bg-accent-green/10 text-accent-green",
+						toastMessage.type === "error" &&
+							"border-red-500/30 bg-red-500/10 text-red-400",
+						toastMessage.type === "info" &&
+							"border-blue-500/30 bg-blue-500/10 text-blue-300",
+					)}
+				>
+					<span className="flex-1">{toastMessage.text}</span>
+					<button
+						type="button"
+						onClick={() => setToastMessage(null)}
+						className="ml-2 text-xs opacity-60 hover:opacity-100"
+					>
+						✕
+					</button>
 				</div>
-			) : null}
+			)}
+
+			{/* Break countdown card */}
+			{breakResult && (
+				<div className="animate-slide-in-up flex items-center gap-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-4">
+					<Coffee className="h-6 w-6 text-amber-400 animate-pulse" />
+					<div className="flex-1">
+						<div className="text-sm font-semibold text-amber-200">
+							☕ Agents are on a break
+						</div>
+						<div className="mt-0.5 text-xs text-amber-300/70">
+							{breakResult.agents.length} agent
+							{breakResult.agents.length > 1 ? "s" : ""} chatting in #break-room
+							• Back to work in{" "}
+							<span className="font-mono font-bold text-amber-200">
+								{Math.floor(breakCountdown / 60)}:
+								{String(breakCountdown % 60).padStart(2, "0")}
+							</span>
+						</div>
+					</div>
+					<div className="h-10 w-10 rounded-full border-2 border-amber-500/40 flex items-center justify-center">
+						<span className="font-mono text-lg font-bold text-amber-300">
+							{Math.floor(breakCountdown / 60)}:
+							{String(breakCountdown % 60).padStart(2, "0")}
+						</span>
+					</div>
+				</div>
+			)}
 
 			{activeTab === "overview" ? (
 				<div className="space-y-6">

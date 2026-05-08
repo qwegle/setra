@@ -22,17 +22,23 @@
 
 	.light {
 		--background: 0 0% 98%;
-		--foreground: 222 18% 12%;
+		--foreground: 222 47% 11%;
 		--card: 0 0% 100%;
-		--card-foreground: 222 18% 12%;
-		--muted: 210 14% 93%;
-		--muted-foreground: 215 12% 45%;
+		--card-foreground: 222 47% 11%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 222 47% 11%;
+		--muted: 210 40% 96%;
+		--muted-foreground: 215 16% 47%;
 		--primary: 213 76% 47%;
 		--primary-foreground: 0 0% 100%;
-		--secondary: 210 14% 93%;
-		--secondary-foreground: 222 18% 12%;
-		--border: 214 14% 85%;
-		--input: 214 14% 90%;
+		--secondary: 210 40% 96%;
+		--secondary-foreground: 222 47% 11%;
+		--accent: 210 40% 96%;
+		--accent-foreground: 222 47% 11%;
+		--destructive: 0 84% 60%;
+		--destructive-foreground: 0 0% 98%;
+		--border: 214 32% 91%;
+		--input: 214 32% 91%;
 		--ring: 213 76% 47%;
 		color-scheme: light;
 	}
@@ -94,6 +100,12 @@
 		@apply bg-card/60 backdrop-blur-xl border border-border/50;
 	}
 
+	/* Light mode: invert hardcoded dark palette colours so pages are readable */
+	.light .glass {
+		@apply bg-card/80 border-border/40;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	}
+
 	/* Status dot */
 	.status-dot {
 		@apply inline-block w-2 h-2 rounded-full shrink-0;
@@ -106,4 +118,110 @@
 		-ms-overflow-style: none;
 		scrollbar-width: none;
 	}
+}
+
+/* ─── Light mode: remap hardcoded zinc/gray/slate colours ─────────────── */
+/* These catch the hundreds of text-zinc-*, bg-zinc-*, border-zinc-*
+   classes scattered across pages. In light mode we flip them so text
+   is dark and backgrounds are light. */
+.light .text-zinc-100,
+.light .text-zinc-200,
+.light .text-zinc-300 {
+	color: hsl(222 47% 11%) !important;
+}
+.light .text-zinc-400 {
+	color: hsl(215 16% 47%) !important;
+}
+.light .text-zinc-500 {
+	color: hsl(215 20% 40%) !important;
+}
+.light .text-zinc-600,
+.light .text-zinc-700 {
+	color: hsl(215 25% 35%) !important;
+}
+
+.light .text-gray-100,
+.light .text-gray-200,
+.light .text-gray-300 {
+	color: hsl(222 47% 11%) !important;
+}
+.light .text-gray-400 {
+	color: hsl(215 16% 47%) !important;
+}
+.light .text-gray-500 {
+	color: hsl(215 20% 40%) !important;
+}
+
+.light .text-slate-100,
+.light .text-slate-200,
+.light .text-slate-300 {
+	color: hsl(222 47% 11%) !important;
+}
+.light .text-slate-400 {
+	color: hsl(215 16% 47%) !important;
+}
+
+.light .text-white {
+	color: hsl(222 47% 11%) !important;
+}
+
+/* Background flips */
+.light .bg-zinc-800,
+.light .bg-zinc-900,
+.light .bg-zinc-950 {
+	background-color: hsl(0 0% 100%) !important;
+}
+.light .bg-zinc-800\/50,
+.light .bg-zinc-800\/70,
+.light .bg-zinc-900\/50,
+.light .bg-zinc-900\/80 {
+	background-color: hsl(210 40% 98% / 0.7) !important;
+}
+.light .bg-zinc-700 {
+	background-color: hsl(210 40% 96%) !important;
+}
+
+.light .bg-gray-800,
+.light .bg-gray-900 {
+	background-color: hsl(0 0% 100%) !important;
+}
+
+.light .bg-slate-800,
+.light .bg-slate-900 {
+	background-color: hsl(0 0% 100%) !important;
+}
+
+/* Border flips */
+.light .border-zinc-600,
+.light .border-zinc-700,
+.light .border-zinc-800 {
+	border-color: hsl(214 32% 91%) !important;
+}
+
+.light .border-gray-700,
+.light .border-gray-800 {
+	border-color: hsl(214 32% 91%) !important;
+}
+
+/* Keep text-white on primary/colored buttons (don't flip those) */
+.light .bg-setra-600 .text-white,
+.light .bg-setra-500 .text-white,
+.light .bg-primary .text-white,
+.light .bg-accent-green .text-white,
+.light .bg-accent-red .text-white,
+.light [class*="bg-setra-"] > .text-white,
+.light button.bg-setra-600,
+.light button.bg-setra-500 {
+	color: white !important;
+}
+
+/* Scrollbar light mode */
+.light ::-webkit-scrollbar-track {
+	background: hsl(210 40% 96%);
+}
+.light ::-webkit-scrollbar-thumb {
+	background: hsl(214 32% 82%);
+}
+.light ::-webkit-scrollbar-thumb:hover {
+	background: hsl(214 32% 72%);
 }
