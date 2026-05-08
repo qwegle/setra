@@ -6,6 +6,7 @@ import { logActivity } from "../lib/audit.js";
 import { ensureProjectChannel, renameProjectChannel } from "../lib/channels.js";
 import { getCompanyId } from "../lib/company-scope.js";
 import { LIFECYCLE_STAGES, type LifecycleStage } from "../lib/lifecycle.js";
+import { autoAssignLeadershipAgents } from "../lib/project-agents.js";
 import {
 	deleteProjectRule,
 	loadProjectRules,
@@ -181,6 +182,7 @@ projectsRoute.post("/", zValidator("json", CreateProjectSchema), async (c) => {
 	if (targetCid) {
 		try {
 			ensureProjectChannel(targetCid, id, body.name);
+			autoAssignLeadershipAgents(id, targetCid);
 			rebuildSprintBoard(id);
 		} catch (err) {
 			console.warn(`[projects] channel/sprint init failed for ${id}:`, err);

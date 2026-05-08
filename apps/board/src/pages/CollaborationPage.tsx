@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	ChevronDown,
 	ChevronRight,
+	Coffee,
 	CornerUpLeft,
 	Hash,
+	LifeBuoy,
 	Loader2,
 	MessageSquare,
 	MoreHorizontal,
@@ -227,6 +229,58 @@ function buildMentionableAgent(
 	};
 }
 
+function isBreakRoom(channel: string): boolean {
+	return channel === "break-room";
+}
+
+function describeChannel(channel: string): string {
+	if (channel === "general") return "Company-wide work conversation";
+	if (isBreakRoom(channel)) return "Casual break-room chat for the team";
+	if (channel.startsWith("proj-")) return "Project workspace discussion";
+	return "Agent collaboration channel";
+}
+
+function messageDecor(message: {
+	channel: string;
+	messageKind?: string | null;
+}): {
+	containerClass: string;
+	badgeClass: string;
+	label: string | null;
+} {
+	if (message.messageKind === "help_request") {
+		return {
+			containerClass: "border border-amber-500/25 bg-amber-500/5",
+			badgeClass: "bg-amber-500/15 text-amber-200 border border-amber-500/20",
+			label: "Help request",
+		};
+	}
+	if (message.messageKind === "approval_request") {
+		return {
+			containerClass: "border border-rose-500/25 bg-rose-500/5",
+			badgeClass: "bg-rose-500/15 text-rose-200 border border-rose-500/20",
+			label: "Needs user decision",
+		};
+	}
+	if (
+		isBreakRoom(message.channel) ||
+		message.messageKind === "break_room" ||
+		message.messageKind === "break_room_notice"
+	) {
+		return {
+			containerClass: "border border-fuchsia-500/20 bg-fuchsia-500/5",
+			badgeClass:
+				"bg-fuchsia-500/15 text-fuchsia-200 border border-fuchsia-500/20",
+			label: "Break room",
+		};
+	}
+	return {
+		containerClass: "",
+		badgeClass: "",
+		label: null,
+	};
+}
+
 export function CollaborationPage() {
 	const qc = useQueryClient();
 	const { selectedCompany } = useCompany();
@@ -443,7 +497,7 @@ export function CollaborationPage() {
 	}, [agents]);
 
 	const activeChannelMessageCount = streamMessages.length;
-	const activeChannelDescription = "Agent collaboration channel";
+	const activeChannelDescription = describeChannel(activeChannel);
 
 	return (
 		<div className="flex h-full min-h-0 bg-background text-foreground">
@@ -508,8 +562,17 @@ export function CollaborationPage() {
 											: "border-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-100",
 									)}
 								>
-									<Hash className="h-3.5 w-3.5 shrink-0" />
+									{isBreakRoom(channel) ? (
+										<Coffee className="h-3.5 w-3.5 shrink-0" />
+									) : (
+										<Hash className="h-3.5 w-3.5 shrink-0" />
+									)}
 									<span className="truncate">{channel}</span>
+									{isBreakRoom(channel) ? (
+										<span className="rounded-full bg-fuchsia-500/15 px-1.5 py-0.5 text-[10px] text-fuchsia-200">
+											casual
+										</span>
+									) : null}
 								</button>
 							))}
 						</div>
@@ -587,7 +650,11 @@ export function CollaborationPage() {
 						<header className="flex items-start justify-between gap-4 border-b border-border/50 bg-background/95 px-6 py-3 backdrop-blur">
 							<div className="min-w-0">
 								<div className="flex items-center gap-2">
-									<Hash className="h-4 w-4 text-muted-foreground" />
+									{isBreakRoom(activeChannel) ? (
+										<Coffee className="h-4 w-4 text-fuchsia-300" />
+									) : (
+										<Hash className="h-4 w-4 text-muted-foreground" />
+									)}
 									<h1 className="truncate text-base font-semibold text-foreground">
 										{activeChannel}
 									</h1>
@@ -711,6 +778,7 @@ export function CollaborationPage() {
 												? true
 												: (meta?.online ?? false);
 
+											const decor = messageDecor(message);
 											return (
 												<div key={message.id}>
 													{showDayDivider && (
@@ -727,6 +795,7 @@ export function CollaborationPage() {
 														className={cn(
 															"group relative rounded-xl px-2 py-1.5 transition-colors hover:bg-muted/20",
 															isGrouped && "pt-0.5",
+															decor.containerClass,
 														)}
 														title={formatFullTimestamp(message.createdAt)}
 													>
@@ -775,18 +844,35 @@ export function CollaborationPage() {
 																className={cn("min-w-0", isGrouped && "pt-0.5")}
 															>
 																{!isGrouped && (
-																	<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-																		<span className="text-sm font-semibold text-foreground">
-																			{displayName}
-																		</span>
-																		{secondaryLabel && (
-																			<span className="text-xs text-muted-foreground">
-																				{secondaryLabel}
+																	<div className="space-y-1">
+																		{decor.label ? (
+																			<span
+																				className={cn(
+																					"inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+																					decor.badgeClass,
+																				)}
+																			>
+																				{decor.label === "Help request" ? (
+																					<LifeBuoy className="h-3 w-3" />
+																				) : decor.label === "Break room" ? (
+																					<Coffee className="h-3 w-3" />
+																				) : null}
+																				{decor.label}
 																			</span>
-																		)}
-																		<span className="text-xs text-muted-foreground">
-																			{formatTime(message.createdAt)}
-																		</span>
+																		) : null}
+																		<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+																			<span className="text-sm font-semibold text-foreground">
+																				{displayName}
+																			</span>
+																			{secondaryLabel && (
+																				<span className="text-xs text-muted-foreground">
+																					{secondaryLabel}
+																				</span>
+																			)}
+																			<span className="text-xs text-muted-foreground">
+																				{formatTime(message.createdAt)}
+																			</span>
+																		</div>
 																	</div>
 																)}
 																<MarkdownMessage

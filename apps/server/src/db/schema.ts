@@ -51,6 +51,7 @@ export const agentRoster = sqliteTable("agent_roster", {
 	continuousIntervalMs: integer("continuous_interval_ms").default(60_000),
 	idlePrompt: text("idle_prompt"),
 	lastRunEndedAt: text("last_run_ended_at"),
+	lastRefreshedAt: text("last_refreshed_at"),
 	...ts,
 });
 
@@ -606,6 +607,7 @@ export function ensureTables(): void {
 		`ALTER TABLE agent_roster ADD COLUMN continuous_interval_ms INTEGER DEFAULT 60000`,
 		`ALTER TABLE agent_roster ADD COLUMN idle_prompt TEXT`,
 		`ALTER TABLE agent_roster ADD COLUMN last_run_ended_at TEXT`,
+		`ALTER TABLE agent_roster ADD COLUMN last_refreshed_at TEXT`,
 		// Roster merge: agent_roster is now the canonical org-tree row. parent_agent_id
 		// is a self-FK that replaces company_roster.reports_to. template_id replaces
 		// the JOIN to company_roster for template metadata. Backfill follows below.
@@ -710,6 +712,27 @@ export function ensureTables(): void {
 		);
 	} catch {
 		/* routines table may not exist on minimal installs */
+	}
+
+	try {
+		rawSqlite.exec(`
+			CREATE TABLE IF NOT EXISTS project_agents (
+				id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+				project_id TEXT NOT NULL REFERENCES board_projects(id) ON DELETE CASCADE,
+				agent_roster_id TEXT NOT NULL,
+				role TEXT NOT NULL DEFAULT 'member',
+				assigned_by TEXT DEFAULT 'system',
+				assigned_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+			);
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_project_agents_unique
+				ON project_agents(project_id, agent_roster_id);
+			CREATE INDEX IF NOT EXISTS idx_project_agents_project
+				ON project_agents(project_id);
+			CREATE INDEX IF NOT EXISTS idx_project_agents_agent
+				ON project_agents(agent_roster_id);
+		`);
+	} catch {
+		/* project agent assignments are best-effort on legacy DBs */
 	}
 
 	// Agent credibility scores table (autonomous loop).

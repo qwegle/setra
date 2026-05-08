@@ -31,6 +31,7 @@ import { MultiViewPage } from "./pages/MultiViewPage";
 import { OrgPage } from "./pages/OrgUnifiedPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { RoutinesPage } from "./pages/RoutinesPage";
 import { SearchPage } from "./pages/SearchPage";
@@ -70,7 +71,7 @@ export default function App() {
 					<Route index element={<Navigate to="/overview" replace />} />
 					<Route path="/overview" element={<OverviewPage />} />
 					<Route path="/projects" element={<ProjectsPage />} />
-					<Route path="/projects/:id" element={<IssuesPage />} />
+					<Route path="/projects/:id" element={<ProjectDetailPage />} />
 					<Route path="/issues/:issueId" element={<IssueDetailPage />} />
 					<Route path="/agents" element={<AgentsPage />} />
 					<Route path="/agents/:agentId" element={<AgentRedirect />} />

@@ -156,7 +156,8 @@ export type AgentStatus =
 	| "completed"
 	| "pending"
 	| "inactive"
-	| "awaiting_key";
+	| "awaiting_key"
+	| "on_break";
 export type AgentRunMode = "on_demand" | "continuous" | "scheduled";
 
 // SDLC delivery loop — every issue moves through this 9-stage pipeline.
@@ -367,6 +368,49 @@ export interface Agent {
 	successRate?: number | null;
 	experienceLevel?: string;
 	topSkills?: string[];
+}
+
+export interface ProjectAgent {
+	id: string;
+	projectId: string;
+	agentRosterId: string;
+	role: string;
+	assignedBy: string | null;
+	assignedAt: string;
+	agentId: string;
+	slug: string;
+	displayName: string;
+	agentRole: string;
+	status: AgentStatus;
+	adapterType: string | null;
+	modelId: string | null;
+	isActive: number;
+	lastRefreshedAt: string | null;
+}
+
+export interface ContextRefreshResult {
+	pruned: number;
+	remaining: number;
+	summary: string;
+	projects?: Array<{
+		projectId: string;
+		pruned: number;
+		remaining: number;
+		summary: string;
+	}>;
+	agents?: Array<{
+		agentRosterId: string;
+		slug: string;
+		pruned: number;
+		remaining: number;
+		summary: string;
+	}>;
+}
+
+export interface ProjectBreakResponse {
+	breakId: string;
+	endsAt: string;
+	agents: Array<{ id: string; slug: string; displayName: string }>;
 }
 
 export interface AgentHeartbeat {
@@ -656,7 +700,13 @@ export interface RosterEntry {
 	estimated_cost_tier: CostTier;
 	is_builtin: number;
 	/** Live runtime status from agent_roster (joined). Null if no matching row. */
-	runtime_status: "idle" | "awaiting_key" | "running" | "paused" | null;
+	runtime_status:
+		| "idle"
+		| "awaiting_key"
+		| "running"
+		| "paused"
+		| "on_break"
+		| null;
 	paused_reason: string | null;
 	adapter_type: string | null;
 	model_id: string | null;
@@ -1121,6 +1171,36 @@ export const api = {
 		update: (projectId: string, content: string) =>
 			put(`/projects/${projectId}/context`, { content }),
 	},
+	getProjectAgents: (projectId: string) =>
+		request<ProjectAgent[]>(`/projects/${projectId}/agents`),
+	assignAgent: (projectId: string, agentRosterId: string, role = "member") =>
+		post<{ ok: true }>(`/projects/${projectId}/agents`, {
+			agentRosterId,
+			role,
+		}),
+	unassignAgent: (projectId: string, agentRosterId: string) =>
+		del<{ ok: true }>(`/projects/${projectId}/agents/${agentRosterId}`),
+	reassignAgent: (
+		projectId: string,
+		agentRosterId: string,
+		fromProjectId?: string | null,
+	) =>
+		post<{ ok: true }>(`/projects/${projectId}/agents/reassign`, {
+			agentRosterId,
+			fromProjectId: fromProjectId ?? null,
+		}),
+	autoAssignLeadership: (projectId: string) =>
+		post<{ ok: true; assigned: number }>(
+			`/projects/${projectId}/agents/auto-assign-leadership`,
+		),
+	refreshAgentContext: (agentRosterId: string) =>
+		post<ContextRefreshResult>(
+			`/agents/roster/${agentRosterId}/refresh-context`,
+		),
+	refreshProjectContext: (projectId: string) =>
+		post<ContextRefreshResult>(`/projects/${projectId}/refresh-context`),
+	startBreak: (projectId: string) =>
+		post<ProjectBreakResponse>(`/projects/${projectId}/break`),
 	budget: {
 		summary: () => request<BudgetSummary>("/budget/summary"),
 		settings: () =>
