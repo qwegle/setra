@@ -86,6 +86,8 @@ export interface CompanySettings {
 	gemini_api_key?: string;
 	openrouter_api_key?: string;
 	groq_api_key?: string;
+	preferred_adapter?: string;
+	preferred_model?: string;
 	default_model?: string;
 	small_model?: string;
 	budget_daily_usd?: number;

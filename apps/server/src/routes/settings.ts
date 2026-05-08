@@ -47,6 +47,8 @@ app.get("/", (c) => {
 		isOfflineOnly,
 		defaultModel: s["default_model"] ?? "claude-sonnet-4-6",
 		smallModel: s["small_model"] ?? "claude-haiku-4-5",
+		preferredAdapter: s["preferred_adapter"] ?? "",
+		preferredModel: s["preferred_model"] ?? "",
 		budget: {
 			dailyUsd: s["budget_daily_usd"] ?? 10,
 			perRunUsd: s["budget_per_run_usd"] ?? 2,
@@ -474,6 +476,8 @@ app.post("/", zValidator("json", SaveSettingsSchema), async (c) => {
 		patch["web_search_enabled"] = body.webSearchEnabled;
 	if (body.defaultModel) patch["default_model"] = body.defaultModel;
 	if (body.smallModel) patch["small_model"] = body.smallModel;
+	if (body.preferredAdapter !== undefined) patch["preferred_adapter"] = body.preferredAdapter ?? "";
+	if (body.preferredModel !== undefined) patch["preferred_model"] = body.preferredModel ?? "";
 	if (body.budget) {
 		if (body.budget.dailyUsd !== undefined)
 			patch["budget_daily_usd"] = body.budget.dailyUsd;
@@ -545,6 +549,8 @@ app.patch("/", zValidator("json", PatchSettingsSchema), async (c) => {
 	const patch: Record<string, unknown> = {};
 	if (body.defaultModel) patch["default_model"] = body.defaultModel;
 	if (body.smallModel) patch["small_model"] = body.smallModel;
+	if (body.preferredAdapter !== undefined) patch["preferred_adapter"] = body.preferredAdapter ?? "";
+	if (body.preferredModel !== undefined) patch["preferred_model"] = body.preferredModel ?? "";
 	if (body.webSearchEnabled !== undefined)
 		patch["web_search_enabled"] = body.webSearchEnabled;
 	if (body.autonomy) {

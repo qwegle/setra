@@ -21,6 +21,8 @@ export const SaveSettingsSchema = z.object({
 	webSearchEnabled: z.boolean().optional(),
 	defaultModel: z.string().optional(),
 	smallModel: z.string().optional(),
+	preferredAdapter: z.string().optional(),
+	preferredModel: z.string().optional(),
 	budget: z
 		.object({
 			dailyUsd: z.number().optional(),
@@ -64,6 +66,8 @@ export const PatchSettingsSchema = z.object({
 	companyId: z.string().optional(),
 	defaultModel: z.string().optional(),
 	smallModel: z.string().optional(),
+	preferredAdapter: z.string().optional(),
+	preferredModel: z.string().optional(),
 	webSearchEnabled: z.boolean().optional(),
 	governance: z
 		.object({

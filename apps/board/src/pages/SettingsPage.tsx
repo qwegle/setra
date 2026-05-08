@@ -579,6 +579,14 @@ export function SettingsPage() {
 		"model.small",
 		"claude-haiku-4-5",
 	);
+	const [preferredAdapter, setPreferredAdapter] = useLocalSetting(
+		"adapter.preferred",
+		"",
+	);
+	const [preferredModel, setPreferredModel] = useLocalSetting(
+		"adapter.preferred_model",
+		"",
+	);
 	const [deployMode, setDeployMode] = useLocalSetting<
 		"manual" | "semi" | "auto"
 	>("governance.deployMode", "manual");
@@ -868,6 +876,10 @@ export function SettingsPage() {
 		if (serverSettings.defaultModel)
 			setDefaultModel(serverSettings.defaultModel);
 		if (serverSettings.smallModel) setSmallModel(serverSettings.smallModel);
+		if ((serverSettings as Record<string, unknown>).preferredAdapter)
+			setPreferredAdapter((serverSettings as Record<string, unknown>).preferredAdapter as string);
+		if ((serverSettings as Record<string, unknown>).preferredModel)
+			setPreferredModel((serverSettings as Record<string, unknown>).preferredModel as string);
 		if (serverSettings.governance) {
 			setDeployMode(
 				serverSettings.governance.deployMode as "manual" | "semi" | "auto",
@@ -951,6 +963,8 @@ export function SettingsPage() {
 					webSearchEnabled,
 					defaultModel,
 					smallModel,
+					preferredAdapter: preferredAdapter || undefined,
+					preferredModel: preferredModel || undefined,
 					governance: {
 						deployMode,
 						autoApprove,
@@ -1529,6 +1543,89 @@ export function SettingsPage() {
 						>
 							{renderModelOptions(smallModelSelectOptions)}
 						</Select>
+					</div>
+					{/* Global default adapter — overrides auto-selection for all agents */}
+					<div className="mt-4 rounded-lg border border-zinc-700 bg-zinc-800/40 p-4">
+						<p className="mb-3 text-sm font-medium text-zinc-100">
+							Global default agent adapter
+						</p>
+						<p className="mb-3 text-xs text-zinc-400">
+							When set, every agent hired (by you or by the CEO agent) will
+							automatically use this adapter and model. Leave blank to use
+							auto-selection based on configured API keys.
+						</p>
+						<div className="grid gap-4 md:grid-cols-2">
+							<Select
+								id="preferred-adapter"
+								label="Preferred adapter"
+								helperText="Applies to all new agent hires."
+								value={preferredAdapter}
+								onChange={(event) => setPreferredAdapter(event.target.value)}
+							>
+								<option value="">Auto (use cheapest configured key)</option>
+								<option value="codex">Codex CLI (OpenAI)</option>
+								<option value="claude">Claude CLI (Anthropic)</option>
+								<option value="openai-api">OpenAI API</option>
+								<option value="anthropic-api">Anthropic API</option>
+								<option value="gemini-api">Gemini API</option>
+								<option value="openrouter">OpenRouter</option>
+								<option value="groq">Groq</option>
+								<option value="ollama">Ollama (local)</option>
+							</Select>
+							{preferredAdapter && (
+								<Select
+									id="preferred-model"
+									label="Preferred model"
+									helperText="Leave blank to use adapter default."
+									value={preferredModel}
+									onChange={(event) => setPreferredModel(event.target.value)}
+								>
+									<option value="">Adapter default</option>
+									{preferredAdapter === "codex" && (
+										<>
+											<option value="gpt-5.5">gpt-5.5</option>
+											<option value="gpt-5.4">gpt-5.4</option>
+											<option value="gpt-4o">gpt-4o</option>
+											<option value="o3">o3</option>
+											<option value="o4-mini">o4-mini</option>
+										</>
+									)}
+									{preferredAdapter === "claude" && (
+										<>
+											<option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+											<option value="claude-opus-4-5">claude-opus-4-5</option>
+											<option value="claude-haiku-4-5">claude-haiku-4-5</option>
+										</>
+									)}
+									{(preferredAdapter === "openai-api" || preferredAdapter === "openrouter") && (
+										<>
+											<option value="gpt-5.5">gpt-5.5</option>
+											<option value="gpt-5.4">gpt-5.4</option>
+											<option value="gpt-4o">gpt-4o</option>
+											<option value="gpt-4o-mini">gpt-4o-mini</option>
+										</>
+									)}
+									{(preferredAdapter === "anthropic-api") && (
+										<>
+											<option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+											<option value="claude-haiku-4-5">claude-haiku-4-5</option>
+										</>
+									)}
+									{preferredAdapter === "gemini-api" && (
+										<>
+											<option value="gemini-2.5-flash">gemini-2.5-flash</option>
+											<option value="gemini-2.5-pro">gemini-2.5-pro</option>
+										</>
+									)}
+									{preferredAdapter === "ollama" && (
+										<>
+											<option value="qwen2.5-coder:7b">qwen2.5-coder:7b</option>
+											<option value="llama3:8b">llama3:8b</option>
+										</>
+									)}
+								</Select>
+							)}
+						</div>
 					</div>
 					{selectableModelOptions.length === 0 && (
 						<p className="text-sm text-zinc-400">

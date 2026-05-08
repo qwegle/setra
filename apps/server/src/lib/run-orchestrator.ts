@@ -1,4 +1,5 @@
 import { getRawDb } from "@setra/db";
+import { spawnSync } from "node:child_process";
 import { isOfflineForCompany } from "../repositories/runtime.repo.js";
 import { readProjectContext } from "../routes/project-context.js";
 import { emit } from "../sse/handler.js";
@@ -529,6 +530,81 @@ export function registerRunQueueProcessor(): void {
 	});
 }
 
+/**
+ * Run `codex exec` as a child process (non-interactive, full-auto).
+ * Codex CLI v0.128+ uses its own auth (codex login) — no API key needed.
+ */
+function callCodexOnce(
+	model: string,
+	systemPrompt: string | null,
+	task: string,
+	cwd?: string,
+): Promise<import("./types.js").LlmCallResult> {
+	return new Promise((resolve, reject) => {
+		const args = [
+			"exec",
+			"-m",
+			model,
+			"--dangerously-bypass-approvals-and-sandbox",
+			"--skip-git-repo-check",
+			"--color",
+			"never",
+		];
+		if (cwd) args.push("-C", cwd);
+		if (systemPrompt) args.push("-c", `instructions=${JSON.stringify(systemPrompt)}`);
+		args.push(task);
+
+		const proc = spawnSync("codex", args, {
+			encoding: "utf8",
+			maxBuffer: 10 * 1024 * 1024,
+			...(cwd ? { cwd } : {}),
+		});
+
+		if (proc.error) {
+			reject(new Error(`codex exec failed: ${proc.error.message}`));
+			return;
+		}
+
+		const output = (proc.stdout ?? "") + (proc.stderr ?? "");
+		// Strip ANSI escape codes
+		// eslint-disable-next-line no-control-regex
+		const clean = output.replace(/\x1b\[[0-9;]*[mGKHFABCDJsu]/g, "");
+
+		// Parse token usage from codex output
+		const parseNum = (re: RegExp) => {
+			const m = re.exec(clean);
+			return m ? Number.parseInt((m[1] ?? "0").replace(/,/g, ""), 10) : 0;
+		};
+		const promptTokens = parseNum(/prompt tokens:\s+([\d,]+)/i);
+		const completionTokens = parseNum(/completion tokens:\s+([\d,]+)/i);
+		const costMatch = /cost:\s+\$?([\d.]+)/i.exec(clean);
+		const costUsd = costMatch ? Number.parseFloat(costMatch[1] ?? "0") : 0;
+
+		// Extract just the agent's reply (strip header/footer metadata lines)
+		const lines = clean.split("\n");
+		const replyLines: string[] = [];
+		let inReply = false;
+		for (const line of lines) {
+			if (/^codex$/i.test(line.trim())) { inReply = true; continue; }
+			if (/^user$/i.test(line.trim()) && inReply) break;
+			if (/^Usage$/i.test(line.trim())) break;
+			if (inReply) replyLines.push(line);
+		}
+		const content = replyLines.length > 0 ? replyLines.join("\n").trim() : clean.trim();
+
+		resolve({
+			content,
+			usage: {
+				promptTokens,
+				completionTokens,
+				cacheReadTokens: 0,
+				cacheWriteTokens: 0,
+			},
+			costUsd,
+		});
+	});
+}
+
 export async function spawnServerRun(input: SpawnRunInput): Promise<void> {
 	registerRunQueueProcessor();
 	const existing = getRawDb()
@@ -570,8 +646,9 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		"openrouter",
 		"groq",
 		"ollama",
+		"codex",
 	]);
-	const ptyOnly = new Set(["claude", "codex", "gemini", "amp", "opencode"]);
+	const ptyOnly = new Set(["claude", "gemini", "amp", "opencode"]);
 	const offline = isOfflineForCompany(companyId);
 	if (offline && isCloudAdapter(adapterId)) {
 		setRunStatus(runId, {
@@ -605,6 +682,7 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		openrouter: "openRouterKey",
 		groq: "groqKey",
 		ollama: null,
+		codex: null, // uses codex CLI auth (codex login), no API key needed
 	};
 	const requiredEnvName: Record<keyof RuntimeKeys, string> = {
 		anthropicKey: "ANTHROPIC_API_KEY",
@@ -632,6 +710,7 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		openrouter: "openrouter/auto",
 		groq: "llama-3.3-70b-versatile",
 		ollama: "qwen2.5-coder:7b",
+		codex: "gpt-5.5",
 	};
 	let model =
 		run.agent_version ??
@@ -858,6 +937,15 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 				),
 				RUN_TIMEOUT_MS,
 				`${adapterId}/${model}`,
+			);
+		} else if (adapterId === "codex") {
+			result = await withTimeout(
+				withRetry(
+					async () => callCodexOnce(model, systemPrompt, task, worktreePath),
+					retryOptions,
+				),
+				RUN_TIMEOUT_MS,
+				`codex/${model}`,
 			);
 		} else {
 			throw new Error(`unreachable: unsupported adapter ${adapterId}`);
