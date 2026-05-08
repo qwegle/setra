@@ -23,6 +23,23 @@ function createDb(): Database.Database {
 			created_at TEXT,
 			updated_at TEXT
 		);
+		CREATE TABLE company_invites (
+			id TEXT PRIMARY KEY,
+			company_id TEXT,
+			email TEXT NOT NULL,
+			role TEXT NOT NULL DEFAULT 'member',
+			status TEXT NOT NULL DEFAULT 'pending',
+			sent_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+			expires_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now','+7 days'))
+		);
+		CREATE TABLE company_members (
+			id TEXT PRIMARY KEY,
+			company_id TEXT,
+			name TEXT,
+			email TEXT,
+			role TEXT NOT NULL DEFAULT 'member',
+			joined_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+		);
 	`);
 	return nextDb;
 }

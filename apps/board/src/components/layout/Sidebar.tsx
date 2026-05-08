@@ -129,7 +129,9 @@ function SidebarContent({
 		refetchInterval: 10_000,
 	});
 
-	const isMoreRouteActive = moreNav.some((item) => location.pathname.startsWith(item.to));
+	const isMoreRouteActive = moreNav.some((item) =>
+		location.pathname.startsWith(item.to),
+	);
 	const [moreOpen, setMoreOpen] = useState(isMoreRouteActive);
 
 	// Members see a trimmed Team section (no Agents)
@@ -212,11 +214,8 @@ function SidebarContent({
 						)}
 					/>
 				</button>
-				{moreOpen && (
-					<NavSection items={moreNav} onItemClick={onItemClick} />
-				)}
+				{moreOpen && <NavSection items={moreNav} onItemClick={onItemClick} />}
 			</nav>
-
 		</>
 	);
 }

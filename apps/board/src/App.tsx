@@ -103,7 +103,7 @@ export default function App() {
 						element={<Navigate to="/org?tab=agents" replace />}
 					/>
 					<Route path="/org" element={<OrgPage />} />
-						<Route path="/search" element={<SearchPage />} />
+					<Route path="/search" element={<SearchPage />} />
 					<Route path="/files" element={<FilesPage />} />
 
 					{/* Legacy redirects for trimmed routes */}

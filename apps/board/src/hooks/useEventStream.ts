@@ -35,14 +35,20 @@ export function useEventStream(): SSEStatus {
 	const qc = useQueryClient();
 	const [status, setStatus] = useState<SSEStatus>("connecting");
 	const esRef = useRef<EventSource | null>(null);
-	const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+	const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>(
+		{},
+	);
 
 	useEffect(() => {
 		let cancelled = false;
 		let retryHandle: ReturnType<typeof setTimeout> | null = null;
 
 		// Debounced invalidation to avoid rapid-fire re-renders during active agents
-		function debouncedInvalidate(key: string, queryKeys: string[][], delay = 1000) {
+		function debouncedInvalidate(
+			key: string,
+			queryKeys: string[][],
+			delay = 1000,
+		) {
 			if (debounceTimers.current[key]) {
 				clearTimeout(debounceTimers.current[key]);
 			}
@@ -71,7 +77,11 @@ export function useEventStream(): SSEStatus {
 				debouncedInvalidate("agents-status", [["agents"], ["agents-roster"]]);
 			});
 			es.addEventListener("agent:bulk_paused", () => {
-				debouncedInvalidate("agents-bulk", [["agents"], ["agents-roster"], ["budget"]]);
+				debouncedInvalidate("agents-bulk", [
+					["agents"],
+					["agents-roster"],
+					["budget"],
+				]);
 			});
 			es.addEventListener("agent:bulk_resumed", () => {
 				debouncedInvalidate("agents-resumed", [["agents"], ["agents-roster"]]);
@@ -119,7 +129,10 @@ export function useEventStream(): SSEStatus {
 				void qc.invalidateQueries({ queryKey: ["agents"] });
 			});
 			es.addEventListener("collab:message", () => {
-				debouncedInvalidate("collab", [["collab-messages"], ["collab-channels"]]);
+				debouncedInvalidate("collab", [
+					["collab-messages"],
+					["collab-channels"],
+				]);
 			});
 
 			es.onerror = () => {

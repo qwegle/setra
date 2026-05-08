@@ -147,13 +147,10 @@ companyRoute.post(
 		// Try sending invite email via Resend if API key is configured
 		const settings = getStoreSettings(cid) as Record<string, unknown>;
 		const resendKey =
-			(settings?.resendApiKey as string) ||
-			process.env["RESEND_API_KEY"] ||
-			"";
+			(settings?.resendApiKey as string) || process.env["RESEND_API_KEY"] || "";
 		if (resendKey) {
 			try {
-				const companyName =
-					(settings?.companyName as string) || "Setra";
+				const companyName = (settings?.companyName as string) || "Setra";
 				await fetch("https://api.resend.com/emails", {
 					method: "POST",
 					headers: {
