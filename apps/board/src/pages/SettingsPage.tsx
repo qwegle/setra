@@ -1793,19 +1793,44 @@ export function SettingsPage() {
 						<Select
 							id="font-family"
 							label="Font family"
-							helperText="Monospace font for editor and terminal surfaces."
+							helperText="Typography used across the interface."
 							value={fontFamily}
 							onChange={(event) => setFontFamily(event.target.value)}
 						>
-							{renderModelOptions([
-								"JetBrains Mono, monospace",
-								"Fira Code, monospace",
-								"Source Code Pro, monospace",
-								"Cascadia Code, monospace",
-								"Monaco, monospace",
-								"Menlo, monospace",
-								"Consolas, monospace",
-							])}
+							<optgroup label="Sans-serif (Enterprise)">
+								<option value="Inter, system-ui, sans-serif">Inter</option>
+								<option value="Poppins, system-ui, sans-serif">Poppins</option>
+								<option value="'Plus Jakarta Sans', system-ui, sans-serif">
+									Plus Jakarta Sans
+								</option>
+								<option value="'DM Sans', system-ui, sans-serif">
+									DM Sans
+								</option>
+								<option value="Outfit, system-ui, sans-serif">Outfit</option>
+								<option value="Satoshi, system-ui, sans-serif">Satoshi</option>
+								<option value="Geist, system-ui, sans-serif">Geist</option>
+								<option value="'IBM Plex Sans', system-ui, sans-serif">
+									IBM Plex Sans
+								</option>
+								<option value="Roboto, system-ui, sans-serif">Roboto</option>
+								<option value="Lato, system-ui, sans-serif">Lato</option>
+								<option value="Nunito, system-ui, sans-serif">Nunito</option>
+								<option value="system-ui, sans-serif">System Default</option>
+							</optgroup>
+							<optgroup label="Monospace">
+								<option value="JetBrains Mono, monospace">
+									JetBrains Mono
+								</option>
+								<option value="'Geist Mono', monospace">Geist Mono</option>
+								<option value="Fira Code, monospace">Fira Code</option>
+								<option value="Source Code Pro, monospace">
+									Source Code Pro
+								</option>
+								<option value="Cascadia Code, monospace">Cascadia Code</option>
+								<option value="Monaco, monospace">Monaco</option>
+								<option value="Menlo, monospace">Menlo</option>
+								<option value="Consolas, monospace">Consolas</option>
+							</optgroup>
 						</Select>
 						<Input
 							id="font-size"
