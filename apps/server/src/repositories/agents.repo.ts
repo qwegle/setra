@@ -4,9 +4,17 @@
 
 import { getRawDb } from "@setra/db";
 import { boardBudgetLimits as budgetLimits, runs } from "@setra/db";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { db, rawSqlite } from "../db/client.js";
 import { agentRoster } from "../db/schema.js";
+
+/** Match company_id = :companyId OR company_id IS NULL (pre-migration agents). */
+function companyScope(companyId: string) {
+	return or(
+		eq(agentRoster.companyId, companyId),
+		isNull(agentRoster.companyId),
+	);
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -497,7 +505,7 @@ export async function getAgentRosterById(id: string, companyId: string) {
 			companyId: agentRoster.companyId,
 		})
 		.from(agentRoster)
-		.where(and(eq(agentRoster.id, id), eq(agentRoster.companyId, companyId)));
+		.where(and(eq(agentRoster.id, id), companyScope(companyId)));
 	return row;
 }
 
@@ -514,9 +522,7 @@ export async function getAgentRosterBySlug(slug: string, companyId: string) {
 			companyId: agentRoster.companyId,
 		})
 		.from(agentRoster)
-		.where(
-			and(eq(agentRoster.slug, slug), eq(agentRoster.companyId, companyId)),
-		);
+		.where(and(eq(agentRoster.slug, slug), companyScope(companyId)));
 	return row;
 }
 
@@ -524,7 +530,7 @@ export async function getFullAgentRosterById(id: string, companyId: string) {
 	const [row] = await db
 		.select()
 		.from(agentRoster)
-		.where(and(eq(agentRoster.id, id), eq(agentRoster.companyId, companyId)));
+		.where(and(eq(agentRoster.id, id), companyScope(companyId)));
 	return row;
 }
 
@@ -535,9 +541,7 @@ export async function getFullAgentRosterBySlug(
 	const [row] = await db
 		.select()
 		.from(agentRoster)
-		.where(
-			and(eq(agentRoster.slug, slug), eq(agentRoster.companyId, companyId)),
-		);
+		.where(and(eq(agentRoster.slug, slug), companyScope(companyId)));
 	return row;
 }
 
@@ -549,10 +553,7 @@ export async function getAgentRosterByDisplayNameAndCompany(
 		.select()
 		.from(agentRoster)
 		.where(
-			and(
-				eq(agentRoster.displayName, displayName),
-				eq(agentRoster.companyId, companyId),
-			),
+			and(eq(agentRoster.displayName, displayName), companyScope(companyId)),
 		);
 	return row;
 }
@@ -572,9 +573,7 @@ export async function getAgentSlugByIdScoped(
 	const [row] = await db
 		.select({ slug: agentRoster.slug })
 		.from(agentRoster)
-		.where(
-			and(eq(agentRoster.id, agentId), eq(agentRoster.companyId, companyId)),
-		);
+		.where(and(eq(agentRoster.id, agentId), companyScope(companyId)));
 	return row;
 }
 
@@ -585,9 +584,7 @@ export async function agentSlugExistsInCompany(
 	const [row] = await db
 		.select({ slug: agentRoster.slug })
 		.from(agentRoster)
-		.where(
-			and(eq(agentRoster.slug, slug), eq(agentRoster.companyId, companyId)),
-		);
+		.where(and(eq(agentRoster.slug, slug), companyScope(companyId)));
 	return row;
 }
 
@@ -749,7 +746,7 @@ export async function agentRosterExists(
 	const [row] = await db
 		.select({ id: agentRoster.id })
 		.from(agentRoster)
-		.where(and(eq(agentRoster.id, id), eq(agentRoster.companyId, companyId)));
+		.where(and(eq(agentRoster.id, id), companyScope(companyId)));
 	return !!row;
 }
 
@@ -761,7 +758,7 @@ export async function updateAgentRoster(
 	const [updated] = await db
 		.update(agentRoster)
 		.set(updates)
-		.where(and(eq(agentRoster.id, id), eq(agentRoster.companyId, companyId)))
+		.where(and(eq(agentRoster.id, id), companyScope(companyId)))
 		.returning();
 	return updated;
 }
@@ -859,7 +856,7 @@ export async function getBudgetLimitByAgentSlugScoped(
 			agentRoster,
 			and(
 				eq(agentRoster.slug, budgetLimits.agentSlug),
-				eq(agentRoster.companyId, companyId),
+				companyScope(companyId),
 			),
 		)
 		.where(eq(budgetLimits.agentSlug, slug))
