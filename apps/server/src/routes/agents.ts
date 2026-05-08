@@ -281,7 +281,8 @@ agentsRoute.post("/roster", zValidator("json", HireAgentSchema), async (c) => {
 agentsRoute.get("/roster/:id/experience", async (c) => {
 	const cid = getCompanyId(c);
 	const id = c.req.param("id");
-	const agent = await agentsRepo.getFullAgentRosterById(id, cid);
+	let agent = await agentsRepo.getFullAgentRosterById(id, cid);
+	if (!agent) agent = await agentsRepo.getFullAgentRosterBySlug(id, cid);
 	if (!agent) return c.json({ error: "not found" }, 404);
 
 	const experience = getAgentExperience(agent.slug, cid);
