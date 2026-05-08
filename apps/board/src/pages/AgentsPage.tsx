@@ -318,7 +318,7 @@ function AgentCard({
 							</div>
 							<div className="min-w-0">
 								<p className="truncate text-sm font-semibold text-white">
-									{agent.role}
+									{agent.displayName || agent.role || agent.slug}
 								</p>
 								<p className="truncate font-mono text-xs text-zinc-400">
 									{agent.slug}

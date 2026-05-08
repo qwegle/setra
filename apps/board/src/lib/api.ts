@@ -350,6 +350,7 @@ export interface SdlcStats {
 export interface Agent {
 	id: string;
 	slug: string;
+	displayName: string;
 	role: string;
 	model: string | null;
 	status: AgentStatus;

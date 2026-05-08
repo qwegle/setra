@@ -205,7 +205,7 @@ export function AgentDetailPage() {
 					</div>
 					<div>
 						<h1 className="text-xl font-semibold text-foreground">
-							{agent.role ?? agent.slug}
+							{agent.displayName || agent.role || agent.slug}
 						</h1>
 						<p className="text-sm text-muted-foreground mt-0.5">
 							{agent.adapterType} · {agent.modelId ?? agent.model}
@@ -1637,7 +1637,7 @@ function ChatTab({ agent, agentId }: { agent: AgentDetail; agentId: string }) {
 		[sendMessage],
 	);
 
-	const agentName = agent.role ?? agent.slug ?? "Agent";
+	const agentName = agent.displayName || agent.role || agent.slug || "Agent";
 
 	function isAgentMessage(msg: ChatMessage) {
 		return msg.agentSlug !== "human" && msg.agentSlug !== user?.email;
