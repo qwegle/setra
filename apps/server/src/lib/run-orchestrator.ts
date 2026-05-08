@@ -10,6 +10,7 @@ import { callOpenAiWithTools } from "./adapters/openai-runner.js";
 import { postChannelMessage } from "./channel-hooks.js";
 import { publishAgentCompletionMessage } from "./company-broker.js";
 import { getCompanySettings } from "./company-settings.js";
+import { postProjectHelpRequest } from "./escalation.js";
 import { addAutomationIssueComment } from "./issue-comments.js";
 import { createLogger } from "./logger.js";
 import {
@@ -951,6 +952,32 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 					error: message,
 				},
 			);
+			if (issue?.projectId) {
+				try {
+					await postProjectHelpRequest({
+						companyId,
+						projectId: issue.projectId,
+						agentRosterId: agent.id,
+						agentSlug: agent.slug,
+						agentName: agent.display_name,
+						task,
+						tried: `Attempted run ${runId} with ${adapterId}/${model}.`,
+						question: message,
+						...(issue.description ? { context: issue.description } : {}),
+						runId,
+						issueId: issue.id,
+					});
+				} catch (escalationError) {
+					log.warn("project help escalation failed", {
+						runId,
+						agentId: agent.slug,
+						error:
+							escalationError instanceof Error
+								? escalationError.message
+								: String(escalationError),
+					});
+				}
+			}
 		}
 		log.error("adapter failed", {
 			runId,

@@ -63,6 +63,8 @@ import { requireAuth } from "./middleware/require-auth.js";
 import { requireCompany } from "./middleware/require-company.js";
 import { securityHeaders } from "./middleware/security-headers.js";
 import { activityRoute } from "./routes/activity.js";
+import { agentBreakRoute } from "./routes/agent-break.js";
+import { agentContextRoute } from "./routes/agent-context.js";
 import { agentEventsRoute } from "./routes/agent-events.js";
 import { agentsRoute } from "./routes/agents.js";
 import { aiCeoRoute } from "./routes/ai-ceo.js";
@@ -89,6 +91,7 @@ import { mcpRoute } from "./routes/mcp.js";
 import orgRoute from "./routes/org.js";
 import parseGoalRoute from "./routes/parse-goal.js";
 import { plansRoute } from "./routes/plans.js";
+import projectAgentsRoute from "./routes/project-agents.js";
 import { projectContextRoute } from "./routes/project-context.js";
 import { projectGitRoute } from "./routes/project-git.js";
 import { projectSecretsRoute } from "./routes/project-secrets.js";
@@ -195,6 +198,7 @@ export async function createApp(
 		"/api/files/*",
 		"/api/agent-events/*",
 		"/api/mcp/*",
+		"/api/project-agents/*",
 	];
 	for (const mount of scopedMounts) {
 		app.use(mount, authGuard, requireCompany);
@@ -228,7 +232,11 @@ export async function createApp(
 	app.route("/api/projects", projectSecretsRoute);
 	app.route("/api/projects", projectGitRoute);
 	app.route("/api/projects", projectWorkspaceRoute);
+	app.route("/api/projects", projectAgentsRoute);
+	app.route("/api/project-agents", projectAgentsRoute);
 	app.route("/api", projectContextRoute);
+	app.route("/api", agentContextRoute);
+	app.route("/api", agentBreakRoute);
 	app.route("/api/issues", issuesRoute);
 	app.route("/api/agents", agentsRoute);
 	app.route("/api/budget", budgetRoute);
