@@ -13,6 +13,7 @@ import { getAgentExperience } from "./agent-reflection.js";
 import { getAgentScore } from "./credibility.js";
 import { createLogger } from "./logger.js";
 import { getMatchingRules, loadProjectRules } from "./project-rules.js";
+import { rawSqlite } from "../db/client.js";
 import type { AgentRow, IssueRow } from "./types.js";
 
 const log = createLogger("prompt-builder");
@@ -343,6 +344,102 @@ async function buildProjectRulesSection(
 	}
 }
 
+/**
+ * Auto-select relevant skills based on agent role and task content.
+ * Skills are matched by keyword triggers against the task description.
+ * Agent role (frontend, backend, etc.) provides additional signal.
+ */
+function buildSkillsSection(
+	agent: AgentRow,
+	issue: IssueRow | null,
+	task: string,
+): string {
+	try {
+		const text = `${task} ${issue?.title ?? ""} ${issue?.description ?? ""}`.toLowerCase();
+		const agentRole = `${agent.slug} ${agent.display_name ?? ""}`.toLowerCase();
+
+		// Role-based skill affinity — these skills are always loaded for certain roles
+		const roleSkillMap: Record<string, string[]> = {
+			frontend: [
+				"anthropic-frontend-design",
+				"ui-ux-pro-max",
+				"vercel-react-best-practices",
+				"vercel-web-design",
+				"bencium-controlled-ux",
+				"accesslint-audit",
+			],
+			backend: [
+				"api-design-patterns",
+				"database-performance",
+				"supabase-postgres",
+				"security-hardening",
+			],
+			cto: [
+				"bencium-renaissance-architecture",
+				"code-review-expert",
+				"testing-strategy",
+				"devops-cicd",
+			],
+			fullstack: [
+				"vercel-react-best-practices",
+				"api-design-patterns",
+				"database-performance",
+				"devops-cicd",
+			],
+		};
+
+		// Determine which role skills to include
+		const matchedRoleSlugs = new Set<string>();
+		for (const [role, slugs] of Object.entries(roleSkillMap)) {
+			if (agentRole.includes(role)) {
+				for (const s of slugs) matchedRoleSlugs.add(s);
+			}
+		}
+
+		// Task-content keyword matching against skill triggers
+		const allSkills = rawSqlite
+			.prepare(
+				`SELECT slug, name, prompt, trigger FROM skills WHERE is_active = 1 AND trigger != '' LIMIT 100`,
+			)
+			.all() as Array<{
+			slug: string;
+			name: string;
+			prompt: string;
+			trigger: string;
+		}>;
+
+		const matched: Array<{ name: string; prompt: string }> = [];
+		for (const skill of allSkills) {
+			// Include if role-matched
+			if (matchedRoleSlugs.has(skill.slug)) {
+				matched.push({ name: skill.name, prompt: skill.prompt });
+				continue;
+			}
+			// Include if task keywords match trigger words
+			const triggers = skill.trigger.split(",").map((t) => t.trim().toLowerCase());
+			const taskMatch = triggers.some(
+				(trigger) => trigger.length > 2 && text.includes(trigger),
+			);
+			if (taskMatch) {
+				matched.push({ name: skill.name, prompt: skill.prompt });
+			}
+		}
+
+		if (matched.length === 0) return "";
+
+		// Limit to top 5 most relevant skills to avoid prompt bloat
+		const selected = matched.slice(0, 5);
+		const lines = ["## Active Skills for This Task"];
+		for (const skill of selected) {
+			lines.push(`\n### ${skill.name}`);
+			lines.push(skill.prompt);
+		}
+		return lines.join("\n");
+	} catch {
+		return "";
+	}
+}
+
 function buildRoleSpecificPrompt(
 	agent: AgentRow,
 	issue: IssueRow | null,
@@ -641,6 +738,7 @@ export async function buildSystemPrompt(
 	].join("\n");
 
 	const rolePrompt = buildRoleSpecificPrompt(agent, issue, task);
+	const skillsSection = buildSkillsSection(agent, issue, task);
 	return [
 		base,
 		companyContext,
@@ -651,6 +749,7 @@ export async function buildSystemPrompt(
 		cloneBriefSection,
 		projectRulesSection,
 		rolePrompt,
+		skillsSection,
 		mcpGuidance + mcpToolsList,
 		issue ? `Parent issue: ${issue.slug} — ${issue.title}` : null,
 	]
