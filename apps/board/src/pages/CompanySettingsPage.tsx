@@ -333,8 +333,10 @@ function MembersTab({ toast }: { toast: (msg: string) => void }) {
 		<div className="space-y-4">
 			<div className="rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3">
 				<p className="text-xs text-zinc-400">
-					<strong className="text-zinc-300">Prerequisites:</strong>{" "}
-					To send email invites, add a Resend API key in Settings → AI Providers. Without it, invites are created but emails won't be sent — members can still register with the invited email to auto-join.
+					<strong className="text-zinc-300">Prerequisites:</strong> To send
+					email invites, add a Resend API key in Settings → AI Providers.
+					Without it, invites are created but emails won't be sent — members can
+					still register with the invited email to auto-join.
 				</p>
 			</div>
 			<div className="flex justify-end">

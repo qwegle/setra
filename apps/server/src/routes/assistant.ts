@@ -33,13 +33,13 @@ import { getRawDb } from "@setra/db";
 import { Hono } from "hono";
 import { recheckAvailability } from "../lib/agent-lifecycle.js";
 import { logActivity } from "../lib/audit.js";
+import { getCompanyId } from "../lib/company-scope.js";
 import {
 	applyKeysToEnv,
 	getCompanySettings,
 	getDefaultCompanyId,
 	setCompanySettings,
 } from "../lib/company-settings.js";
-import { getCompanyId } from "../lib/company-scope.js";
 import { resolveAutoAdapter } from "../lib/resolve-auto-adapter.js";
 import { spawnServerRun } from "../lib/server-runner.js";
 import * as assistantRepo from "../repositories/assistant.repo.js";
@@ -517,9 +517,19 @@ assistantToolsRoute.post(
 				const db = getRawDb();
 				const updates: string[] = [];
 				const values: unknown[] = [];
-				for (const field of ["name", "description", "repoUrl", "defaultBranch"] as const) {
+				for (const field of [
+					"name",
+					"description",
+					"repoUrl",
+					"defaultBranch",
+				] as const) {
 					if (body[field] !== undefined) {
-						const col = field === "repoUrl" ? "repo_url" : field === "defaultBranch" ? "default_branch" : field;
+						const col =
+							field === "repoUrl"
+								? "repo_url"
+								: field === "defaultBranch"
+									? "default_branch"
+									: field;
 						updates.push(`${col} = ?`);
 						values.push(body[field]);
 					}
@@ -531,7 +541,13 @@ assistantToolsRoute.post(
 					`UPDATE projects SET ${updates.join(", ")} WHERE company_id = ? AND id = ?`,
 				).run(...values);
 				emit("project:updated", { id: projectId, companyId: cid });
-				await logActivity(c, "assistant.tool.update_project", "project", projectId, body);
+				await logActivity(
+					c,
+					"assistant.tool.update_project",
+					"project",
+					projectId,
+					body,
+				);
 				return c.json({ ok: true });
 			}
 
@@ -624,8 +640,15 @@ assistantToolsRoute.get("/tools", (c) =>
 			},
 			{
 				name: "update_project",
-				description: "Update project settings (name, description, repo URL, default branch).",
-				params: ["projectId", "name?", "description?", "repoUrl?", "defaultBranch?"],
+				description:
+					"Update project settings (name, description, repo URL, default branch).",
+				params: [
+					"projectId",
+					"name?",
+					"description?",
+					"repoUrl?",
+					"defaultBranch?",
+				],
 			},
 		],
 	}),

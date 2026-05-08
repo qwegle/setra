@@ -250,9 +250,7 @@ export function AgentDetailPage() {
 			{activeTab === "dashboard" && (
 				<DashboardTab agent={agent} agentId={agentId} />
 			)}
-			{activeTab === "chat" && (
-				<ChatTab agent={agent} agentId={agentId} />
-			)}
+			{activeTab === "chat" && <ChatTab agent={agent} agentId={agentId} />}
 			{activeTab === "instructions" && (
 				<InstructionsTab agent={agent} agentId={agentId} />
 			)}
@@ -1582,10 +1580,7 @@ interface ChatMessage {
 	messageKind?: string | null;
 }
 
-function ChatTab({
-	agent,
-	agentId,
-}: { agent: AgentDetail; agentId: string }) {
+function ChatTab({ agent, agentId }: { agent: AgentDetail; agentId: string }) {
 	const { user } = useAuth();
 	const queryClient = useQueryClient();
 	const [input, setInput] = useState("");
@@ -1623,7 +1618,9 @@ function ChatTab({
 				agentSlug: "human",
 			});
 			setInput("");
-			await queryClient.invalidateQueries({ queryKey: ["agent-chat", agentId] });
+			await queryClient.invalidateQueries({
+				queryKey: ["agent-chat", agentId],
+			});
 		} finally {
 			setSending(false);
 			inputRef.current?.focus();
@@ -1684,8 +1681,8 @@ function ChatTab({
 							Start a conversation with {agentName}
 						</p>
 						<p className="text-xs text-muted-foreground/50 max-w-sm">
-							Send messages, instructions, or follow-up questions.
-							The agent will see your messages when it starts its next task.
+							Send messages, instructions, or follow-up questions. The agent
+							will see your messages when it starts its next task.
 						</p>
 					</div>
 				) : (

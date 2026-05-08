@@ -142,11 +142,7 @@ export async function ensureRepo(
 	// The folder might be inside an existing git repo (subfolder of a repo)
 	// Use git rev-parse to detect this before blindly running git init
 	try {
-		const { stdout } = await runGit(
-			cwd,
-			["rev-parse", "--git-dir"],
-			timeout,
-		);
+		const { stdout } = await runGit(cwd, ["rev-parse", "--git-dir"], timeout);
 		if (stdout.trim().length > 0) {
 			const branch = await currentBranchSafe(cwd, timeout);
 			return {

@@ -8,12 +8,12 @@ import {
 import { getRawDb } from "@setra/db";
 import { getMcpManager } from "@setra/mcp";
 import { MemoryStore } from "@setra/memory";
+import { rawSqlite } from "../db/client.js";
 import * as integrationsRepo from "../repositories/integrations.repo.js";
 import { getAgentExperience } from "./agent-reflection.js";
 import { getAgentScore } from "./credibility.js";
 import { createLogger } from "./logger.js";
 import { getMatchingRules, loadProjectRules } from "./project-rules.js";
-import { rawSqlite } from "../db/client.js";
 import type { AgentRow, IssueRow } from "./types.js";
 
 const log = createLogger("prompt-builder");
@@ -355,7 +355,8 @@ function buildSkillsSection(
 	task: string,
 ): string {
 	try {
-		const text = `${task} ${issue?.title ?? ""} ${issue?.description ?? ""}`.toLowerCase();
+		const text =
+			`${task} ${issue?.title ?? ""} ${issue?.description ?? ""}`.toLowerCase();
 		const agentRole = `${agent.slug} ${agent.display_name ?? ""}`.toLowerCase();
 
 		// Role-based skill affinity — these skills are always loaded for certain roles
@@ -416,7 +417,9 @@ function buildSkillsSection(
 				continue;
 			}
 			// Include if task keywords match trigger words
-			const triggers = skill.trigger.split(",").map((t) => t.trim().toLowerCase());
+			const triggers = skill.trigger
+				.split(",")
+				.map((t) => t.trim().toLowerCase());
 			const taskMatch = triggers.some(
 				(trigger) => trigger.length > 2 && text.includes(trigger),
 			);

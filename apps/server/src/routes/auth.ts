@@ -82,16 +82,12 @@ authRoute.post("/register", async (c) => {
 			 WHERE email = ? AND status = 'pending' AND expires_at > datetime('now')
 			 ORDER BY sent_at DESC LIMIT 1`,
 		)
-		.get(email) as
-		| { id: string; company_id: string; role: string }
-		| undefined;
+		.get(email) as { id: string; company_id: string; role: string } | undefined;
 
-	const targetCompany = invite
-		? { id: invite.company_id }
-		: company;
+	const targetCompany = invite ? { id: invite.company_id } : company;
 	const role = isFirstUser
 		? "owner"
-		: (invite?.role as "admin" | "member") ?? "member";
+		: ((invite?.role as "admin" | "member") ?? "member");
 
 	const passwordHash = await hashPassword(password);
 	const user = db
@@ -133,7 +129,10 @@ authRoute.post("/register", async (c) => {
 		companyId: user.company_id,
 		role: user.role,
 	});
-	return c.json({ token, user: sanitizeUser(user), company: targetCompany }, 201);
+	return c.json(
+		{ token, user: sanitizeUser(user), company: targetCompany },
+		201,
+	);
 });
 
 authRoute.post("/login", async (c) => {
