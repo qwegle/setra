@@ -139,6 +139,25 @@ export async function ensureRepo(
 			alreadyExisted: true,
 		};
 	}
+	// The folder might be inside an existing git repo (subfolder of a repo)
+	// Use git rev-parse to detect this before blindly running git init
+	try {
+		const { stdout } = await runGit(
+			cwd,
+			["rev-parse", "--git-dir"],
+			timeout,
+		);
+		if (stdout.trim().length > 0) {
+			const branch = await currentBranchSafe(cwd, timeout);
+			return {
+				initialized: true,
+				defaultBranch: branch ?? "main",
+				alreadyExisted: true,
+			};
+		}
+	} catch {
+		// Not inside any git repo — proceed to init
+	}
 	await runGit(cwd, ["init", "-b", "main"], timeout);
 	return { initialized: true, defaultBranch: "main", alreadyExisted: false };
 }
