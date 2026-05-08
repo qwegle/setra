@@ -454,3 +454,61 @@ projectGitRoute.post(
 		}
 	},
 );
+
+// POST /:projectId/git/revert — reset to a checkpoint (commit SHA)
+// body: { sha: string, hard?: boolean }
+//   hard=true  → git reset --hard <sha>  (discard all uncommitted changes)
+//   hard=false → git revert <sha>         (creates a new revert commit)
+const RevertSchema = z.object({
+	sha: z.string().min(4).max(40),
+	hard: z.boolean().optional().default(false),
+});
+
+projectGitRoute.post(
+	"/:projectId/git/revert",
+	zValidator("json", RevertSchema),
+	(c) => {
+		try {
+			const companyId = getCompanyId(c);
+			const projectId = c.req.param("projectId");
+			const { sha, hard } = c.req.valid("json");
+			const root = getWorkspaceRoot(projectId, companyId);
+			if (hard) {
+				runGit(root, ["reset", "--hard", sha]);
+			} else {
+				runGit(root, ["revert", "--no-edit", sha]);
+			}
+			const head = runGit(root, ["rev-parse", "HEAD"]).trim();
+			return c.json({ ok: true, head });
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "failed to revert";
+			return c.json(
+				{ error: message },
+				message === "project not found" ? 404 : 500,
+			);
+		}
+	},
+);
+
+// GET /:projectId/git/remote — get the remote origin URL
+projectGitRoute.get("/:projectId/git/remote", (c) => {
+	try {
+		const companyId = getCompanyId(c);
+		const projectId = c.req.param("projectId");
+		const root = getWorkspaceRoot(projectId, companyId);
+		let remoteUrl: string | null = null;
+		try {
+			remoteUrl = runGit(root, ["remote", "get-url", "origin"]).trim() || null;
+		} catch {
+			remoteUrl = null;
+		}
+		const branch = runGit(root, ["rev-parse", "--abbrev-ref", "HEAD"]).trim();
+		return c.json({ remoteUrl, branch });
+	} catch (error) {
+		return c.json(
+			{ error: error instanceof Error ? error.message : "failed" },
+			500,
+		);
+	}
+});
