@@ -781,20 +781,20 @@ function ConfigurationTab({
 						) : null}
 					</div>
 					<div>
-						<label className="block text-xs text-muted-foreground/70 mb-1">
+						<label className="mb-1 block text-xs text-muted-foreground/70">
 							Model
 						</label>
-						<input
-							type="text"
-							defaultValue={agent.modelId ?? agent.model ?? ""}
-							onBlur={(e) => {
-								const v = e.target.value.trim();
-								if (v && v !== (agent.modelId ?? agent.model))
-									updateMutation.mutate({ modelId: v });
-							}}
-							className="w-full px-3 py-2 rounded-md border border-border/50 bg-card/40 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-setra-500/50"
-							placeholder="e.g. gpt-4o, claude-sonnet-4-5"
-						/>
+						<div className="flex items-center gap-2">
+							<span className="flex-1 rounded-md border border-border/50 bg-card/40 px-3 py-2 font-mono text-foreground text-sm">
+								{agent.modelId ?? agent.model ?? "auto (smart selection)"}
+							</span>
+						</div>
+						<p className="mt-1 text-[11px] text-muted-foreground/60">
+							Models are configured globally in Settings → AI Providers. When
+							set to "auto", Setra picks the best model based on task complexity
+							— cheaper models for simple tasks, premium models for complex
+							ones.
+						</p>
 					</div>
 					<div>
 						<label className="block text-xs text-muted-foreground/70 mb-1">

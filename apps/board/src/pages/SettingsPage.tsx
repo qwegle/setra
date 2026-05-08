@@ -159,7 +159,7 @@ const PROVIDERS: Array<{
 const tabs = [
 	{ id: "general", label: "General", icon: Info },
 	{ id: "aiProviders", label: "AI Providers", icon: Cpu },
-	{ id: "secrets", label: "Secrets", icon: Key },
+	{ id: "secrets", label: "Password Manager", icon: Key },
 	{ id: "governance", label: "Governance", icon: Shield },
 	{ id: "autonomy", label: "Autonomy", icon: Zap },
 	{ id: "appearance", label: "Appearance", icon: Palette },
@@ -179,6 +179,9 @@ function useLocalSetting<T>(key: string, defaultValue: T): [T, (v: T) => void] {
 		setValue(v);
 		try {
 			localStorage.setItem(`setra:${key}`, JSON.stringify(v));
+			if (key.startsWith("appearance:")) {
+				window.dispatchEvent(new Event("setra:appearance-change"));
+			}
 		} catch {
 			/* noop */
 		}

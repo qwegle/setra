@@ -7,6 +7,7 @@ import { DialogProvider } from "../../context/DialogContext";
 import { useDialog } from "../../context/DialogContext";
 import { useEventStream } from "../../hooks/useEventStream";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
+import { cn } from "../../lib/utils";
 import { BudgetBanner } from "../BudgetBanner";
 import { CommandPalette } from "../CommandPalette";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -32,6 +33,74 @@ function AppShellInner() {
 	} = useCompany();
 	const navigate = useNavigate();
 	const location = useLocation();
+	const [appFontFamily, setAppFontFamily] = useState(() => {
+		try {
+			const stored = localStorage.getItem("setra:appearance:fontFamily");
+			return stored ? JSON.parse(stored) : "JetBrains Mono, monospace";
+		} catch {
+			return "JetBrains Mono, monospace";
+		}
+	});
+	const [appUiScale, setAppUiScale] = useState(() => {
+		try {
+			const stored = localStorage.getItem("setra:appearance:uiScale");
+			return stored ? JSON.parse(stored) : 100;
+		} catch {
+			return 100;
+		}
+	});
+	const [appSidebarPosition, setAppSidebarPosition] = useState(() => {
+		try {
+			const stored = localStorage.getItem("setra:appearance:sidebarPosition");
+			return stored ? JSON.parse(stored) : "left";
+		} catch {
+			return "left";
+		}
+	});
+
+	useEffect(() => {
+		const applyAppearanceSettings = () => {
+			try {
+				const storedFontFamily = localStorage.getItem(
+					"setra:appearance:fontFamily",
+				);
+				setAppFontFamily(
+					storedFontFamily
+						? JSON.parse(storedFontFamily)
+						: "JetBrains Mono, monospace",
+				);
+			} catch {
+				setAppFontFamily("JetBrains Mono, monospace");
+			}
+			try {
+				const storedUiScale = localStorage.getItem("setra:appearance:uiScale");
+				setAppUiScale(storedUiScale ? JSON.parse(storedUiScale) : 100);
+			} catch {
+				setAppUiScale(100);
+			}
+			try {
+				const storedSidebarPosition = localStorage.getItem(
+					"setra:appearance:sidebarPosition",
+				);
+				setAppSidebarPosition(
+					storedSidebarPosition ? JSON.parse(storedSidebarPosition) : "left",
+				);
+			} catch {
+				setAppSidebarPosition("left");
+			}
+		};
+
+		applyAppearanceSettings();
+		window.addEventListener("storage", applyAppearanceSettings);
+		window.addEventListener("setra:appearance-change", applyAppearanceSettings);
+		return () => {
+			window.removeEventListener("storage", applyAppearanceSettings);
+			window.removeEventListener(
+				"setra:appearance-change",
+				applyAppearanceSettings,
+			);
+		};
+	}, []);
 
 	useKeyboardShortcuts({
 		onToggleSidebar: () => {
@@ -71,7 +140,13 @@ function AppShellInner() {
 	}
 
 	return (
-		<div className="flex h-screen w-screen overflow-hidden bg-background">
+		<div
+			className={cn(
+				"flex h-screen w-screen overflow-hidden bg-background",
+				appSidebarPosition === "right" && "flex-row-reverse",
+			)}
+			style={{ zoom: `${appUiScale}%` }}
+		>
 			<OrgRail />
 			<Sidebar
 				sseStatus={sseStatus}
@@ -84,7 +159,10 @@ function AppShellInner() {
 					onToggleSidebar={() => setMobileSidebarOpen((open) => !open)}
 				/>
 				<BudgetBanner />
-				<main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 animate-fade-in">
+				<main
+					className="animate-fade-in flex-1 overflow-auto p-4 md:p-6 lg:p-8"
+					style={{ fontFamily: appFontFamily }}
+				>
 					<ErrorBoundary>
 						<Outlet />
 					</ErrorBoundary>

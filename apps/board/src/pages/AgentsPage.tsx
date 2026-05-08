@@ -27,13 +27,6 @@ import {
 } from "../lib/api";
 import { cn, formatCost, formatTokens, timeAgo } from "../lib/utils";
 
-interface AvailableModel {
-	id: string;
-	label?: string;
-	provider: string;
-	available: boolean;
-}
-
 const STATUS_CONFIG: Partial<
 	Record<
 		AgentStatus,
@@ -341,14 +334,9 @@ function AgentCard({
 						</Badge>
 					</div>
 
-					<div className="space-y-2">
-						<p className="text-xs uppercase tracking-wide text-zinc-500">
-							Model
-						</p>
-						<ModelPicker
-							agentId={agent.id}
-							currentModel={agent.model ?? null}
-						/>
+					<div className="flex items-center gap-2 text-xs text-zinc-400">
+						<span className="text-zinc-500">Model:</span>
+						<span className="font-mono">{agent.model ?? "auto"}</span>
 					</div>
 
 					<div className="space-y-2">
@@ -504,71 +492,6 @@ function RunModePicker({
 			<option value="on_demand">On Demand</option>
 			<option value="continuous">Continuous (24/7)</option>
 			<option value="scheduled">Scheduled</option>
-		</Select>
-	);
-}
-
-function ModelPicker({
-	agentId,
-	currentModel,
-}: { agentId: string; currentModel: string | null }) {
-	const queryClient = useQueryClient();
-	const { data: models = [] } = useQuery({
-		queryKey: ["runtime", "available-models"],
-		queryFn: () => api.runtime.availableModels(),
-		staleTime: 60_000,
-	});
-
-	const mutation = useMutation({
-		mutationFn: (model: string) => api.agents.update(agentId, { model }),
-		onSuccess: () =>
-			void queryClient.invalidateQueries({ queryKey: ["agents"] }),
-	});
-
-	const availableOnly = models.filter((model) => model.available);
-	const grouped = availableOnly.reduce<Record<string, AvailableModel[]>>(
-		(accumulator, model) => {
-			(accumulator[model.provider] ||= []).push(model);
-			return accumulator;
-		},
-		{},
-	);
-	const hasCurrent =
-		!currentModel || availableOnly.some((model) => model.id === currentModel);
-	const swallow = (event: SyntheticEvent) => {
-		event.preventDefault();
-		event.stopPropagation();
-	};
-
-	return (
-		<Select
-			value={currentModel ?? ""}
-			onClick={swallow}
-			onMouseDown={(event) => event.stopPropagation()}
-			onChange={(event) => {
-				event.preventDefault();
-				event.stopPropagation();
-				const next = event.target.value;
-				if (next && next !== currentModel) mutation.mutate(next);
-			}}
-			disabled={mutation.isPending}
-			className="font-mono text-xs"
-		>
-			{!currentModel && <option value="">—</option>}
-			{currentModel && !hasCurrent && (
-				<option value={currentModel}>{currentModel} (unavailable)</option>
-			)}
-			{Object.entries(grouped)
-				.sort(([a], [b]) => a.localeCompare(b))
-				.map(([provider, list]) => (
-					<optgroup key={provider} label={provider}>
-						{list.map((model) => (
-							<option key={model.id} value={model.id}>
-								{model.label ?? model.id}
-							</option>
-						))}
-					</optgroup>
-				))}
 		</Select>
 	);
 }
