@@ -920,8 +920,7 @@ export function ProjectDetailPage() {
 														{agent.displayName}
 													</div>
 													<div className="truncate text-sm text-zinc-400">
-														@{agent.slug} · {agent.adapterType ?? "auto"} ·{" "}
-														{agent.modelId ?? "auto"}
+														@{agent.slug} · {agent.adapterType && agent.adapterType !== "auto" ? agent.adapterType : "codex"} · {agent.modelId && agent.modelId !== "auto" ? agent.modelId : agent.adapterType === "claude" ? "claude (auto)" : "gpt-5.5 (auto)"}
 													</div>
 													<div className="mt-2 flex flex-wrap gap-2">
 														<Badge
