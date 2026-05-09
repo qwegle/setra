@@ -1315,7 +1315,7 @@ export const api = {
 			request<ProjectChannel | null>(`/projects/${projectId}/channel`),
 		messages: (channel: string) =>
 			request<CollabMessage[]>(
-				`/collaboration/messages?channel=${encodeURIComponent(channel)}&limit=100`,
+				`/collaboration/messages?channel=${encodeURIComponent(channel)}&limit=100&hideSystem=true`,
 			),
 		send: (channel: string, content: string) =>
 			post<{ id: string; createdAt: string }>("/collaboration/messages", {
@@ -1890,7 +1890,7 @@ export const api = {
 					pinned?: number | boolean | null;
 				}>
 			>(
-				`/collaboration/messages?channel=${encodeURIComponent(channel)}&limit=${limit}`,
+				`/collaboration/messages?channel=${encodeURIComponent(channel)}&limit=${limit}&hideSystem=true`,
 			),
 		post: (data: { channel: string; body: string; agentSlug?: string }) =>
 			request<{ id: string }>("/collaboration/messages", {

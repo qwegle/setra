@@ -121,10 +121,10 @@ function detectRunCommand(workspacePath: string): string {
 	if (existsSync(path.join(workspacePath, "manage.py")))
 		return "python manage.py runserver";
 	if (existsSync(path.join(workspacePath, "go.mod"))) return "go run .";
-	// Static HTML — serve with Python's built-in HTTP server on a random port
+	// Static HTML — serve with Python's built-in HTTP server on a fixed port
 	if (existsSync(path.join(workspacePath, "index.html")))
-		return "python3 -m http.server 0";
-	return "python3 -m http.server 0";
+		return "python3 -m http.server 8090";
+	return "python3 -m http.server 8090";
 }
 
 function detectUrlFromLine(line: string): string | null {
@@ -703,14 +703,18 @@ projectsRoute.post("/:id/run", async (c) => {
 	const [cmd, ...args] = command.split(" ");
 	const child = spawn(cmd!, args, {
 		cwd: project.workspacePath,
-		env: { ...process.env, FORCE_COLOR: "0" },
+		env: { ...process.env, FORCE_COLOR: "0", PYTHONUNBUFFERED: "1" },
 		shell: true,
 	});
+
+	// For python3 http.server, extract port from command and set URL immediately
+	const staticPortMatch = command.match(/http\.server\s+(\d+)/);
+	const initialUrl = staticPortMatch ? `http://localhost:${staticPortMatch[1]}` : null;
 
 	const state = {
 		process: child,
 		lines: [] as string[],
-		url: null as string | null,
+		url: initialUrl as string | null,
 		startedAt: new Date().toISOString(),
 	};
 	activeRuns.set(projectId, state);
