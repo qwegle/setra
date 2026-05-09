@@ -2,9 +2,19 @@ import { getRawDb } from "@setra/db";
 import { isOfflineForCompany } from "../repositories/runtime.repo.js";
 import { readProjectContext } from "../routes/project-context.js";
 import { emit } from "../sse/handler.js";
-import { isCloudAdapter, normalizeAdapterId } from "./adapter-policy.js";
+import {
+	isCloudAdapter,
+	isPtyOnlyAdapter,
+	isServerRunnableAdapter,
+	normalizeAdapterId,
+} from "./adapter-policy.js";
 import { callAdapterTextOnce } from "./adapters/adapter-dispatch.js";
 import { callAnthropicWithTools } from "./adapters/anthropic-runner.js";
+import {
+	CodexLoginRequiredError,
+	CodexNotInstalledError,
+	callCodexExecOnce,
+} from "./adapters/codex-runner.js";
 import { callGeminiWithTools } from "./adapters/gemini-runner.js";
 import { callOpenAiWithTools } from "./adapters/openai-runner.js";
 import { postChannelMessage } from "./channel-hooks.js";
@@ -563,15 +573,6 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		return;
 	}
 	let adapterId = normalizeAdapterId(agent.adapter_type);
-	const supported = new Set([
-		"anthropic-api",
-		"openai-api",
-		"gemini-api",
-		"openrouter",
-		"groq",
-		"ollama",
-	]);
-	const ptyOnly = new Set(["claude", "codex", "gemini", "amp", "opencode"]);
 	const offline = isOfflineForCompany(companyId);
 	if (offline && isCloudAdapter(adapterId)) {
 		setRunStatus(runId, {
@@ -581,16 +582,16 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		setAgentRuntimeStatus(agent.id, "idle");
 		return;
 	}
-	if (!supported.has(adapterId)) {
-		if (ptyOnly.has(adapterId)) {
+	if (!isServerRunnableAdapter(adapterId)) {
+		if (isPtyOnlyAdapter(adapterId)) {
 			setRunStatus(runId, {
 				status: "failed",
-				errorMessage: `Adapter '${adapterId}' requires the desktop app (PTY). Use anthropic-api, openai-api, gemini-api, openrouter, groq, or ollama for server-side runs.`,
+				errorMessage: `Adapter '${adapterId}' requires the desktop app (PTY). Use anthropic-api, openai-api, gemini-api, openrouter, groq, ollama, or codex for server-side runs.`,
 			});
 		} else {
 			setRunStatus(runId, {
 				status: "failed",
-				errorMessage: `Unsupported adapter '${agent.adapter_type ?? "null"}'. Supported: ${Array.from(supported).join(", ")}.`,
+				errorMessage: `Unsupported adapter '${agent.adapter_type ?? "null"}'. Supported server-side: anthropic-api, openai-api, gemini-api, openrouter, groq, ollama, codex.`,
 			});
 		}
 		setAgentRuntimeStatus(agent.id, "idle");
@@ -605,6 +606,8 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		openrouter: "openRouterKey",
 		groq: "groqKey",
 		ollama: null,
+		// codex authenticates via `codex login` (OAuth) — no API key needed.
+		codex: null,
 	};
 	const requiredEnvName: Record<keyof RuntimeKeys, string> = {
 		anthropicKey: "ANTHROPIC_API_KEY",
@@ -632,6 +635,7 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		openrouter: "openrouter/auto",
 		groq: "llama-3.3-70b-versatile",
 		ollama: "qwen2.5-coder:7b",
+		codex: "gpt-5.5",
 	};
 	let model =
 		run.agent_version ??
@@ -859,6 +863,23 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 				RUN_TIMEOUT_MS,
 				`${adapterId}/${model}`,
 			);
+		} else if (adapterId === "codex") {
+			result = await withTimeout(
+				withRetry(
+					() =>
+						callCodexExecOnce({
+							model,
+							systemPrompt,
+							task,
+							...(worktreePath ? { cwd: worktreePath } : {}),
+							runId,
+						}),
+					retryOptions,
+				),
+				// codex exec can take longer than API calls; give it a larger window.
+				10 * 60 * 1000,
+				`${adapterId}/${model}`,
+			);
 		} else {
 			throw new Error(`unreachable: unsupported adapter ${adapterId}`);
 		}
@@ -936,6 +957,19 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		});
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
+		// Codex pre-flight failures should pause the agent (awaiting login/install)
+		// rather than burning a retry budget.
+		if (
+			error instanceof CodexLoginRequiredError ||
+			error instanceof CodexNotInstalledError
+		) {
+			writeChunk(runId, `[codex] ${message}\n`, "stderr");
+			setRunStatus(runId, { status: "failed", errorMessage: message });
+			setAgentRuntimeStatus(agent.id, "awaiting_key", message);
+			emit("run:updated", { runId, agentId: agent.slug, status: "failed" });
+			void onRunCompleted(runId, 1).catch(() => {});
+			return;
+		}
 		writeChunk(runId, `[server-runner] error: ${message}\n`, "stderr");
 		setRunStatus(runId, { status: "failed", errorMessage: message });
 		emit("run:updated", { runId, agentId: agent.slug, status: "failed" });

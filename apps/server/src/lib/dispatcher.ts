@@ -44,13 +44,11 @@ const RECENT_RUN_WINDOW_MS = 5 * 60_000;
 const STALE_RUN_TIMEOUT_MS = 10 * 60_000; // 10 minutes
 const VERIFICATION_DIGEST_INTERVAL_MS = 12 * 60 * 60_000;
 
-const PTY_ONLY_ADAPTERS = new Set([
-	"claude",
-	"codex",
-	"gemini",
-	"amp",
-	"opencode",
-]);
+// PTY-only adapters: must run via the Electron PTY bridge.
+// NOTE: `codex` was historically here, but with `codex login` (OAuth) the
+// non-interactive `codex exec` invocation works server-side too. Source of
+// truth lives in `adapter-policy.ts#getAdapterExecutionMode`.
+const PTY_ONLY_ADAPTERS = new Set(["claude", "gemini", "amp", "opencode"]);
 
 const DEVELOPER_SLUG_HINTS = [
 	"dev",
