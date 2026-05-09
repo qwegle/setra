@@ -1,5 +1,5 @@
 import { getRawDb } from "@setra/db";
-import { spawnSync } from "node:child_process";
+import { spawn as spawnAsync, spawnSync } from "node:child_process";
 import { isOfflineForCompany } from "../repositories/runtime.repo.js";
 import { readProjectContext } from "../routes/project-context.js";
 import { emit } from "../sse/handler.js";
@@ -10,6 +10,7 @@ import { callGeminiWithTools } from "./adapters/gemini-runner.js";
 import { callOpenAiWithTools } from "./adapters/openai-runner.js";
 import { postChannelMessage } from "./channel-hooks.js";
 import { publishAgentCompletionMessage } from "./company-broker.js";
+import { createMessage as createCollabMessage } from "../repositories/collaboration.repo.js";
 import { getCompanySettings } from "./company-settings.js";
 import { postProjectHelpRequest } from "./escalation.js";
 import { addAutomationIssueComment } from "./issue-comments.js";
@@ -41,6 +42,8 @@ import type {
 const log = createLogger("server-runner");
 const HEARTBEAT_MS = 60_000;
 const RUN_TIMEOUT_MS = 5 * 60 * 1000;
+// Codex CLI can take longer to start up and process; give it a larger window.
+const CODEX_TIMEOUT_MS = 10 * 60 * 1000;
 
 function loadRuntimeKeys(companyId: string | null): RuntimeKeys {
 	const settings = (getCompanySettings(companyId) ?? {}) as Record<
@@ -534,74 +537,81 @@ export function registerRunQueueProcessor(): void {
 /**
  * Run `codex exec` as a child process (non-interactive, full-auto).
  * Codex CLI v0.128+ uses its own auth (codex login) — no API key needed.
+ * Uses async spawn to avoid blocking the event loop during the run.
  */
-function callCodexOnce(
+async function callCodexOnce(
 	model: string,
 	systemPrompt: string | null,
 	task: string,
 	cwd?: string,
 ): Promise<import("./types.js").LlmCallResult> {
-	return new Promise((resolve, reject) => {
-		const args = [
-			"exec",
-			"-m",
-			model,
-			"--dangerously-bypass-approvals-and-sandbox",
-			"--skip-git-repo-check",
-			"--color",
-			"never",
-		];
-		if (cwd) args.push("-C", cwd);
-		if (systemPrompt) args.push("-c", `instructions=${JSON.stringify(systemPrompt)}`);
-		args.push(task);
+	const args = [
+		"exec",
+		"-m",
+		model,
+		"--dangerously-bypass-approvals-and-sandbox",
+		"--skip-git-repo-check",
+	];
+	if (cwd) args.push("-C", cwd);
+	if (systemPrompt) args.push("-c", `instructions=${JSON.stringify(systemPrompt)}`);
+	args.push(task);
 
-		const proc = spawnSync("codex", args, {
-			encoding: "utf8",
-			maxBuffer: 10 * 1024 * 1024,
+	return new Promise((resolve, reject) => {
+		const proc = spawnAsync("codex", args, {
 			...(cwd ? { cwd } : {}),
+			// Explicitly close stdin so codex doesn't block waiting for input.
+			// pipe stdout/stderr to collect output; pipe stdin so it's not inherited.
+			stdio: ["ignore", "pipe", "pipe"],
 		});
 
-		if (proc.error) {
-			reject(new Error(`codex exec failed: ${proc.error.message}`));
-			return;
-		}
+		const chunks: Buffer[] = [];
+		proc.stdout?.on("data", (d: Buffer) => chunks.push(d));
+		proc.stderr?.on("data", (d: Buffer) => chunks.push(d));
 
-		const output = (proc.stdout ?? "") + (proc.stderr ?? "");
-		// Strip ANSI escape codes
-		// eslint-disable-next-line no-control-regex
-		const clean = output.replace(/\x1b\[[0-9;]*[mGKHFABCDJsu]/g, "");
+		proc.on("error", (err) => reject(new Error(`codex exec failed: ${err.message}`)));
 
-		// Parse token usage from codex output
-		const parseNum = (re: RegExp) => {
-			const m = re.exec(clean);
-			return m ? Number.parseInt((m[1] ?? "0").replace(/,/g, ""), 10) : 0;
-		};
-		const promptTokens = parseNum(/prompt tokens:\s+([\d,]+)/i);
-		const completionTokens = parseNum(/completion tokens:\s+([\d,]+)/i);
-		const costMatch = /cost:\s+\$?([\d.]+)/i.exec(clean);
-		const costUsd = costMatch ? Number.parseFloat(costMatch[1] ?? "0") : 0;
+		proc.on("close", () => {
+			const output = Buffer.concat(chunks).toString("utf8");
+			// Strip ANSI escape codes
+			// eslint-disable-next-line no-control-regex
+			const clean = output.replace(/\x1b\[[0-9;]*[mGKHFABCDJsu]/g, "");
 
-		// Extract just the agent's reply (strip header/footer metadata lines)
-		const lines = clean.split("\n");
-		const replyLines: string[] = [];
-		let inReply = false;
-		for (const line of lines) {
-			if (/^codex$/i.test(line.trim())) { inReply = true; continue; }
-			if (/^user$/i.test(line.trim()) && inReply) break;
-			if (/^Usage$/i.test(line.trim())) break;
-			if (inReply) replyLines.push(line);
-		}
-		const content = replyLines.length > 0 ? replyLines.join("\n").trim() : clean.trim();
+			// Parse token usage from codex output.
+			// Format: "tokens used\n1,760" (total) or "prompt tokens: N" / "completion tokens: N"
+			const parseNum = (re: RegExp) => {
+				const m = re.exec(clean);
+				return m ? Number.parseInt((m[1] ?? "0").replace(/,/g, ""), 10) : 0;
+			};
+			const promptTokens = parseNum(/prompt tokens:\s+([\d,]+)/i);
+			const completionTokens = parseNum(/completion tokens:\s+([\d,]+)/i);
+			// "tokens used\nN,NNN" — fallback when per-type breakdown isn't present
+			const totalTokens = parseNum(/tokens used\n([\d,]+)/i);
+			const costMatch = /cost:\s+\$?([\d.]+)/i.exec(clean);
+			const costUsd = costMatch ? Number.parseFloat(costMatch[1] ?? "0") : 0;
 
-		resolve({
-			content,
-			usage: {
-				promptTokens,
-				completionTokens,
-				cacheReadTokens: 0,
-				cacheWriteTokens: 0,
-			},
-			costUsd,
+			// Extract just the agent's reply (strip header/footer metadata lines)
+			const lines = clean.split("\n");
+			const replyLines: string[] = [];
+			let inReply = false;
+			for (const line of lines) {
+				if (/^codex$/i.test(line.trim())) { inReply = true; continue; }
+				if (/^user$/i.test(line.trim()) && inReply) break;
+				if (/^Usage$/i.test(line.trim())) break;
+				if (/^tokens used$/i.test(line.trim())) break;
+				if (inReply) replyLines.push(line);
+			}
+			const content = replyLines.length > 0 ? replyLines.join("\n").trim() : clean.trim();
+
+			resolve({
+				content,
+				usage: {
+					promptTokens: promptTokens || (totalTokens > 0 ? totalTokens : 0),
+					completionTokens,
+					cacheReadTokens: 0,
+					cacheWriteTokens: 0,
+				},
+				costUsd,
+			});
 		});
 	});
 }
@@ -625,7 +635,7 @@ export async function spawnServerRun(input: SpawnRunInput): Promise<void> {
 }
 
 export async function executeServerRun(input: SpawnRunInput): Promise<void> {
-	const { runId, agentSlug, issueId, companyId } = input;
+	const { runId, agentSlug, issueId, companyId, sourceChannel } = input;
 	const run = loadRun(runId);
 	if (!run) {
 		log.warn("run not found", { runId });
@@ -961,7 +971,7 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 					async () => callCodexOnce(model, systemPrompt, task, worktreePath),
 					retryOptions,
 				),
-				RUN_TIMEOUT_MS,
+				CODEX_TIMEOUT_MS,
 				`codex/${model}`,
 			);
 		} else {
@@ -1009,6 +1019,24 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 				issueId: issueId ?? null,
 				runId,
 			});
+		}
+		// Post the agent's actual reply text back to the channel that triggered this run.
+		// This is especially critical for CEO which is excluded from publishAgentCompletionMessage.
+		if (companyId && sourceChannel && trimmedContent && trimmedContent.length > 10 &&
+			!trimmedContent.startsWith("🚀") && !trimmedContent.startsWith("✅") &&
+			!trimmedContent.startsWith("[server-runner]")
+		) {
+			try {
+				createCollabMessage({
+					channel: sourceChannel,
+					content: trimmedContent.slice(0, 5000),
+					fromAgent: agent.slug,
+					companyId,
+				});
+				emit("collab:message", { channel: sourceChannel, companyId });
+			} catch (err) {
+				log.warn("failed to post agent reply to channel", { channel: sourceChannel, agentSlug: agent.slug, error: err });
+			}
 		}
 		setRunStatus(runId, {
 			status: "completed",

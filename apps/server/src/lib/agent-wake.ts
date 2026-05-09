@@ -435,6 +435,7 @@ export function wakeAgentsForChannelMessage(
 			companyId,
 			task: `Channel: #${channel}\nRecent messages:\n${history}\n\nLatest human message from @${fromAgent}: ${message}\n\nReply in the collaboration channel as ${agent.display_name} (@${agent.slug}). Keep it concise and useful.`,
 			issueId: null,
+			sourceChannel: channel,
 		}).catch((err) => {
 			log.warn("channel wake failed", {
 				agentSlug: agent.slug,
