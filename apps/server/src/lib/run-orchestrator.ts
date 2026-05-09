@@ -589,16 +589,32 @@ async function callCodexOnce(
 			const costMatch = /cost:\s+\$?([\d.]+)/i.exec(clean);
 			const costUsd = costMatch ? Number.parseFloat(costMatch[1] ?? "0") : 0;
 
-			// Extract just the agent's reply (strip header/footer metadata lines)
+			// Extract just the agent's human-readable reply.
+			// codex output format (v0.128 exec mode):
+			//   header lines  →  user  →  <task>  →  codex  →  <reply+tool calls>  →  tokens used  →  N
+			// Inside the reply section, skip exec blocks and JSON memory blobs.
 			const lines = clean.split("\n");
 			const replyLines: string[] = [];
 			let inReply = false;
+			let skipUntilBlank = false;
 			for (const line of lines) {
-				if (/^codex$/i.test(line.trim())) { inReply = true; continue; }
-				if (/^user$/i.test(line.trim()) && inReply) break;
-				if (/^Usage$/i.test(line.trim())) break;
-				if (/^tokens used$/i.test(line.trim())) break;
-				if (inReply) replyLines.push(line);
+				const trimmed = line.trim();
+				if (/^codex$/i.test(trimmed)) { inReply = true; continue; }
+				if (/^user$/i.test(trimmed) && inReply) break;
+				if (/^Usage$/i.test(trimmed)) break;
+				if (/^tokens used$/i.test(trimmed)) break;
+				if (!inReply) continue;
+				// Skip exec tool output blocks (exec header + body)
+				if (/^exec$/.test(trimmed)) { skipUntilBlank = true; continue; }
+				if (skipUntilBlank) {
+					if (trimmed === "") skipUntilBlank = false;
+					continue;
+				}
+				// Skip lines that are pure JSON objects (memory tool output)
+				if (/^\{/.test(trimmed) && /\}$/.test(trimmed)) continue;
+				// Skip "succeeded in Nms:" / "failed in Nms:" tool result headers
+				if (/^(succeeded|failed) in \d+ms:?$/.test(trimmed)) continue;
+				replyLines.push(line);
 			}
 			const content = replyLines.length > 0 ? replyLines.join("\n").trim() : clean.trim();
 
@@ -1022,14 +1038,27 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		}
 		// Post the agent's actual reply text back to the channel that triggered this run.
 		// This is especially critical for CEO which is excluded from publishAgentCompletionMessage.
-		if (companyId && sourceChannel && trimmedContent && trimmedContent.length > 10 &&
-			!trimmedContent.startsWith("🚀") && !trimmedContent.startsWith("✅") &&
-			!trimmedContent.startsWith("[server-runner]")
+		// Filter out JSON blobs, exec output, and boilerplate before posting.
+		const channelReply = trimmedContent
+			.split("\n")
+			.filter(line => {
+				const t = line.trim();
+				if (!t) return true; // keep blank lines for readability
+				if (/^\{/.test(t) && /\}$/.test(t)) return false; // skip JSON blobs
+				if (/^(exec|succeeded in|failed in)/.test(t)) return false;
+				if (/^\[server-runner\]/.test(t)) return false;
+				return true;
+			})
+			.join("\n")
+			.trim();
+
+		if (companyId && sourceChannel && channelReply && channelReply.length > 10 &&
+			!channelReply.startsWith("🚀") && !channelReply.startsWith("✅")
 		) {
 			try {
 				createCollabMessage({
 					channel: sourceChannel,
-					content: trimmedContent.slice(0, 5000),
+					content: channelReply.slice(0, 5000),
 					fromAgent: agent.slug,
 					companyId,
 				});
