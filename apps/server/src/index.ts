@@ -124,11 +124,16 @@ export async function createApp(
 	mkdirSync(dataDir, { recursive: true });
 	const dbPath = join(dataDir, "setra.db");
 	getDb({ dbPath, verbose: false });
+
+	// Order matters. ensureTables() creates the server-local tables that the
+	// drizzle migrations do not own (approvals, routines, agent_roster, ...).
+	// Some migrations rebuild those tables to attach foreign keys, so the
+	// tables must exist before the migrations run; otherwise a fresh install
+	// would silently skip the rebuild and end up without the FK constraints.
+	ensureTables();
 	await runMigrations();
 	seedBuiltins();
 
-	// Ensure all server-local tables exist before handling requests
-	ensureTables();
 	seedLocalSkillsCatalog();
 	const app = new Hono();
 
