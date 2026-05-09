@@ -144,6 +144,46 @@ function extractFirstUrl(text: string): string | null {
 	return match?.[0] ?? null;
 }
 
+/**
+ * Strips internal agent metadata from codex output before it is shown in the
+ * user-facing collaboration channel. Removes:
+ *  - "Delegation for @X: ..." lines and the subsequent "Context:" block
+ *  - JSON object blobs (lines that look like {…})
+ *  - exec / succeeded / failed shell output lines
+ *  - [server-runner] prefixed lines
+ */
+function sanitizeAgentReply(raw: string): string {
+	const lines = raw.split("\n");
+	const out: string[] = [];
+	let skipUntilBlank = false;
+
+	for (const line of lines) {
+		const t = line.trim();
+
+		// Entering a delegation/context block — skip until next blank line
+		if (/^Delegation for @/i.test(t) || /^Context:\s*/i.test(t)) {
+			skipUntilBlank = true;
+			continue;
+		}
+		if (skipUntilBlank) {
+			if (t === "") { skipUntilBlank = false; }
+			continue;
+		}
+
+		if (!t) { out.push(""); continue; }
+		if (/^\{/.test(t) && /\}$/.test(t)) continue;       // JSON blob
+		if (/^(exec|succeeded in|failed in)\b/.test(t)) continue;
+		if (/^\[server-runner\]/.test(t)) continue;
+
+		out.push(line);
+	}
+
+	// Collapse 3+ consecutive blank lines to 1
+	return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+
+
 function buildPipelineInitialState(
 	pipelineTemplate: string,
 	task: string,
@@ -1013,19 +1053,9 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 			});
 		}
 		const trimmedContent = result.content.trim();
-		// Build a clean version: no JSON blobs, no exec output, no server-runner lines
-		const channelReply = trimmedContent
-			.split("\n")
-			.filter(line => {
-				const t = line.trim();
-				if (!t) return true;
-				if (/^\{/.test(t) && /\}$/.test(t)) return false; // JSON blobs
-				if (/^(exec|succeeded in|failed in)/.test(t)) return false;
-				if (/^\[server-runner\]/.test(t)) return false;
-				return true;
-			})
-			.join("\n")
-			.trim();
+		// Build a clean version: strip internal metadata blocks before showing to users.
+		// Removes: JSON blobs, exec output, server-runner lines, delegation/context blocks.
+		const channelReply = sanitizeAgentReply(trimmedContent);
 
 		// Post clean content as issue comment (low threshold — even short replies matter)
 		if (issueId && channelReply) {

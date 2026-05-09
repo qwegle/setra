@@ -48,9 +48,10 @@ export function listMessages(
 	hideLifecycle = true,
 ): ChannelMessageRow[] {
 	// Filter out run lifecycle noise: "🚀 X started run" / "✅ X finished run" / "❌ X failed"
-	// These are automatically posted by channel-hooks and clutter the conversation view.
+	// Also filter internal delegation routing messages ("Delegation for @X:") — these are
+	// internal agent-to-agent messages and should not appear in the user-facing channel view.
 	const lifecycleFilter = hideLifecycle
-		? ` AND content NOT LIKE '🚀 %' AND content NOT LIKE '✅ %' AND content NOT LIKE '❌ %'`
+		? ` AND content NOT LIKE '🚀 %' AND content NOT LIKE '✅ %' AND content NOT LIKE '❌ %' AND content NOT LIKE 'Delegation for @%'`
 		: "";
 	const rows = (
 		companyId

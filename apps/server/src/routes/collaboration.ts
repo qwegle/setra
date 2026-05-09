@@ -57,14 +57,8 @@ collaborationRoute.get("/messages", async (c) => {
 	const cid = getCompanyId(c);
 	const channel = c.req.query("channel") ?? "general";
 	const limit = Math.min(Number(c.req.query("limit") ?? 80), 200);
-	const hideSystem = c.req.query("hideSystem") === "true";
-	let messages = collaborationRepo.listMessages(cid, channel, limit);
-	if (hideSystem) {
-		messages = messages.filter(m => {
-			const b = (m as { body?: string }).body ?? "";
-			return !b.startsWith("🚀") && !b.startsWith("✅ CEO") && !b.startsWith("❌");
-		});
-	}
+	// hideLifecycle is always true; hideSystem is passed from the board for extra client-side noise
+	const messages = collaborationRepo.listMessages(cid, channel, limit, true);
 	return c.json(messages);
 });
 
