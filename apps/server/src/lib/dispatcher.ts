@@ -66,9 +66,9 @@ const DEVELOPER_SLUG_HINTS = [
 	"full-stack",
 	"coder",
 	"ai-engineer",
-	"ceo",
-	"cto",
 	"agent",
+	// NOTE: "ceo" and "cto" are intentionally excluded — they are planning/leadership
+	// roles. The dispatcher should assign coding issues to developer agents, not to CEO/CTO.
 ];
 
 interface IssueRow {
