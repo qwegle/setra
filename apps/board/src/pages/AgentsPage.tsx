@@ -337,7 +337,15 @@ function AgentCard({
 
 					<div className="flex items-center gap-2 text-xs text-zinc-400">
 						<span className="text-zinc-500">Model:</span>
-						<span className="font-mono">{agent.model ?? "auto"}</span>
+						<span className="font-mono">
+							{agent.model && agent.model !== "auto"
+								? agent.model
+								: agent.adapterType === "codex"
+									? "gpt-5.5 (auto)"
+									: agent.adapterType === "claude"
+										? "claude (auto)"
+										: "auto"}
+						</span>
 					</div>
 
 					<div className="space-y-2">

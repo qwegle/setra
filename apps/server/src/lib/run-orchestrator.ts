@@ -725,9 +725,12 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		ollama: "qwen2.5-coder:7b",
 		codex: "gpt-5.5",
 	};
+	// Treat "auto" as unset — fall through to resolvedModel or defaultModel
+	const isAutoOrEmpty = (v: string | null | undefined) =>
+		!v || v === "auto";
 	let model =
-		run.agent_version ??
-		agent.model_id ??
+		(!isAutoOrEmpty(run.agent_version) ? run.agent_version : null) ??
+		(!isAutoOrEmpty(agent.model_id) ? agent.model_id : null) ??
 		resolvedModel ??
 		defaultModel[adapterId] ??
 		"claude-haiku-4-5";
