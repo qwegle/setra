@@ -121,13 +121,20 @@ function detectRunCommand(workspacePath: string): string {
 	if (existsSync(path.join(workspacePath, "manage.py")))
 		return "python manage.py runserver";
 	if (existsSync(path.join(workspacePath, "go.mod"))) return "go run .";
-	return "npm start";
+	// Static HTML — serve with Python's built-in HTTP server on a random port
+	if (existsSync(path.join(workspacePath, "index.html")))
+		return "python3 -m http.server 0";
+	return "python3 -m http.server 0";
 }
 
 function detectUrlFromLine(line: string): string | null {
+	// Python http.server: "Serving HTTP on 0.0.0.0 port 8080 (http://0.0.0.0:8080/) ..."
+	const pyMatch = line.match(/Serving HTTP on .+ port (\d+)/i);
+	if (pyMatch) return `http://localhost:${pyMatch[1]}`;
 	const m =
 		line.match(/https?:\/\/localhost:[0-9]+/i) ??
-		line.match(/Local:\s*(https?:\/\/[^\s]+)/i);
+		line.match(/Local:\s*(https?:\/\/[^\s]+)/i) ??
+		line.match(/➜\s+Local:\s*(https?:\/\/[^\s]+)/i);
 	return m ? (m[1] ?? m[0]) : null;
 }
 

@@ -8,7 +8,7 @@ import { callAdapterTextOnce } from "./adapters/adapter-dispatch.js";
 import { callAnthropicWithTools } from "./adapters/anthropic-runner.js";
 import { callGeminiWithTools } from "./adapters/gemini-runner.js";
 import { callOpenAiWithTools } from "./adapters/openai-runner.js";
-import { postChannelMessage } from "./channel-hooks.js";
+import { postChannelMessage, postProjectMessage } from "./channel-hooks.js";
 import { publishAgentCompletionMessage } from "./company-broker.js";
 import { createMessage as createCollabMessage } from "../repositories/collaboration.repo.js";
 import { getCompanySettings } from "./company-settings.js";
@@ -1013,16 +1013,31 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 			});
 		}
 		const trimmedContent = result.content.trim();
-		if (issueId && trimmedContent) {
+		// Build a clean version: no JSON blobs, no exec output, no server-runner lines
+		const channelReply = trimmedContent
+			.split("\n")
+			.filter(line => {
+				const t = line.trim();
+				if (!t) return true;
+				if (/^\{/.test(t) && /\}$/.test(t)) return false; // JSON blobs
+				if (/^(exec|succeeded in|failed in)/.test(t)) return false;
+				if (/^\[server-runner\]/.test(t)) return false;
+				return true;
+			})
+			.join("\n")
+			.trim();
+
+		// Post clean content as issue comment (low threshold — even short replies matter)
+		if (issueId && channelReply) {
 			if (
-				trimmedContent.length > 50 &&
-				!trimmedContent.startsWith("🔄") &&
-				!trimmedContent.startsWith("[server-runner]")
+				channelReply.length > 20 &&
+				!channelReply.startsWith("🔄") &&
+				!channelReply.startsWith("[server-runner]")
 			) {
 				addAutomationIssueComment(
 					issueId,
 					issue?.companyId ?? companyId,
-					trimmedContent.slice(0, 5000),
+					channelReply.slice(0, 5000),
 					agent.slug,
 				);
 			}
@@ -1036,22 +1051,6 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 				runId,
 			});
 		}
-		// Post the agent's actual reply text back to the channel that triggered this run.
-		// This is especially critical for CEO which is excluded from publishAgentCompletionMessage.
-		// Filter out JSON blobs, exec output, and boilerplate before posting.
-		const channelReply = trimmedContent
-			.split("\n")
-			.filter(line => {
-				const t = line.trim();
-				if (!t) return true; // keep blank lines for readability
-				if (/^\{/.test(t) && /\}$/.test(t)) return false; // skip JSON blobs
-				if (/^(exec|succeeded in|failed in)/.test(t)) return false;
-				if (/^\[server-runner\]/.test(t)) return false;
-				return true;
-			})
-			.join("\n")
-			.trim();
-
 		if (companyId && sourceChannel && channelReply && channelReply.length > 10 &&
 			!channelReply.startsWith("🚀") && !channelReply.startsWith("✅")
 		) {
@@ -1088,6 +1087,43 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 					costUsd: result.costUsd,
 				},
 			);
+		}
+		// Auto-commit when all issues in the project are done
+		if (issueId && companyId) {
+			try {
+				const issueForProject = loadIssue(issueId);
+				if (issueForProject?.projectId) {
+					const raw = getRawDb();
+					const openCount = (raw.prepare(
+						`SELECT COUNT(*) as c FROM board_issues WHERE project_id = ? AND status NOT IN ('done','cancelled','rejected')`
+					).get(issueForProject.projectId) as { c: number } | undefined)?.c ?? 1;
+					if (openCount === 0) {
+						const projectRow = raw.prepare(
+							`SELECT name, workspace_path FROM board_projects WHERE id = ?`
+						).get(issueForProject.projectId) as { name: string; workspace_path: string | null } | undefined;
+						if (projectRow?.workspace_path) {
+							const { execSync } = await import("node:child_process");
+							const wp = projectRow.workspace_path;
+							const projName = projectRow.name;
+							try {
+								execSync(
+									`git -C ${JSON.stringify(wp)} add -A && git -C ${JSON.stringify(wp)} diff --staged --quiet || git -C ${JSON.stringify(wp)} commit -m "chore: all issues complete — auto-checkpoint for ${projName}"`,
+									{ shell: true }
+								);
+								log.info("auto-committed project checkpoint", { projectId: issueForProject.projectId, projectName: projName });
+								postProjectMessage(
+									companyId,
+									issueForProject.projectId,
+									"system",
+									`✅ All tasks complete — auto-committed checkpoint for **${projName}**`
+								);
+							} catch (commitErr) {
+								log.warn("auto-commit failed", { error: commitErr });
+							}
+						}
+					}
+				}
+			} catch { /* best-effort */ }
 		}
 		void onRunCompleted(runId, 0).catch((error) => {
 			log.warn("run completion hook failed", {
