@@ -45,6 +45,28 @@ npx vite --port 5173               # board only (from apps/board/)
 - Desktop: Electron 33, electron-vite, node-pty
 - CLI: Commander + Ink (React for terminal)
 
+## Operating standards (mandatory)
+
+This codebase ships an enterprise multi-agent orchestration product. Every
+artifact you produce must be production-ready and suitable for delivery to
+a paying enterprise customer.
+
+The full operating standards live in `AGENTS.md` at the repository root and
+are also injected into every Setra agent system prompt via
+`apps/server/src/lib/enterprise-standards.ts`. Read `AGENTS.md` before
+making any change. Highlights:
+
+- No emojis in code, comments, commits, PRs, issue comments, broker posts,
+  or wiki articles. Professional, neutral English only.
+- TypeScript strict, Biome for lint and format, no `any` without a tracked
+  follow-up.
+- All DB access through repositories or `packages/db` schema. No raw SQL in
+  routes.
+- Never push to `main`, `dev`, or `stage`. Feature branch, then PR to `dev`.
+- Conventional Commits. No `Co-authored-by` trailer naming an assistant.
+- Validate every change with `pnpm lint`, `pnpm test:ci`,
+  `pnpm --filter @setra/server build`, `pnpm --filter @setra/board build`.
+
 ## Code style
 - Biome for linting/formatting (`pnpm biome check`)
 - No unused imports, no `any` unless necessary
