@@ -240,9 +240,12 @@ export function resolveAutoAdapter(
 				reason: "offline:cloud-adapter-blocked",
 			};
 		}
+		// Treat "auto" model string as unset — caller should use adapter default
+		const resolvedModel =
+			requestedModel && requestedModel !== "auto" ? requestedModel : null;
 		return {
 			adapter: canonicalAdapter(a),
-			model: requestedModel ?? null,
+			model: resolvedModel,
 			reason: "explicit-adapter",
 		};
 	}
@@ -265,7 +268,7 @@ export function resolveAutoAdapter(
 			: null;
 	if (preferredAdapter) {
 		const preferredModel =
-			requestedModel ||
+			(requestedModel && requestedModel !== "auto" ? requestedModel : null) ||
 			(typeof s.preferred_model === "string" && s.preferred_model.trim()
 				? s.preferred_model.trim()
 				: null);
