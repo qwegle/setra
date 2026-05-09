@@ -46,10 +46,11 @@ const VERIFICATION_DIGEST_INTERVAL_MS = 12 * 60 * 60_000;
 
 const PTY_ONLY_ADAPTERS = new Set([
 	"claude",
-	"codex",
 	"gemini",
 	"amp",
 	"opencode",
+	// "codex" is intentionally excluded: codex runs via server-side `callCodexOnce`
+	// (async spawn of `codex exec`). The desktop PTY bridge is NOT needed.
 ]);
 
 const DEVELOPER_SLUG_HINTS = [
