@@ -1,31 +1,40 @@
 /**
- * Cold-start integration test: a fresh data dir must boot through every
- * SQL migration AND the server-local ensureTables() pass without throwing.
+ * Cold-start integration test: a fresh data directory must boot through
+ * ensureTables() THEN runMigrations() THEN seedBuiltins() — the order
+ * apps/server/src/index.ts uses — without throwing.
  *
- * This guards the seam where packages/db/migrations/*.sql and
- * apps/server/src/db/schema.ts:ensureTables() must agree about column
- * names and idempotent ALTERs. It also serves as smoke coverage for
- * seedBuiltins() so a brand-new install always has a default company.
+ * apps/server/src/db/client.ts opens its better-sqlite3 connection at
+ * module-init time and caches it. Since vitest reuses module imports
+ * across tests in a file, we use a single beforeAll/afterAll lifecycle
+ * and a single tmp data directory for this entire file. That mirrors
+ * production: the server boots once and reuses the connection.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const ENV_KEYS = ["HOME", "SETRA_DATA_DIR"] as const;
 const savedEnv: Record<string, string | undefined> = {};
 let tmpDir: string;
 
-beforeEach(() => {
+beforeAll(() => {
 	for (const k of ENV_KEYS) savedEnv[k] = process.env[k];
 	tmpDir = mkdtempSync(join(tmpdir(), "setra-coldstart-"));
 	mkdirSync(join(tmpDir, ".setra"), { recursive: true });
 	process.env["HOME"] = tmpDir;
 	process.env["SETRA_DATA_DIR"] = join(tmpDir, ".setra");
+	// Seed an empty company-settings file so company-settings.ts doesn't
+	// accidentally read a developer's real ~/.setra/settings.json.
+	writeFileSync(
+		join(tmpDir, ".setra", "settings.json"),
+		JSON.stringify({ version: 2, companies: {} }),
+		"utf8",
+	);
 });
 
-afterEach(async () => {
+afterAll(async () => {
 	try {
 		const { closeDb } = await import("@setra/db");
 		closeDb();
@@ -40,12 +49,29 @@ afterEach(async () => {
 });
 
 describe("cold-start", () => {
-	it("runs all SQL migrations on an empty database", async () => {
-		const { getDb, runMigrations, getRawDb } = await import("@setra/db");
+	it("boots a fresh database through ensureTables -> runMigrations -> seedBuiltins", async () => {
+		const { getDb, getRawDb, runMigrations, seedBuiltins } = await import(
+			"@setra/db"
+		);
 		getDb({ dbPath: join(tmpDir, ".setra", "setra.db") });
+
+		// Real boot order: ensureTables() first because migration 0009
+		// references the ensureTables-owned `approvals` table.
+		const { ensureTables } = await import("../db/schema.js");
+		expect(() => ensureTables()).not.toThrow();
 
 		await expect(runMigrations()).resolves.toBeUndefined();
 
+		// Idempotent: ensureTables must run cleanly a second time after the
+		// migration loop. Otherwise an in-place upgrade would crash on the
+		// next process restart.
+		expect(() => ensureTables()).not.toThrow();
+
+		// seedBuiltins fills in the default company / agent templates.
+		expect(() => seedBuiltins()).not.toThrow();
+		expect(() => seedBuiltins()).not.toThrow();
+
+		// Anchor tables that the rest of the app assumes exist after boot.
 		const tables = (
 			getRawDb()
 				.prepare(
@@ -53,38 +79,10 @@ describe("cold-start", () => {
 				)
 				.all() as Array<{ name: string }>
 		).map((r) => r.name);
-
-		// Spot-check: anchor tables that the rest of the app assumes exist.
-		// agent_roster lives in apps/server/src/db/schema.ts ensureTables(),
-		// not in the SQL migrations, so we only assert the migration-owned set
-		// here. The third test below verifies ensureTables() layers on top.
 		expect(tables).toContain("board_projects");
 		expect(tables).toContain("board_issues");
 		expect(tables).toContain("runs");
-	});
-
-	it("seeds builtins on a fresh database", async () => {
-		const { getDb, runMigrations, seedBuiltins, getRawDb } = await import(
-			"@setra/db"
-		);
-		getDb({ dbPath: join(tmpDir, ".setra", "setra.db") });
-		await runMigrations();
-
-		expect(() => seedBuiltins()).not.toThrow();
-
-		// seedBuiltins is idempotent — second call must be a no-op.
-		expect(() => seedBuiltins()).not.toThrow();
-	});
-
-	it("ensureTables() runs cleanly after migrations", async () => {
-		const { getDb, runMigrations } = await import("@setra/db");
-		getDb({ dbPath: join(tmpDir, ".setra", "setra.db") });
-		await runMigrations();
-
-		const { ensureTables } = await import("../db/schema.js");
-		// Idempotent: must succeed twice without ALTER duplicate-column errors
-		// escaping the try/catch in the migration loop.
-		expect(() => ensureTables()).not.toThrow();
-		expect(() => ensureTables()).not.toThrow();
+		expect(tables).toContain("agent_roster");
+		expect(tables).toContain("approvals");
 	});
 });

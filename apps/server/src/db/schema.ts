@@ -630,6 +630,15 @@ export function ensureTables(): void {
 		`ALTER TABLE plugins ADD COLUMN company_id TEXT`,
 		`ALTER TABLE skills ADD COLUMN company_id TEXT`,
 		`ALTER TABLE artifacts ADD COLUMN company_id TEXT`,
+		// Migration 0004_enterprise_board adds these columns + indexes on a
+		// pre-existing ensureTables artifacts table. Without these ADD COLUMNs
+		// the migration's CREATE INDEX idx_artifacts_type ON artifacts(type)
+		// fails on cold start with "no such column: type".
+		`ALTER TABLE artifacts ADD COLUMN type TEXT NOT NULL DEFAULT 'data'`,
+		`ALTER TABLE artifacts ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE artifacts ADD COLUMN issue_slug TEXT`,
+		`ALTER TABLE artifacts ADD COLUMN description TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE artifacts ADD COLUMN storage_path TEXT`,
 		`ALTER TABLE wiki_entries ADD COLUMN company_id TEXT`,
 		`ALTER TABLE review_items ADD COLUMN company_id TEXT`,
 		`ALTER TABLE review_items ADD COLUMN entity_type TEXT`,
