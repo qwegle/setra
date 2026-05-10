@@ -829,9 +829,13 @@ export function SettingsPage() {
 			...selectableModelOptions,
 		];
 		if (!options.some((option) => option.id === currentValue)) {
+			const known = modelLabelById.get(currentValue);
+			const note = known
+				? `${known} (saved — provider key missing)`
+				: `${currentValue} (saved — provider key missing)`;
 			options.unshift({
 				id: currentValue,
-				label: `${modelLabelById.get(currentValue) ?? currentValue} (current)`,
+				label: note,
 				disabled: true,
 			});
 		}
@@ -1595,13 +1599,13 @@ export function SettingsPage() {
 					<SectionIntro
 						icon={Sparkles}
 						title="Default selections"
-						description="Choose the default primary and lightweight models used across the workspace. Only ready providers contribute selectable models."
+						description="Powers the in-app Assistant chat (top-right panel) and lightweight summaries. Hired agents pick their own adapter — including any CLI you've connected — under Agents → Roster."
 					/>
 					<div className="grid gap-4 md:grid-cols-2">
 						<Select
 							id="default-model"
 							label="Default model"
-							helperText="Used for main agent turns."
+							helperText="Used by the Assistant chat. Requires a saved API key for the matching provider."
 							value={defaultModel}
 							onChange={(event) => setDefaultModel(event.target.value)}
 						>
@@ -1617,10 +1621,27 @@ export function SettingsPage() {
 							{renderModelOptions(smallModelSelectOptions)}
 						</Select>
 					</div>
+					{cliStatus &&
+						(cliStatus.codex.loggedIn ||
+							cliStatus.claude.loggedIn ||
+							cliStatus.copilot.loggedIn) && (
+							<p className="text-xs text-muted-foreground">
+								CLI subscriptions detected (
+								{[
+									cliStatus.codex.loggedIn && "Codex",
+									cliStatus.claude.loggedIn && "Claude",
+									cliStatus.copilot.loggedIn && "Copilot",
+								]
+									.filter(Boolean)
+									.join(", ")}
+								). They are not selectable here — assign them to a hired agent
+								under Agents → Roster to use them.
+							</p>
+						)}
 					{selectableModelOptions.length === 0 && (
 						<p className="text-sm text-zinc-400">
-							No model is currently selectable. Add and save an API key, or use
-							a local Ollama model.
+							No model is currently selectable. Add and save an API key above,
+							or use a local Ollama model.
 						</p>
 					)}
 				</div>

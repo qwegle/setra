@@ -423,11 +423,22 @@ app.get("/models", (c) => {
 		},
 	);
 
-	let defaultModel =
-		(s["default_model"] as string | undefined) ??
-		(offline ? "ollama:llama3.2:latest" : "openrouter:openrouter/auto");
-	if (!offline && s["anthropic_api_key"]) defaultModel = "claude-sonnet-4-5";
-	else if (!offline && s["openai_api_key"]) defaultModel = "gpt-4o";
+	// Honor the user's saved choice. Only fall back to a provider-specific
+	// default when nothing has been saved yet — never silently overwrite a
+	// saved id, otherwise the picker becomes un-changeable.
+	const savedDefault = s["default_model"] as string | undefined;
+	let defaultModel: string;
+	if (savedDefault && savedDefault.length > 0) {
+		defaultModel = savedDefault;
+	} else if (!offline && s["anthropic_api_key"]) {
+		defaultModel = "claude-sonnet-4-5";
+	} else if (!offline && s["openai_api_key"]) {
+		defaultModel = "gpt-4o";
+	} else if (offline) {
+		defaultModel = "ollama:llama3.2:latest";
+	} else {
+		defaultModel = "openrouter:openrouter/auto";
+	}
 
 	// Final safety net: if offline, drop any cloud entries that slipped through
 	// (e.g. a stale default_model id).

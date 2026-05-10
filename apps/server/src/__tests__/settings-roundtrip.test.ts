@@ -116,6 +116,28 @@ describe("settings round-trip", () => {
 		expect(body.budget["alertAt"]).toBe(0.9);
 	});
 
+	it("GET /models honors a saved default_model even when an API key is present", async () => {
+		const settingsRoute = await makeApp();
+
+		// Save a custom default + a Claude key. Prior bug: the Claude key would
+		// silently overwrite the saved default with claude-sonnet-4-5, making the
+		// picker un-changeable.
+		await settingsRoute.fetch(
+			new Request("http://x/", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					anthropicApiKey: "sk-ant-test1234567890abcdef",
+					defaultModel: "claude-haiku-4-5",
+				}),
+			}),
+		);
+
+		const res = await settingsRoute.fetch(new Request("http://x/models"));
+		const body = (await res.json()) as { defaultModel: string };
+		expect(body.defaultModel).toBe("claude-haiku-4-5");
+	});
+
 	it("persists the file at ~/.setra/settings.json", async () => {
 		const settingsRoute = await makeApp();
 		await settingsRoute.fetch(
