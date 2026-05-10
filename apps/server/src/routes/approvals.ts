@@ -2,6 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { logActivity } from "../lib/audit.js";
 import { getCompanyId } from "../lib/company-scope.js";
+import { requestDispatcherTick } from "../lib/dispatcher-scheduler.js";
 import * as approvalsRepo from "../repositories/approvals.repo.js";
 import { emit } from "../sse/handler.js";
 import { RejectApprovalSchema } from "../validators/approvals.validators.js";
@@ -40,6 +41,7 @@ approvalsRoute.post("/:id/approve", async (c) => {
 
 	emit("review_resolved", { id, status: "approved", companyId: cid });
 	await logActivity(c, "approval.approved", "approval", id);
+	requestDispatcherTick(`approval-${id}-approved`);
 	return c.json(updated);
 });
 
@@ -69,6 +71,7 @@ approvalsRoute.post(
 		await logActivity(c, "approval.rejected", "approval", id, {
 			reason: body.reason,
 		});
+		requestDispatcherTick(`approval-${id}-rejected`);
 		return c.json(updated);
 	},
 );

@@ -13,6 +13,7 @@
 import { Hono } from "hono";
 import { assembleRunBundle } from "../lib/run-bundle.js";
 import { listRunChunks } from "../lib/run-chunks.js";
+import { classifyRunHealth } from "../lib/run-health.js";
 import { onRunCompleted } from "../lib/run-lifecycle.js";
 
 export const runsRoute = new Hono();
@@ -36,15 +37,27 @@ runsRoute.get("/:id", (c) => {
 			.prepare(
 				`SELECT r.id, r.agent AS agentSlug, r.status, r.started_at AS startedAt,
                         r.first_chunk_at AS firstChunkAt, r.ended_at AS endedAt,
+                        r.updated_at AS updatedAt,
                         r.system_prompt AS systemPrompt, r.exit_code AS exitCode,
                         ar.company_id AS companyId, ar.display_name AS displayName
                    FROM runs r
               LEFT JOIN agent_roster ar ON ar.slug = r.agent
                   WHERE r.id = ?`,
 			)
-			.get(runId);
+			.get(runId) as
+			| {
+					status?: string | null;
+					updatedAt?: string | null;
+					startedAt?: string | null;
+			  }
+			| undefined;
 		if (!row) return c.json({ ok: false, error: "run not found" }, 404);
-		return c.json({ ok: true, run: row });
+		const health = classifyRunHealth({
+			status: row.status,
+			updatedAt: row.updatedAt,
+			startedAt: row.startedAt,
+		});
+		return c.json({ ok: true, run: { ...row, health } });
 	} catch (err) {
 		return c.json(
 			{
