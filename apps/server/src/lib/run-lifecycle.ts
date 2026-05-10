@@ -435,6 +435,17 @@ export async function startIssueTestRun(
 	if (!issue.testCommand) {
 		return { started: false, reason: "missing_test_command" };
 	}
+	// Hard cap: a test command is a single shell line, not a script. Anything
+	// longer is either a paste mistake or a smuggle attempt; reject before exec.
+	if (issue.testCommand.length > 1000) {
+		return { started: false, reason: "missing_test_command" };
+	}
+	// Newlines turn one shell line into many — same risk as a multi-statement
+	// SQL injection. Treat as missing rather than truncating, so the operator
+	// has to fix the field before it runs.
+	if (/[\r\n\u2028\u2029]/.test(issue.testCommand)) {
+		return { started: false, reason: "missing_test_command" };
+	}
 	if (issue.testStatus === "running") {
 		return { started: false, reason: "already_running" };
 	}

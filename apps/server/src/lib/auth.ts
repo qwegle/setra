@@ -3,11 +3,19 @@ import { promisify } from "node:util";
 
 const scryptAsync = promisify(crypto.scrypt);
 const TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
-const JWT_SECRET =
-	process.env.JWT_SECRET ??
-	process.env.SETRA_INSTANCE_TOKEN ??
-	process.env.INSTANCE_TOKEN ??
-	crypto.randomBytes(32).toString("hex");
+const JWT_SECRET = ((): string => {
+	const explicit =
+		process.env.JWT_SECRET ??
+		process.env.SETRA_INSTANCE_TOKEN ??
+		process.env.INSTANCE_TOKEN;
+	if (explicit && explicit.trim().length >= 16) return explicit.trim();
+	if (process.env.NODE_ENV === "production") {
+		throw new Error(
+			"JWT_SECRET (or SETRA_INSTANCE_TOKEN) must be set to a value of at least 16 characters in production. Refusing to fall back to an ephemeral secret because that would invalidate every issued token on restart.",
+		);
+	}
+	return crypto.randomBytes(32).toString("hex");
+})();
 
 export interface TokenPayload {
 	userId: string;
