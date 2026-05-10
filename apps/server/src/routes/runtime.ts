@@ -22,6 +22,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { Hono } from "hono";
 import { isCodexLoggedIn } from "../lib/adapters/codex-runner.js";
+import { isCopilotLoggedIn } from "../lib/adapters/copilot-runner.js";
 import { tryGetCompanyId } from "../lib/company-scope.js";
 import { getCompanySettings } from "../lib/company-settings.js";
 import * as runtimeRepo from "../repositories/runtime.repo.js";
@@ -186,11 +187,12 @@ function isClaudeLoggedIn(): boolean {
 }
 
 runtimeRoute.get("/cli-status", async (c) => {
-	const [codex, claude] = await Promise.all([
+	const [codex, claude, copilot] = await Promise.all([
 		detectCli("codex", isCodexLoggedIn),
 		detectCli("claude", isClaudeLoggedIn),
+		detectCli("copilot", isCopilotLoggedIn),
 	]);
-	return c.json({ codex, claude });
+	return c.json({ codex, claude, copilot });
 });
 
 runtimeRoute.post("/install-cli", async (c) => {
@@ -202,12 +204,16 @@ runtimeRoute.post("/install-cli", async (c) => {
 	const packages: Record<string, string> = {
 		codex: "@openai/codex",
 		claude: "@anthropic-ai/claude-code",
+		copilot: "@github/copilot",
 	};
 
 	const pkg = packages[tool];
 	if (!pkg) {
 		return c.json(
-			{ ok: false, error: `Unknown tool: ${tool}. Use "codex" or "claude".` },
+			{
+				ok: false,
+				error: `Unknown tool: ${tool}. Use "codex", "claude", or "copilot".`,
+			},
 			400,
 		);
 	}
@@ -237,12 +243,16 @@ runtimeRoute.post("/cli-login", async (c) => {
 	const commands: Record<string, string> = {
 		codex: "codex login",
 		claude: "claude login",
+		copilot: "copilot auth login",
 	};
 
 	const cmd = commands[tool];
 	if (!cmd) {
 		return c.json(
-			{ ok: false, error: `Unknown tool: ${tool}. Use "codex" or "claude".` },
+			{
+				ok: false,
+				error: `Unknown tool: ${tool}. Use "codex", "claude", or "copilot".`,
+			},
 			400,
 		);
 	}

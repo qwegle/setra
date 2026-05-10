@@ -10,6 +10,7 @@ const CLOUD_ADAPTERS = new Set([
 	"gemini",
 	"amp",
 	"opencode",
+	"copilot",
 ]);
 
 export function normalizeAdapterId(
@@ -68,6 +69,7 @@ const EXECUTION_MODES: Record<string, AdapterExecutionMode> = {
 	"gcp-vertex": "cloud-api",
 	"custom-openai": "cloud-api",
 	codex: "cli-server",
+	copilot: "cli-server",
 	claude: "cli-pty",
 	gemini: "cli-pty",
 	amp: "cli-pty",
