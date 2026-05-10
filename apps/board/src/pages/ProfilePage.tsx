@@ -26,7 +26,7 @@ export function ProfilePage() {
 
 	const updateProfile = useMutation({
 		mutationFn: async (data: { name: string; avatarUrl?: string | null }) =>
-			request("/api/auth/profile", {
+			request("/auth/profile", {
 				method: "PUT",
 				body: JSON.stringify(data),
 			}),
@@ -42,7 +42,7 @@ export function ProfilePage() {
 			currentPassword: string;
 			newPassword: string;
 		}) =>
-			request("/api/auth/change-password", {
+			request("/auth/change-password", {
 				method: "POST",
 				body: JSON.stringify(data),
 			}),
