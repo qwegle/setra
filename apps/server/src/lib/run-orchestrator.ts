@@ -15,6 +15,7 @@ import {
 	CodexNotInstalledError,
 	callCodexExecOnce,
 } from "./adapters/codex-runner.js";
+import { callCopilotExecOnce } from "./adapters/copilot-runner.js";
 import { callGeminiWithTools } from "./adapters/gemini-runner.js";
 import { callOpenAiWithTools } from "./adapters/openai-runner.js";
 import { postChannelMessage } from "./channel-hooks.js";
@@ -575,12 +576,12 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		if (isPtyOnlyAdapter(adapterId)) {
 			setRunStatus(runId, {
 				status: "failed",
-				errorMessage: `Adapter '${adapterId}' requires the desktop app (PTY). Use anthropic-api, openai-api, gemini-api, openrouter, groq, ollama, or codex for server-side runs.`,
+				errorMessage: `Adapter '${adapterId}' requires the desktop app (PTY). Use anthropic-api, openai-api, gemini-api, openrouter, groq, ollama, codex, or copilot for server-side runs.`,
 			});
 		} else {
 			setRunStatus(runId, {
 				status: "failed",
-				errorMessage: `Unsupported adapter '${agent.adapter_type ?? "null"}'. Supported server-side: anthropic-api, openai-api, gemini-api, openrouter, groq, ollama, codex.`,
+				errorMessage: `Unsupported adapter '${agent.adapter_type ?? "null"}'. Supported server-side: anthropic-api, openai-api, gemini-api, openrouter, groq, ollama, codex, copilot.`,
 			});
 		}
 		setAgentRuntimeStatus(agent.id, "idle");
@@ -597,6 +598,8 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		ollama: null,
 		// codex authenticates via `codex login` (OAuth) — no API key needed.
 		codex: null,
+		// copilot authenticates via `copilot auth login` (subscription OAuth).
+		copilot: null,
 	};
 	const requiredEnvName: Record<keyof RuntimeKeys, string> = {
 		anthropicKey: "ANTHROPIC_API_KEY",
@@ -625,6 +628,7 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		groq: "llama-3.3-70b-versatile",
 		ollama: "qwen2.5-coder:7b",
 		codex: "gpt-5.5",
+		copilot: "claude-sonnet-4.6",
 	};
 	let model =
 		run.agent_version ??
@@ -867,6 +871,22 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 					retryOptions,
 				),
 				// codex exec can take longer than API calls; give it a larger window.
+				10 * 60 * 1000,
+				`${adapterId}/${model}`,
+			);
+		} else if (adapterId === "copilot") {
+			result = await withTimeout(
+				withRetry(
+					() =>
+						callCopilotExecOnce({
+							model,
+							systemPrompt,
+							task,
+							...(worktreePath ? { cwd: worktreePath } : {}),
+							runId,
+						}),
+					retryOptions,
+				),
 				10 * 60 * 1000,
 				`${adapterId}/${model}`,
 			);
