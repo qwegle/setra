@@ -11,9 +11,8 @@ const ORIGINAL_DATA = process.env.SETRA_DATA_DIR;
 let getRawDb: typeof import("@setra/db").getRawDb;
 let ensureTables: typeof import("../db/schema.js").ensureTables;
 let runMigrations: typeof import("@setra/db").runMigrations;
-let checkPostTurnDurability: typeof import(
-	"../lib/post-turn-durability.js",
-).checkPostTurnDurability;
+import type { checkPostTurnDurability as CheckPostTurnDurabilityType } from "../lib/post-turn-durability.js";
+let checkPostTurnDurability: typeof CheckPostTurnDurabilityType;
 
 beforeAll(async () => {
 	process.env.HOME = tmpDir;
