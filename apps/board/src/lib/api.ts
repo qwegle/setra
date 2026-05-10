@@ -1969,10 +1969,19 @@ export interface AgentRun {
 }
 
 export interface AgentRunLogChunk {
-	type: "assistant" | "tool_use" | "tool_result" | "system";
+	type:
+		| "assistant"
+		| "tool_use"
+		| "tool_result"
+		| "system"
+		| "input"
+		| "stdout"
+		| "stderr"
+		| "output";
 	timestamp: string;
 	content: string;
 	toolName?: string;
+	sequence?: number;
 }
 
 export interface AgentBudgetPolicy {

@@ -687,6 +687,8 @@ export function ensureTables(): void {
 		`ALTER TABLE activity_log ADD COLUMN prev_hash TEXT`,
 		`ALTER TABLE runs ADD COLUMN source_type TEXT`,
 		`ALTER TABLE runs ADD COLUMN source_id TEXT`,
+		`ALTER TABLE runs ADD COLUMN system_prompt TEXT`,
+		`ALTER TABLE runs ADD COLUMN first_chunk_at TEXT`,
 	]) {
 		try {
 			rawSqlite.exec(stmt);
