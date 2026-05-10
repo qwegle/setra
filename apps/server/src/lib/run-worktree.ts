@@ -19,7 +19,7 @@ import { join } from "node:path";
 
 export interface RunWorktreeIdentity {
 	runId: string;
-	projectSlug: string;
+	projectSlug?: string;
 }
 
 export interface RunWorktreeLayout {
@@ -44,7 +44,7 @@ export function resolveRunWorktree(
 	dataDir: string = process.env.SETRA_DATA_DIR ??
 		join(process.env.HOME ?? "", ".setra"),
 ): RunWorktreeLayout {
-	const project = sanitize(identity.projectSlug, "default");
+	const project = sanitize(identity.projectSlug ?? "", "default");
 	const runId = sanitize(identity.runId, "unknown");
 	const directory = join(dataDir, "run-worktrees", project, runId);
 	const branchName = `setra/run-${runId}`;
