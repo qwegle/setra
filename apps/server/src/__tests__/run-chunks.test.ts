@@ -60,6 +60,7 @@ async function bootstrapDb() {
       sequence INTEGER NOT NULL,
       content TEXT NOT NULL,
       chunk_type TEXT NOT NULL,
+      tool_name TEXT,
       recorded_at TEXT NOT NULL
     );
   `);

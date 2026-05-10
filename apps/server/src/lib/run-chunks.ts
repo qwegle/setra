@@ -114,10 +114,17 @@ export function recordRunChunk(input: RecordRunChunkInput): {
 		sequence = getNextChunkSeq(input.runId);
 		getRawDb()
 			.prepare(
-				`INSERT INTO chunks (run_id, sequence, content, chunk_type, recorded_at)
-                 VALUES (?, ?, ?, ?, ?)`,
+				`INSERT INTO chunks (run_id, sequence, content, chunk_type, tool_name, recorded_at)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
 			)
-			.run(input.runId, sequence, input.content, input.type, ts);
+			.run(
+				input.runId,
+				sequence,
+				input.content,
+				input.type,
+				input.toolName ?? null,
+				ts,
+			);
 		if (sequence === 0) stampFirstChunk(input.runId, ts);
 	} catch (err) {
 		log.warn("recordRunChunk persist failed", {
@@ -187,12 +194,13 @@ export function listRunChunks(
 ): Array<{
 	sequence: number;
 	type: RunChunkType;
+	toolName: string | null;
 	content: string;
 	recordedAt: string;
 }> {
 	const rows = getRawDb()
 		.prepare(
-			`SELECT sequence, chunk_type AS type, content, recorded_at AS recordedAt
+			`SELECT sequence, chunk_type AS type, tool_name AS toolName, content, recorded_at AS recordedAt
                FROM chunks
               WHERE run_id = ? AND sequence > ?
               ORDER BY sequence ASC
@@ -201,6 +209,7 @@ export function listRunChunks(
 		.all(runId, since, limit) as Array<{
 		sequence: number;
 		type: RunChunkType;
+		toolName: string | null;
 		content: string;
 		recordedAt: string;
 	}>;

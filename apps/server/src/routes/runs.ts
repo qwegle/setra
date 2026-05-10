@@ -11,6 +11,7 @@
  */
 
 import { Hono } from "hono";
+import { assembleRunBundle } from "../lib/run-bundle.js";
 import { listRunChunks } from "../lib/run-chunks.js";
 import { onRunCompleted } from "../lib/run-lifecycle.js";
 
@@ -77,6 +78,33 @@ runsRoute.get("/:id/chunks", (c) => {
 		limit,
 	);
 	return c.json({ ok: true, runId, chunks });
+});
+
+/**
+ * GET /api/runs/:id/bundle
+ *
+ * Returns the full evidence bundle for a run: header, system prompt,
+ * every chunk, structured tool calls, files touched, and any artifacts
+ * tied to the same issue/agent. This is the canonical "what did the
+ * agent do" surface for enterprise audit, PM review, and the human
+ * approval gate before commit/PR.
+ */
+runsRoute.get("/:id/bundle", (c) => {
+	const runId = c.req.param("id");
+	if (!runId) return c.json({ ok: false, error: "missing run id" }, 400);
+	try {
+		const bundle = assembleRunBundle(runId);
+		if (!bundle) return c.json({ ok: false, error: "run not found" }, 404);
+		return c.json({ ok: true, bundle });
+	} catch (err) {
+		return c.json(
+			{
+				ok: false,
+				error: err instanceof Error ? err.message : "failed to assemble bundle",
+			},
+			500,
+		);
+	}
 });
 
 runsRoute.post("/:id/completed", async (c) => {
