@@ -517,17 +517,25 @@ function IntegrationsTab() {
 					<Zap className="w-5 h-5" />
 				</div>
 				<div>
-					<p className="text-sm font-semibold mb-1">Daemon mode</p>
+					<p className="text-sm font-semibold mb-1">Background mode</p>
 					<p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
-						setra runs as a background daemon — no API key needed, uses your
-						existing Claude subscription. When a Slack message or webhook fires,
-						agents wake up, handle the task, and post results back. Zero idle
-						cost: agents only run when triggered.
+						Setra runs as a background process. When a Slack message or webhook
+						fires, agents wake up, handle the task, and post results back.
+						Agents only consume tokens when triggered.
 					</p>
 					<div className="flex items-center gap-2 mt-3">
-						<span className="status-dot bg-accent-green" />
+						<span
+							className={cn(
+								"status-dot",
+								integrationsError ? "bg-amber-500" : "bg-accent-green",
+							)}
+						/>
 						<span className="text-xs text-muted-foreground">
-							daemon running · listening for events
+							{integrationsError
+								? "Server unreachable — retrying"
+								: integrationsLoading
+									? "Connecting"
+									: "Server reachable · listening for events"}
 						</span>
 					</div>
 				</div>
