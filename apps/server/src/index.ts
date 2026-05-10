@@ -54,6 +54,7 @@ import { startDispatcher } from "./lib/dispatcher.js";
 import { startHeartbeatSweeper } from "./lib/heartbeat-sweeper.js";
 import { createLogger } from "./lib/logger.js";
 import { jobQueue } from "./lib/queue.js";
+import { primeResumePackets } from "./lib/resume-packet-store.js";
 import { registerRunQueueProcessor } from "./lib/run-orchestrator.js";
 import { seedLocalSkillsCatalog } from "./lib/skills-catalog.js";
 import { inputSanitizer } from "./middleware/input-sanitizer.js";
@@ -318,6 +319,11 @@ if (isMain) {
 		});
 		startHeartbeatSweeper();
 		startDispatcher();
+		try {
+			primeResumePackets();
+		} catch (err) {
+			log.warn("primeResumePackets failed", { err: String(err) });
+		}
 
 		// Apply API keys from settings.json to process.env for all companies
 		// so that /llm/status and server-runner can find them without requiring
