@@ -11,12 +11,41 @@
  */
 
 import { Hono } from "hono";
+import { getCompanyId } from "../lib/company-scope.js";
+import { findPriorRunPrs } from "../lib/cross-run-memory.js";
 import { assembleRunBundle } from "../lib/run-bundle.js";
 import { listRunChunks } from "../lib/run-chunks.js";
 import { classifyRunHealth } from "../lib/run-health.js";
 import { onRunCompleted } from "../lib/run-lifecycle.js";
+import * as integrationsRepo from "../repositories/integrations.repo.js";
 
 export const runsRoute = new Hono();
+
+function resolveGitHubToken(companyId: string): string | null {
+	const envToken = process.env.GITHUB_TOKEN?.trim();
+	if (envToken) return envToken;
+	const integration = integrationsRepo
+		.listIntegrations(companyId)
+		.find((row) => row.type.toLowerCase() === "github");
+	if (!integration?.config) return null;
+	for (const key of ["token", "accessToken", "githubToken", "pat", "apiKey"]) {
+		const value = integration.config[key];
+		if (typeof value === "string" && value.trim()) return value.trim();
+	}
+	return null;
+}
+
+function resolveRepoUrl(companyId: string): string | null {
+	const integration = integrationsRepo
+		.listIntegrations(companyId)
+		.find((row) => row.type.toLowerCase() === "github");
+	if (!integration?.config) return null;
+	for (const key of ["repoUrl", "repository", "repo", "url"]) {
+		const value = integration.config[key];
+		if (typeof value === "string" && value.trim()) return value.trim();
+	}
+	return null;
+}
 
 /**
  * GET /api/runs/:id
@@ -116,6 +145,56 @@ runsRoute.get("/:id/bundle", (c) => {
 				error: err instanceof Error ? err.message : "failed to assemble bundle",
 			},
 			500,
+		);
+	}
+});
+
+runsRoute.get("/prior-prs", async (c) => {
+	const companyId = getCompanyId(c);
+	if (!companyId) {
+		return c.json({ ok: false, error: "no company in scope" }, 400);
+	}
+	const repoUrlParam = c.req.query("repoUrl");
+	const repoUrl = repoUrlParam?.trim() || resolveRepoUrl(companyId);
+	if (!repoUrl) {
+		return c.json(
+			{
+				ok: false,
+				error:
+					"no GitHub repository configured; pass ?repoUrl= or set integrations.github.repoUrl",
+			},
+			400,
+		);
+	}
+	const token = resolveGitHubToken(companyId);
+	if (!token) {
+		return c.json(
+			{ ok: false, error: "no GitHub token configured for this company" },
+			400,
+		);
+	}
+	const component = c.req.query("component")?.trim() || undefined;
+	const limit = Number.parseInt(c.req.query("limit") ?? "25", 10);
+	const stateRaw = (c.req.query("state") ?? "closed").toLowerCase();
+	const state = (
+		["open", "closed", "all"].includes(stateRaw) ? stateRaw : "closed"
+	) as "open" | "closed" | "all";
+	try {
+		const prs = await findPriorRunPrs({
+			repoUrl,
+			token,
+			...(component ? { component } : {}),
+			limit: Number.isFinite(limit) ? limit : 25,
+			state,
+		});
+		return c.json({ ok: true, prs });
+	} catch (err) {
+		return c.json(
+			{
+				ok: false,
+				error: err instanceof Error ? err.message : "GitHub query failed",
+			},
+			502,
 		);
 	}
 });

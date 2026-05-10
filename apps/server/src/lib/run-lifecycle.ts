@@ -38,6 +38,8 @@ import { createPlan, listPlans } from "./plan-engine.js";
 import { checkPostTurnDurability } from "./post-turn-durability.js";
 import { getProjectSettings } from "./project-settings.js";
 import { isCeoAgent, isCtoAgent, isDevAgent } from "./prompt-builder.js";
+import { renderRunBundleMarkdown } from "./run-bundle-markdown.js";
+import { assembleRunBundle } from "./run-bundle.js";
 import { spawnServerRun } from "./server-runner.js";
 
 const execFile = promisify(_execFile);
@@ -614,13 +616,28 @@ async function finalizeSuccess(
 			const prTitle = detail.issue_title
 				? `[Setra] ${detail.issue_title}`
 				: `Setra: ${branch}`;
-			const prBody = [
+			const fallbackBody = [
 				`Automated changes by Setra agent \`${detail.agent_slug}\`.`,
 				"",
 				detail.issue_id ? `Closes issue \`${detail.issue_id}\`.` : "",
 			]
 				.filter(Boolean)
 				.join("\n");
+			let prBody = fallbackBody;
+			try {
+				const bundle = assembleRunBundle(detail.run_id);
+				if (bundle) {
+					prBody = renderRunBundleMarkdown(bundle);
+					if (detail.issue_id) {
+						prBody += `\n\nCloses issue \`${detail.issue_id}\`.`;
+					}
+				}
+			} catch (err) {
+				log.warn("evidence bundle assembly failed; using fallback PR body", {
+					runId: detail.run_id,
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}
 			prUrl = await createPullRequest(
 				detail.worktree_path!,
 				branch,
