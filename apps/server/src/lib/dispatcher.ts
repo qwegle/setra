@@ -886,15 +886,19 @@ function recoverStaleRuns(): void {
 	const staleSeconds = Math.round(STALE_RUN_TIMEOUT_MS / 1000);
 	const now = new Date().toISOString();
 
-	// Find runs stuck in pending/running for longer than the timeout
+	// Find runs stuck in pending/running for longer than the timeout.
+	// Heartbeat-aware: a run is only stale if BOTH its start time AND its last
+	// update (chunks/status writes bump updated_at) are older than the window.
+	// COALESCE protects against a NULL updated_at on legacy rows.
 	const staleRuns = raw
 		.prepare(
 			`SELECT r.id, r.agent, r.plot_id, r.status
 			   FROM runs r
 			  WHERE r.status IN ('pending', 'running')
-			    AND strftime('%Y-%m-%d %H:%M:%S', r.started_at) <= datetime('now', ?)`,
+			    AND strftime('%Y-%m-%d %H:%M:%S', r.started_at) <= datetime('now', ?)
+			    AND strftime('%Y-%m-%d %H:%M:%S', COALESCE(r.updated_at, r.started_at)) <= datetime('now', ?)`,
 		)
-		.all(`-${staleSeconds} seconds`) as Array<{
+		.all(`-${staleSeconds} seconds`, `-${staleSeconds} seconds`) as Array<{
 		id: string;
 		agent: string;
 		plot_id: string;
