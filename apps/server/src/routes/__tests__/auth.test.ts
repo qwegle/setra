@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const JWT_SECRET = "test-jwt-secret";
+const JWT_SECRET = "test-jwt-secret-with-32+chars-padding";
 const savedJwtSecret = process.env["JWT_SECRET"];
 
 let db: Database.Database;
