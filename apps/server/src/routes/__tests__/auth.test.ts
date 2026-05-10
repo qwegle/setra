@@ -77,11 +77,15 @@ async function buildApp() {
 beforeEach(() => {
 	db = createDb();
 	process.env["JWT_SECRET"] = JWT_SECRET;
-	mockCreateCompany = vi.fn(async ({ name }: { name: string }) => ({
-		id: "company-1",
-		name,
-		slug: "company-1",
-	}));
+	let companyCounter = 0;
+	mockCreateCompany = vi.fn(async ({ name }: { name: string }) => {
+		companyCounter += 1;
+		return {
+			id: `company-${companyCounter}`,
+			name,
+			slug: name.toLowerCase().replace(/\s+/g, "-"),
+		};
+	});
 	mockListCompanies = vi.fn(async () => [
 		{
 			id: "company-1",
@@ -132,7 +136,7 @@ describe("auth routes", () => {
 		expect(user.company_id).toBe("company-1");
 	});
 
-	it("register joins the first company after the first user exists", async () => {
+	it("register without companyName or invite is rejected (no silent tenant join)", async () => {
 		const { app, authLib } = await buildApp();
 		const passwordHash = await authLib.hashPassword("supersafe123");
 		db.prepare(
@@ -158,15 +162,49 @@ describe("auth routes", () => {
 		});
 		const body = (await res.json()) as Record<string, unknown>;
 
-		expect(res.status).toBe(201);
+		expect(res.status).toBe(400);
+		expect(String(body.error)).toMatch(/companyName/i);
 		expect(mockCreateCompany).not.toHaveBeenCalled();
-		expect(mockListCompanies).toHaveBeenCalledTimes(1);
-		expect((body.user as Record<string, unknown>).role).toBe("member");
+	});
+
+	it("register with a fresh companyName creates an isolated workspace", async () => {
+		const { app, authLib } = await buildApp();
+		const passwordHash = await authLib.hashPassword("supersafe123");
+		db.prepare(
+			`INSERT INTO users (id, email, password_hash, name, company_id, role, created_at, updated_at)
+			 VALUES (?, ?, ?, ?, ?, ?, '', '')`,
+		).run(
+			"owner-1",
+			"owner@example.com",
+			passwordHash,
+			"Owner",
+			"first-tenant",
+			"owner",
+		);
+
+		const res = await app.request("/auth/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				email: "second@example.com",
+				password: "supersafe123",
+				name: "Second",
+				companyName: "Second Co",
+			}),
+		});
+		const body = (await res.json()) as Record<string, unknown>;
+
+		expect(res.status).toBe(201);
+		expect(mockCreateCompany).toHaveBeenCalledWith({ name: "Second Co" });
+		expect((body.user as Record<string, unknown>).role).toBe("owner");
 		const user = db
 			.prepare("SELECT company_id, role FROM users WHERE email = ?")
-			.get("member@example.com") as { company_id: string; role: string };
-		expect(user.company_id).toBe("company-1");
-		expect(user.role).toBe("member");
+			.get("second@example.com") as { company_id: string; role: string };
+		// Crucially, NOT first-tenant (the existing tenant). The new account
+		// must land in its own company so it cannot see the first user's
+		// projects / agents / settings.
+		expect(user.company_id).not.toBe("first-tenant");
+		expect(user.role).toBe("owner");
 	});
 
 	it("login with the correct password returns a token", async () => {
