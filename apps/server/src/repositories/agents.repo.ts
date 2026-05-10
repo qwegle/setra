@@ -687,9 +687,8 @@ export function createTaskChunk(
 	task: string,
 	now: string,
 ): void {
-	const { recordRunChunk } =
-		require("../lib/run-chunks.js") as typeof import("../lib/run-chunks.js");
-	recordRunChunk({ runId, type: "input", content: task, now });
+	const runChunks = require("../lib/run-chunks.js") as typeof import("../lib/run-chunks.js");
+	runChunks.recordRunChunk({ runId, type: "input", content: task, now });
 }
 
 export function getRunFull(runId: string): unknown {
