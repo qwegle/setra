@@ -35,6 +35,7 @@ import { dispatchPlan } from "./dispatcher.js";
 import { addAutomationIssueComment } from "./issue-comments.js";
 import { createLogger } from "./logger.js";
 import { createPlan, listPlans } from "./plan-engine.js";
+import { checkPostTurnDurability } from "./post-turn-durability.js";
 import { getProjectSettings } from "./project-settings.js";
 import { isCeoAgent, isCtoAgent, isDevAgent } from "./prompt-builder.js";
 import { spawnServerRun } from "./server-runner.js";
@@ -939,6 +940,22 @@ export async function onRunCompleted(
 	const isSuccess = exitCode === 0;
 
 	if (isSuccess) {
+		const durability = checkPostTurnDurability(runId);
+		if (!durability.durable) {
+			log.warn("run completed without durable evidence", {
+				runId,
+				agentSlug: detail.agent_slug,
+				reason: durability.reason,
+			});
+			emit("run:non_durable", {
+				runId,
+				agentSlug: detail.agent_slug,
+				companyId,
+				chunkCount: durability.chunkCount,
+				toolCallCount: durability.toolCallCount,
+				filesTouched: durability.filesTouched,
+			});
+		}
 		await handleSuccess(detail, companyId);
 		if (detail.issue_id) {
 			await startIssueTestRun(detail.issue_id, {
