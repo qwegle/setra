@@ -31,6 +31,7 @@ import {
 	storeRuntimeMemory,
 } from "./prompt-builder.js";
 import { jobQueue } from "./queue.js";
+import { consumeResumePacketFor } from "./resume-packet-store.js";
 import { withRetry } from "./retry.js";
 import { persistRunSystemPrompt, recordRunChunk } from "./run-chunks.js";
 import { onRunCompleted } from "./run-lifecycle.js";
@@ -656,10 +657,16 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		issue?.workspacePath && issue.workspacePath.trim().length > 0
 			? readProjectContext(issue.workspacePath).content
 			: "";
+	const resumePacket = consumeResumePacketFor(companyId, agent.slug);
+	const resumePreamble = resumePacket?.body
+		? `${resumePacket.body}\n\n---\n\n`
+		: "";
 	const systemPrompt =
+		resumePreamble +
 		(projectContext
 			? `## Project Context\n\n${projectContext}\n\n---\n\n`
-			: "") + (await buildSystemPrompt(agent, issue, task));
+			: "") +
+		(await buildSystemPrompt(agent, issue, task));
 	persistRunSystemPrompt(runId, systemPrompt);
 	const runArgs = safeParseJsonObject(run.agent_args);
 	const pipelineTemplate =
