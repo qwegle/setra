@@ -1045,7 +1045,7 @@ export function SettingsPage() {
 	const [loggingInCli, setLoggingInCli] = useState<string | null>(null);
 	const [installingOllama, setInstallingOllama] = useState(false);
 	const [cliError, setCliError] = useState<string | null>(null);
-	const handleInstallCli = async (tool: "codex" | "claude") => {
+	const handleInstallCli = async (tool: "codex" | "claude" | "copilot") => {
 		setInstallingCli(tool);
 		setCliError(null);
 		try {
@@ -1059,7 +1059,7 @@ export function SettingsPage() {
 			setInstallingCli(null);
 		}
 	};
-	const handleLoginCli = async (tool: "codex" | "claude") => {
+	const handleLoginCli = async (tool: "codex" | "claude" | "copilot") => {
 		setLoggingInCli(tool);
 		setCliError(null);
 		try {
@@ -1501,6 +1501,93 @@ export function SettingsPage() {
 							{cliError}
 						</p>
 					)}
+				</div>
+			</Card>
+			<Card>
+				<div className="space-y-6">
+					<SectionIntro
+						icon={Terminal}
+						title="CLI tools"
+						description="Use your existing ChatGPT Plus, Claude Pro, or GitHub Copilot subscription instead of API keys. Once a CLI is installed and logged in, agents with the matching adapter can run without a separate key."
+					/>
+					<div className="space-y-3">
+						{(
+							[
+								{
+									key: "codex",
+									label: "Codex CLI (OpenAI)",
+									note: "Drives GPT-5.x agents using your ChatGPT subscription.",
+								},
+								{
+									key: "claude",
+									label: "Claude Code (Anthropic)",
+									note: "Drives Claude agents using your Claude Pro or Max plan.",
+								},
+								{
+									key: "copilot",
+									label: "GitHub Copilot CLI",
+									note: "Drives Copilot agents using your GitHub Copilot subscription.",
+								},
+							] as const
+						).map((tool) => {
+							const entry = cliStatus?.[tool.key];
+							const isInstalling = installingCli === tool.key;
+							const isLoggingIn = loggingInCli === tool.key;
+							return (
+								<div
+									key={tool.key}
+									className="flex flex-col gap-3 rounded-lg border border-border/50 bg-muted/10 p-4 sm:flex-row sm:items-center sm:justify-between"
+								>
+									<div className="flex items-start gap-3">
+										<Terminal className="mt-0.5 h-4 w-4 text-muted-foreground" />
+										<div>
+											<div className="text-sm font-medium text-foreground">
+												{tool.label}
+											</div>
+											<p className="text-xs text-muted-foreground">
+												{tool.note}
+											</p>
+											<p className="mt-1 text-[11px] text-muted-foreground">
+												{!entry
+													? "Status unavailable."
+													: !entry.installed
+														? "Not installed."
+														: entry.loggedIn
+															? `Installed${entry.version ? ` (${entry.version})` : ""} — logged in.`
+															: `Installed${entry.version ? ` (${entry.version})` : ""} — login required.`}
+											</p>
+										</div>
+									</div>
+									<div className="flex flex-wrap items-center gap-2">
+										{!entry?.installed ? (
+											<button
+												type="button"
+												onClick={() => handleInstallCli(tool.key)}
+												disabled={installingCli !== null}
+												className="rounded border border-setra-500/40 bg-setra-600/10 px-3 py-1 text-xs font-medium text-setra-300 transition-colors hover:bg-setra-600/20 disabled:opacity-50"
+											>
+												{isInstalling ? "Installing…" : "Install"}
+											</button>
+										) : !entry.loggedIn ? (
+											<button
+												type="button"
+												onClick={() => handleLoginCli(tool.key)}
+												disabled={loggingInCli !== null}
+												className="rounded border border-amber-400/40 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-500/20 disabled:opacity-50"
+											>
+												{isLoggingIn ? "Opening login…" : "Login"}
+											</button>
+										) : (
+											<span className="rounded border border-accent-green/30 px-2 py-0.5 text-[11px] uppercase tracking-wider text-accent-green">
+												connected
+											</span>
+										)}
+									</div>
+								</div>
+							);
+						})}
+					</div>
+					{cliError && <p className="text-sm text-red-400">{cliError}</p>}
 				</div>
 			</Card>
 			<Card>
