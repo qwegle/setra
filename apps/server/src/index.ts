@@ -87,6 +87,7 @@ import { instanceRoute } from "./routes/instance.js";
 import { integrationsRoute } from "./routes/integrations.js";
 import { issuesRoute } from "./routes/issues.js";
 import { llmRoute } from "./routes/llm.js";
+import { marketingRoute, publicMarketingRoute } from "./routes/marketing.js";
 import { mcpRoute } from "./routes/mcp.js";
 import orgRoute from "./routes/org.js";
 import parseGoalRoute from "./routes/parse-goal.js";
@@ -204,6 +205,8 @@ export async function createApp(
 		"/api/agent-events/*",
 		"/api/mcp/*",
 		"/api/project-agents/*",
+		"/api/marketing",
+		"/api/marketing/*",
 	];
 	for (const mount of scopedMounts) {
 		app.use(mount, authGuard, requireCompany);
@@ -269,6 +272,8 @@ export async function createApp(
 	app.route("/api/agent-events", agentEventsRoute);
 	app.route("/api/mcp", mcpRoute);
 	app.route("/api/runs", runsRoute);
+	app.route("/api/marketing", marketingRoute);
+	app.route("/api/public/marketing", publicMarketingRoute);
 
 	// ─── Board UI static serving ──────────────────────────────────────────────────
 	// When the built board assets exist, serve them as static files so that
