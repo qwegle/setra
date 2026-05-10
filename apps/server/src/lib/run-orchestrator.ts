@@ -31,6 +31,7 @@ import {
 } from "./prompt-builder.js";
 import { jobQueue } from "./queue.js";
 import { withRetry } from "./retry.js";
+import { persistRunSystemPrompt, recordRunChunk } from "./run-chunks.js";
 import { onRunCompleted } from "./run-lifecycle.js";
 import {
 	buildToolDefinitions,
@@ -347,19 +348,7 @@ function writeChunk(
 	content: string,
 	type: "input" | "stdout" | "stderr" | "system" = "stdout",
 ): void {
-	try {
-		getRawDb()
-			.prepare(
-				`INSERT INTO chunks (run_id, sequence, content, chunk_type, recorded_at)
-       VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
-			)
-			.run(runId, getNextChunkSeq(runId), content, type);
-	} catch (error) {
-		log.warn("writeChunk failed", {
-			runId,
-			error: error instanceof Error ? error.message : String(error),
-		});
-	}
+	recordRunChunk({ runId, type, content });
 }
 
 function compactRunChunks(runId: string, companyId: string | null): void {
@@ -667,6 +656,7 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		(projectContext
 			? `## Project Context\n\n${projectContext}\n\n---\n\n`
 			: "") + (await buildSystemPrompt(agent, issue, task));
+	persistRunSystemPrompt(runId, systemPrompt);
 	const runArgs = safeParseJsonObject(run.agent_args);
 	const pipelineTemplate =
 		typeof runArgs.pipelineTemplate === "string"

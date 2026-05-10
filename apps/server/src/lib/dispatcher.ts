@@ -33,6 +33,7 @@ import { getProjectSettings } from "./project-settings.js";
 import { jobQueue } from "./queue.js";
 import { resolveAutoAdapter } from "./resolve-auto-adapter.js";
 import { triggerRoutineRun } from "./routines-scheduler.js";
+import { recordRunChunk } from "./run-chunks.js";
 import { spawnServerRun } from "./server-runner.js";
 import { rebuildSprintBoard } from "./sprint-board.js";
 
@@ -652,12 +653,14 @@ async function createMonitoringRun(
 			now,
 			now,
 		);
-	raw
-		.prepare(
-			`INSERT INTO chunks (run_id, sequence, content, chunk_type, recorded_at)
-			 VALUES (?, 0, ?, 'input', ?)`,
-		)
-		.run(runId, prompt, now);
+	recordRunChunk({
+		runId,
+		type: "input",
+		content: prompt,
+		agentSlug: agent.slug,
+		companyId,
+		now,
+	});
 	raw
 		.prepare(
 			`UPDATE agent_roster

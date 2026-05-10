@@ -687,12 +687,9 @@ export function createTaskChunk(
 	task: string,
 	now: string,
 ): void {
-	getRawDb()
-		.prepare(`
-    INSERT INTO chunks (run_id, sequence, content, chunk_type, recorded_at)
-    VALUES (?, 0, ?, 'input', ?)
-  `)
-		.run(runId, task, now);
+	const { recordRunChunk } =
+		require("../lib/run-chunks.js") as typeof import("../lib/run-chunks.js");
+	recordRunChunk({ runId, type: "input", content: task, now });
 }
 
 export function getRunFull(runId: string): unknown {
