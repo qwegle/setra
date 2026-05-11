@@ -15,6 +15,7 @@ import { ApprovalsPage } from "./pages/ApprovalsPage";
 import { ClonePage } from "./pages/ClonePage";
 import { CollaborationPage } from "./pages/CollaborationPage";
 import { CompanySettingsPage } from "./pages/CompanySettingsPage";
+import ConnectPage from "./pages/ConnectPage";
 import { CostsPage } from "./pages/CostsPage";
 import { EnvironmentsPage } from "./pages/EnvironmentsPage";
 import { FilesPage } from "./pages/FilesPage";
@@ -80,6 +81,7 @@ export default function App() {
 					<Route path="/mcp" element={<McpPage />} />
 					<Route path="/skills" element={<SkillsPage />} />
 					<Route path="/settings" element={<SettingsPage />} />
+					<Route path="/connect" element={<ConnectPage />} />
 					<Route path="/inbox" element={<InboxPage />} />
 					<Route path="/approvals" element={<ApprovalsPage />} />
 					<Route path="/goals" element={<GoalsPage />} />
