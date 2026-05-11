@@ -166,6 +166,13 @@ export const plots = sqliteTable(
 		lastActiveAt: text("last_active_at"),
 		// Team Mode: only one agent can claim a plot at a time (pessimistic lock)
 		claimedBySessionId: text("claimed_by_session_id"),
+		// Branching ancestry — populated when a plot is forked via
+		// POST /api/plots/:id/branch. branchedFromRunId is the run
+		// that was selected as the cut-point; everything before it is
+		// considered preserved history.
+		branchedFromPlotId: text("branched_from_plot_id"),
+		branchedFromRunId: text("branched_from_run_id"),
+		branchedAt: text("branched_at"),
 		...timestamps,
 		// SaaS Phase 2: ADD createdBy TEXT REFERENCES users(id)
 	},
@@ -242,6 +249,10 @@ export const runs = sqliteTable(
 		outcome: text("outcome", { enum: ["success", "partial", "failed"] }),
 		errorMessage: text("error_message"),
 		exitCode: integer("exit_code"),
+		// Optional link to a kanban card / GitHub issue / external task id
+		// so the JSONL transcript and evidence bundle can render the task
+		// each run was working on without parsing the system prompt.
+		taskIdRef: text("task_id_ref"),
 		startedAt: text("started_at")
 			.notNull()
 			.default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
@@ -454,6 +465,9 @@ export const teamMessages = sqliteTable(
 		// null = not yet read by target agent
 		readAt: text("read_at"),
 		plotId: text("plot_id").references(() => plots.id, { onDelete: "cascade" }),
+		// Optional task link mirroring runs.task_id_ref — lets handoff /
+		// approval_request rows carry the task they relate to.
+		taskIdRef: text("task_id_ref"),
 		createdAt: text("created_at")
 			.notNull()
 			.default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),

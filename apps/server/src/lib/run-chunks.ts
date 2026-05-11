@@ -21,6 +21,7 @@
 import { getRawDb } from "@setra/db";
 import { emit } from "../sse/handler.js";
 import { createLogger } from "./logger.js";
+import { recordChunkTranscript } from "./transcript-exporter.js";
 
 const log = createLogger("run-chunks");
 
@@ -47,6 +48,7 @@ export interface RecordRunChunkInput {
 interface RunMeta {
 	agent: string;
 	companyId: string | null;
+	plotId: string | null;
 }
 
 const META_CACHE = new Map<string, RunMeta>();
@@ -58,17 +60,35 @@ function nowIso(): string {
 function lookupRunMeta(runId: string): RunMeta {
 	const cached = META_CACHE.get(runId);
 	if (cached) return cached;
-	const row = getRawDb()
-		.prepare(
-			`SELECT r.agent AS agent, ar.company_id AS companyId
+	let row:
+		| { agent?: string; companyId?: string | null; plotId?: string | null }
+		| undefined;
+	try {
+		row = getRawDb()
+			.prepare(
+				`SELECT r.agent AS agent, r.plot_id AS plotId, ar.company_id AS companyId
                FROM runs r
           LEFT JOIN agent_roster ar ON ar.slug = r.agent
               WHERE r.id = ?`,
-		)
-		.get(runId) as { agent?: string; companyId?: string | null } | undefined;
+			)
+			.get(runId) as
+			| { agent?: string; companyId?: string | null; plotId?: string | null }
+			| undefined;
+	} catch {
+		// Older schemas without plot_id on runs (mostly in narrow test fixtures).
+		row = getRawDb()
+			.prepare(
+				`SELECT r.agent AS agent, ar.company_id AS companyId
+               FROM runs r
+          LEFT JOIN agent_roster ar ON ar.slug = r.agent
+              WHERE r.id = ?`,
+			)
+			.get(runId) as { agent?: string; companyId?: string | null } | undefined;
+	}
 	const meta: RunMeta = {
 		agent: row?.agent ?? "",
 		companyId: row?.companyId ?? null,
+		plotId: row?.plotId ?? null,
 	};
 	META_CACHE.set(runId, meta);
 	return meta;
@@ -134,10 +154,15 @@ export function recordRunChunk(input: RecordRunChunkInput): {
 		return null;
 	}
 
-	const meta =
-		input.agentSlug && typeof input.companyId !== "undefined"
-			? { agent: input.agentSlug, companyId: input.companyId ?? null }
-			: lookupRunMeta(input.runId);
+	const cached = lookupRunMeta(input.runId);
+	const meta: RunMeta = {
+		agent: input.agentSlug ?? cached.agent,
+		companyId:
+			typeof input.companyId !== "undefined"
+				? (input.companyId ?? null)
+				: cached.companyId,
+		plotId: cached.plotId,
+	};
 
 	try {
 		emit("run:chunk", {
@@ -156,6 +181,15 @@ export function recordRunChunk(input: RecordRunChunkInput): {
 			error: err instanceof Error ? err.message : String(err),
 		});
 	}
+
+	recordChunkTranscript(meta.plotId, {
+		runId: input.runId,
+		sequence,
+		chunkType: input.type,
+		toolName: input.toolName ?? null,
+		content: input.content,
+		recordedAt: ts,
+	});
 
 	return { sequence, recordedAt: ts };
 }

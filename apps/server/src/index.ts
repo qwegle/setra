@@ -94,6 +94,7 @@ import { mcpRoute } from "./routes/mcp.js";
 import orgRoute from "./routes/org.js";
 import parseGoalRoute from "./routes/parse-goal.js";
 import { plansRoute } from "./routes/plans.js";
+import { plotsRoute } from "./routes/plots.js";
 import projectAgentsRoute from "./routes/project-agents.js";
 import { projectContextRoute } from "./routes/project-context.js";
 import { projectGitRoute } from "./routes/project-git.js";
@@ -210,6 +211,8 @@ export async function createApp(
 		"/api/project-agents/*",
 		"/api/marketing",
 		"/api/marketing/*",
+		"/api/plots",
+		"/api/plots/*",
 	];
 	for (const mount of scopedMounts) {
 		app.use(mount, authGuard, requireCompany);
@@ -291,6 +294,7 @@ export async function createApp(
 	app.route("/api/agent-events", agentEventsRoute);
 	app.route("/api/mcp", mcpRoute);
 	app.route("/api/runs", runsRoute);
+	app.route("/api/plots", plotsRoute);
 	app.route("/api/marketing", marketingRoute);
 	app.route("/api/public/marketing", publicMarketingRoute);
 
@@ -360,9 +364,7 @@ if (isMain) {
 			);
 			startBrowser();
 			const discoverable = getRawDb()
-				.prepare(
-					`SELECT id, name FROM companies WHERE lan_discoverable = 1`,
-				)
+				.prepare(`SELECT id, name FROM companies WHERE lan_discoverable = 1`)
 				.all() as Array<{ id: string; name: string }>;
 			for (const co of discoverable) {
 				const owner = getRawDb()

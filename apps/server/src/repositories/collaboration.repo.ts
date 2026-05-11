@@ -3,6 +3,7 @@
  */
 
 import { getRawDb } from "@setra/db";
+import { recordTeamMessageTranscript } from "../lib/transcript-exporter.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,25 +88,41 @@ export function createMessage(params: {
 	content: string;
 	fromAgent: string;
 	companyId: string | undefined | null;
+	plotId?: string | null;
+	taskIdRef?: string | null;
 }): { id: string; createdAt: string } {
 	const id = crypto.randomUUID();
 	const sequence = Date.now();
 	const now = new Date().toISOString();
+	const taskIdRef = params.taskIdRef ?? null;
+	const plotId = params.plotId ?? null;
 
 	getRawDb()
 		.prepare(
-			`INSERT INTO team_messages (id, plot_id, from_agent, channel, content, sequence, company_id, created_at)
-       VALUES (?, NULL, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO team_messages (id, plot_id, from_agent, channel, content, sequence, company_id, created_at, task_id_ref)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		)
 		.run(
 			id,
+			plotId,
 			params.fromAgent,
 			params.channel,
 			params.content,
 			sequence,
 			params.companyId ?? null,
 			now,
+			taskIdRef,
 		);
+
+	recordTeamMessageTranscript(plotId, {
+		messageId: id,
+		channel: params.channel,
+		fromAgent: params.fromAgent,
+		messageType: null,
+		taskIdRef,
+		content: params.content,
+		createdAt: now,
+	});
 
 	return { id, createdAt: now };
 }
