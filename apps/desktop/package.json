@@ -7,8 +7,8 @@
 	"main": "./out/main/index.js",
 	"scripts": {
 		"dev": "electron-vite dev",
-		"build": "pnpm --filter @setra/board build && electron-vite build && rm -rf node_modules/@setra && node scripts/prune-broken-workspace-links.cjs && electron-builder --config electron-builder.config.ts",
-		"build:dir": "pnpm --filter @setra/board build && electron-vite build && rm -rf node_modules/@setra && node scripts/prune-broken-workspace-links.cjs && electron-builder --config electron-builder.config.ts --dir",
+		"build": "pnpm --filter @setra/board build && electron-vite build && node scripts/prune-broken-workspace-links.cjs && electron-builder --config electron-builder.config.ts",
+		"build:dir": "pnpm --filter @setra/board build && electron-vite build && node scripts/prune-broken-workspace-links.cjs && electron-builder --config electron-builder.config.ts --dir",
 		"typecheck": "tsc --noEmit",
 		"preview": "electron-vite preview",
 		"clean": "rm -rf out dist",

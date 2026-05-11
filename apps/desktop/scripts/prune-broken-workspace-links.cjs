@@ -32,6 +32,15 @@ function pruneDir(dir) {
 }
 
 function main() {
+	// 1. Remove apps/desktop/node_modules/@setra so electron-builder uses
+	//    only the bundled outputs (cross-platform replacement for `rm -rf`).
+	const localSetra = path.resolve(__dirname, "../node_modules/@setra");
+	if (fs.existsSync(localSetra)) {
+		fs.rmSync(localSetra, { recursive: true, force: true });
+		console.log(`[desktop-build] removed ${localSetra}`);
+	}
+
+	// 2. Prune broken symlinks in the pnpm hoist dir.
 	if (!fs.existsSync(hoistRoot)) return;
 	let removed = 0;
 	for (const name of fs.readdirSync(hoistRoot)) {

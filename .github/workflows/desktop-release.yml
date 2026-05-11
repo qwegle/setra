@@ -1,26 +1,15 @@
 name: Desktop Release Build
 
-# Builds the Electron desktop app installers for macOS (.dmg) and Windows
-# (.exe) without code-signing — for sharing test builds with teammates.
+# Builds unsigned Electron desktop installers for macOS (.dmg) and Windows
+# (.exe) for sharing test builds with teammates.
 #
-# Two ways to trigger:
-#  1. Push a tag like `v0.1.0` or `desktop-v0.1.0` → all platforms build and
-#     a GitHub Release is drafted with the artifacts attached.
-#  2. Click "Run workflow" from the Actions tab → installers are uploaded as
-#     workflow artifacts (no Release created), downloadable for 14 days.
+# Triggers:
+#  * workflow_dispatch — outputs are 14-day workflow artifacts.
+#  * push of a tag matching desktop-v* or v* — drafts a GitHub Release with
+#    both installers attached.
 
 on:
   workflow_dispatch:
-    inputs:
-      platforms:
-        description: "Which platforms to build"
-        required: true
-        default: "all"
-        type: choice
-        options:
-          - all
-          - mac
-          - win
   push:
     tags:
       - "desktop-v*"
@@ -30,58 +19,76 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build ${{ matrix.platform }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: mac
-            os: macos-14
-            artifact: "*.dmg"
-          - platform: win
-            os: windows-latest
-            artifact: "*.exe"
-    runs-on: ${{ matrix.os }}
-    if: |
-      github.event_name == 'push' ||
-      github.event.inputs.platforms == 'all' ||
-      github.event.inputs.platforms == matrix.platform
+  build-mac:
+    name: Build macOS .dmg
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "pnpm"
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile=false
-
       - name: Build desktop app
         env:
-          # Skip code-signing — these are test builds for internal sharing
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm --filter @setra/desktop build
-
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: setra-${{ matrix.platform }}
+          name: setra-mac
           path: |
-            apps/desktop/dist/${{ matrix.artifact }}
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.zip
           retention-days: 14
           if-no-files-found: error
-
       - name: Attach to GitHub Release (on tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: apps/desktop/dist/${{ matrix.artifact }}
+          files: |
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.zip
+          draft: true
+          generate_release_notes: true
+
+  build-win:
+    name: Build Windows .exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+      - name: Build desktop app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm --filter @setra/desktop build
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: setra-win
+          path: |
+            apps/desktop/dist/*.exe
+          retention-days: 14
+          if-no-files-found: error
+      - name: Attach to GitHub Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/desktop/dist/*.exe
           draft: true
           generate_release_notes: true
