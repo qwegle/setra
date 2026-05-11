@@ -10,6 +10,7 @@
  * run-lifecycle.ts. The endpoint just validates input and fires off the handler.
  */
 
+import { getRawDb } from "@setra/db";
 import { Hono } from "hono";
 import { getCompanyId } from "../lib/company-scope.js";
 import { findPriorRunPrs } from "../lib/cross-run-memory.js";
@@ -48,6 +49,39 @@ function resolveRepoUrl(companyId: string): string | null {
 }
 
 /**
+ * Tenant guard for run-scoped reads. Resolves the run's owning company
+ * via the agent_roster join, then 404s if the caller's company does
+ * not match. We return 404 (not 403) to avoid leaking the existence
+ * of cross-tenant run ids.
+ *
+ * `null` callerCompanyId means the caller is in legacy/instance-token
+ * mode with no company pin — we let that through, the legacy boundary
+ * is handled by the auth layer.
+ *
+ * Returns the run's companyId on success; null if the caller is denied
+ * (caller should return 404).
+ */
+function authorizeRunAccess(
+	runId: string,
+	callerCompanyId: string | null,
+): { ok: true; runCompanyId: string | null } | { ok: false } {
+	if (!callerCompanyId) return { ok: true, runCompanyId: null };
+	const row = getRawDb()
+		.prepare(
+			`SELECT ar.company_id AS companyId
+			   FROM runs r
+		  LEFT JOIN agent_roster ar ON ar.slug = r.agent
+			  WHERE r.id = ?`,
+		)
+		.get(runId) as { companyId: string | null } | undefined;
+	if (!row) return { ok: false };
+	if (row.companyId && row.companyId !== callerCompanyId) {
+		return { ok: false };
+	}
+	return { ok: true, runCompanyId: row.companyId };
+}
+
+/**
  * GET /api/runs/:id
  *
  * Returns the run header (status, agent, timestamps) plus the resolved
@@ -58,10 +92,9 @@ function resolveRepoUrl(companyId: string): string | null {
 runsRoute.get("/:id", (c) => {
 	const runId = c.req.param("id");
 	if (!runId) return c.json({ ok: false, error: "missing run id" }, 400);
+	const auth = authorizeRunAccess(runId, getCompanyId(c));
+	if (!auth.ok) return c.json({ ok: false, error: "run not found" }, 404);
 	try {
-		// Lazy import — keeps the route file's hot path independent of
-		// better-sqlite3 startup ordering during tests.
-		const { getRawDb } = require("@setra/db") as typeof import("@setra/db");
 		const row = getRawDb()
 			.prepare(
 				`SELECT r.id, r.agent AS agentSlug, r.status, r.started_at AS startedAt,
@@ -109,6 +142,8 @@ runsRoute.get("/:id", (c) => {
 runsRoute.get("/:id/chunks", (c) => {
 	const runId = c.req.param("id");
 	if (!runId) return c.json({ ok: false, error: "missing run id" }, 400);
+	const auth = authorizeRunAccess(runId, getCompanyId(c));
+	if (!auth.ok) return c.json({ ok: false, error: "run not found" }, 404);
 	const since = Number.parseInt(c.req.query("since") ?? "-1", 10);
 	const limit = Math.min(
 		Math.max(Number.parseInt(c.req.query("limit") ?? "500", 10), 1),
@@ -134,6 +169,8 @@ runsRoute.get("/:id/chunks", (c) => {
 runsRoute.get("/:id/bundle", (c) => {
 	const runId = c.req.param("id");
 	if (!runId) return c.json({ ok: false, error: "missing run id" }, 400);
+	const auth = authorizeRunAccess(runId, getCompanyId(c));
+	if (!auth.ok) return c.json({ ok: false, error: "run not found" }, 404);
 	try {
 		const bundle = assembleRunBundle(runId);
 		if (!bundle) return c.json({ ok: false, error: "run not found" }, 404);
