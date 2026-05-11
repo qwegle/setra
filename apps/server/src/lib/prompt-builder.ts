@@ -12,6 +12,7 @@ import { rawSqlite } from "../db/client.js";
 import * as integrationsRepo from "../repositories/integrations.repo.js";
 import { getAgentExperience } from "./agent-reflection.js";
 import { getAgentScore } from "./credibility.js";
+import { ENTERPRISE_STANDARDS } from "./enterprise-standards.js";
 import { createLogger } from "./logger.js";
 import { getMatchingRules, loadProjectRules } from "./project-rules.js";
 import type { AgentRow, IssueRow } from "./types.js";
@@ -744,6 +745,7 @@ export async function buildSystemPrompt(
 	const skillsSection = buildSkillsSection(agent, issue, task);
 	return [
 		base,
+		ENTERPRISE_STANDARDS,
 		companyContext,
 		semanticMemorySection,
 		experienceSection,

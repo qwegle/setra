@@ -33,6 +33,7 @@ import { getProjectSettings } from "./project-settings.js";
 import { jobQueue } from "./queue.js";
 import { resolveAutoAdapter } from "./resolve-auto-adapter.js";
 import { triggerRoutineRun } from "./routines-scheduler.js";
+import { recordRunChunk } from "./run-chunks.js";
 import { spawnServerRun } from "./server-runner.js";
 import { rebuildSprintBoard } from "./sprint-board.js";
 
@@ -44,14 +45,11 @@ const RECENT_RUN_WINDOW_MS = 5 * 60_000;
 const STALE_RUN_TIMEOUT_MS = 10 * 60_000; // 10 minutes
 const VERIFICATION_DIGEST_INTERVAL_MS = 12 * 60 * 60_000;
 
-const PTY_ONLY_ADAPTERS = new Set([
-	"claude",
-	"gemini",
-	"amp",
-	"opencode",
-	// "codex" is intentionally excluded: codex runs via server-side `callCodexOnce`
-	// (async spawn of `codex exec`). The desktop PTY bridge is NOT needed.
-]);
+// PTY-only adapters: must run via the Electron PTY bridge.
+// NOTE: `codex` was historically here, but with `codex login` (OAuth) the
+// non-interactive `codex exec` invocation works server-side too. Source of
+// truth lives in `adapter-policy.ts#getAdapterExecutionMode`.
+const PTY_ONLY_ADAPTERS = new Set(["claude", "gemini", "amp", "opencode"]);
 
 const DEVELOPER_SLUG_HINTS = [
 	"dev",
@@ -655,12 +653,14 @@ async function createMonitoringRun(
 			now,
 			now,
 		);
-	raw
-		.prepare(
-			`INSERT INTO chunks (run_id, sequence, content, chunk_type, recorded_at)
-			 VALUES (?, 0, ?, 'input', ?)`,
-		)
-		.run(runId, prompt, now);
+	recordRunChunk({
+		runId,
+		type: "input",
+		content: prompt,
+		agentSlug: agent.slug,
+		companyId,
+		now,
+	});
 	raw
 		.prepare(
 			`UPDATE agent_roster
@@ -887,15 +887,19 @@ function recoverStaleRuns(): void {
 	const staleSeconds = Math.round(STALE_RUN_TIMEOUT_MS / 1000);
 	const now = new Date().toISOString();
 
-	// Find runs stuck in pending/running for longer than the timeout
+	// Find runs stuck in pending/running for longer than the timeout.
+	// Heartbeat-aware: a run is only stale if BOTH its start time AND its last
+	// update (chunks/status writes bump updated_at) are older than the window.
+	// COALESCE protects against a NULL updated_at on legacy rows.
 	const staleRuns = raw
 		.prepare(
 			`SELECT r.id, r.agent, r.plot_id, r.status
 			   FROM runs r
 			  WHERE r.status IN ('pending', 'running')
-			    AND strftime('%Y-%m-%d %H:%M:%S', r.started_at) <= datetime('now', ?)`,
+			    AND strftime('%Y-%m-%d %H:%M:%S', r.started_at) <= datetime('now', ?)
+			    AND strftime('%Y-%m-%d %H:%M:%S', COALESCE(r.updated_at, r.started_at)) <= datetime('now', ?)`,
 		)
-		.all(`-${staleSeconds} seconds`) as Array<{
+		.all(`-${staleSeconds} seconds`, `-${staleSeconds} seconds`) as Array<{
 		id: string;
 		agent: string;
 		plot_id: string;

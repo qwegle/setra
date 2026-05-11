@@ -501,13 +501,17 @@ export function McpPage() {
 		return null;
 	}, [addMutation.isPending, updateMutation.isPending]);
 
+	const [discoverNotice, setDiscoverNotice] = useState<string | null>(null);
 	const discoverMutation = useMutation({
 		mutationFn: () => api.mcp.discover(),
 		onSuccess: (discovered) => {
 			if (discovered.length === 0) {
-				alert(
-					"No MCP servers found in your Claude Desktop config.\nInstall Claude Desktop and add MCP servers there, or use the catalog below.",
+				setDiscoverNotice(
+					"No MCP servers found in your Claude Desktop config. Install Claude Desktop and add MCP servers there, or use the catalog below.",
 				);
+				setTimeout(() => setDiscoverNotice(null), 6000);
+			} else {
+				setDiscoverNotice(null);
 			}
 			void invalidateServers();
 		},
@@ -601,6 +605,15 @@ export function McpPage() {
 			{busyMessage && (
 				<div className="px-6 py-4 border-b border-border/30">
 					<p className="text-xs text-muted-foreground">{busyMessage}</p>
+				</div>
+			)}
+
+			{discoverNotice && (
+				<div
+					role="status"
+					className="mx-6 px-3 py-2 rounded border border-amber-500/30 bg-amber-500/5 text-xs text-amber-300"
+				>
+					{discoverNotice}
 				</div>
 			)}
 

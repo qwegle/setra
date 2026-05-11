@@ -54,6 +54,7 @@ import { startDispatcher } from "./lib/dispatcher.js";
 import { startHeartbeatSweeper } from "./lib/heartbeat-sweeper.js";
 import { createLogger } from "./lib/logger.js";
 import { jobQueue } from "./lib/queue.js";
+import { primeResumePackets } from "./lib/resume-packet-store.js";
 import { registerRunQueueProcessor } from "./lib/run-orchestrator.js";
 import { seedLocalSkillsCatalog } from "./lib/skills-catalog.js";
 import { inputSanitizer } from "./middleware/input-sanitizer.js";
@@ -87,6 +88,7 @@ import { instanceRoute } from "./routes/instance.js";
 import { integrationsRoute } from "./routes/integrations.js";
 import { issuesRoute } from "./routes/issues.js";
 import { llmRoute } from "./routes/llm.js";
+import { marketingRoute, publicMarketingRoute } from "./routes/marketing.js";
 import { mcpRoute } from "./routes/mcp.js";
 import orgRoute from "./routes/org.js";
 import parseGoalRoute from "./routes/parse-goal.js";
@@ -124,11 +126,16 @@ export async function createApp(
 	mkdirSync(dataDir, { recursive: true });
 	const dbPath = join(dataDir, "setra.db");
 	getDb({ dbPath, verbose: false });
+
+	// Order matters. ensureTables() creates the server-local tables that the
+	// drizzle migrations do not own (approvals, routines, agent_roster, ...).
+	// Some migrations rebuild those tables to attach foreign keys, so the
+	// tables must exist before the migrations run; otherwise a fresh install
+	// would silently skip the rebuild and end up without the FK constraints.
+	ensureTables();
 	await runMigrations();
 	seedBuiltins();
 
-	// Ensure all server-local tables exist before handling requests
-	ensureTables();
 	seedLocalSkillsCatalog();
 	const app = new Hono();
 
@@ -199,6 +206,8 @@ export async function createApp(
 		"/api/agent-events/*",
 		"/api/mcp/*",
 		"/api/project-agents/*",
+		"/api/marketing",
+		"/api/marketing/*",
 	];
 	for (const mount of scopedMounts) {
 		app.use(mount, authGuard, requireCompany);
@@ -264,6 +273,8 @@ export async function createApp(
 	app.route("/api/agent-events", agentEventsRoute);
 	app.route("/api/mcp", mcpRoute);
 	app.route("/api/runs", runsRoute);
+	app.route("/api/marketing", marketingRoute);
+	app.route("/api/public/marketing", publicMarketingRoute);
 
 	// ─── Board UI static serving ──────────────────────────────────────────────────
 	// When the built board assets exist, serve them as static files so that
@@ -308,6 +319,11 @@ if (isMain) {
 		});
 		startHeartbeatSweeper();
 		startDispatcher();
+		try {
+			primeResumePackets();
+		} catch (err) {
+			log.warn("primeResumePackets failed", { err: String(err) });
+		}
 
 		// Apply API keys from settings.json to process.env for all companies
 		// so that /llm/status and server-runner can find them without requiring

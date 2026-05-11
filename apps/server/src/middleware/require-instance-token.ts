@@ -18,7 +18,13 @@ export const requireInstanceToken: MiddlewareHandler = async (c, next) => {
 	}
 
 	const path = c.req.path;
-	if (path === "/api/health" || path.startsWith("/api/events")) {
+	// /api/health is the only endpoint that may stay anonymous when an
+	// instance token is configured — uptime probes need an unauth check
+	// and it returns no tenant data. /api/events used to be exempted but
+	// that leaked SSE payloads (run chunks, cost telemetry, agent activity)
+	// to anyone on the network. EventSource clients can authenticate via
+	// the ?instanceToken= query parameter handled below.
+	if (path === "/api/health") {
 		await next();
 		return;
 	}

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AgentActivityStrip } from "../components/AgentActivityStrip";
 import { AgentRunCard } from "../components/AgentRunCard";
 import { AgentRunLogViewer } from "../components/AgentRunLogViewer";
 import { type EnvVar, EnvVarEditor } from "../components/EnvVarEditor";
@@ -226,6 +227,10 @@ export function AgentDetailPage() {
 						.toUpperCase() + String(agent.status ?? "idle").slice(1)}
 				</span>
 			</div>
+
+			{/* Live activity — pushed via SSE so the user always sees what
+			    the agent is doing right now, regardless of which tab is open. */}
+			<AgentActivityStrip agentId={agentId} variant="full" className="mb-6" />
 
 			{/* Tab bar */}
 			<div className="flex gap-0.5 border-b border-border/50 mb-6">

@@ -651,6 +651,7 @@ function Step3({
 	const [cliStatus, setCliStatus] = useState<{
 		codex: { installed: boolean; loggedIn: boolean; version: string | null };
 		claude: { installed: boolean; loggedIn: boolean; version: string | null };
+		copilot: { installed: boolean; loggedIn: boolean; version: string | null };
 	} | null>(null);
 	const [installingCli, setInstallingCli] = useState<string | null>(null);
 	const [catalogModels, setCatalogModels] = useState<
@@ -929,7 +930,7 @@ function Step3({
 		systemPrompt,
 	]);
 
-	const handleInstallCli = async (tool: "codex" | "claude") => {
+	const handleInstallCli = async (tool: "codex" | "claude" | "copilot") => {
 		setInstallingCli(tool);
 		try {
 			await api.runtime.installCli(tool);
@@ -1224,10 +1225,51 @@ function Step3({
 							)}
 						</div>
 
-						{(cliStatus.codex.loggedIn || cliStatus.claude.loggedIn) && (
+						{/* Copilot CLI */}
+						<div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/10">
+							<div className="flex items-center gap-2">
+								<Terminal className="w-4 h-4 text-muted-foreground" />
+								<div>
+									<span className="text-sm font-medium text-foreground">
+										GitHub Copilot CLI
+									</span>
+									<p className="text-[10px] text-muted-foreground">
+										{cliStatus.copilot.installed
+											? cliStatus.copilot.loggedIn
+												? "Logged in — uses your Copilot subscription"
+												: "Installed — run `copilot` in terminal to login"
+											: "Not installed"}
+									</p>
+								</div>
+							</div>
+							{!cliStatus.copilot.installed ? (
+								<button
+									type="button"
+									onClick={() => handleInstallCli("copilot")}
+									disabled={installingCli !== null}
+									className="text-[10px] font-medium px-2.5 py-1 rounded border border-setra-500/40 bg-setra-600/10 text-setra-300 hover:bg-setra-600/20 transition-colors disabled:opacity-50"
+								>
+									{installingCli === "copilot" ? "Installing…" : "Install"}
+								</button>
+							) : (
+								<span
+									className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+										cliStatus.copilot.loggedIn
+											? "text-accent-green border-accent-green/30"
+											: "text-amber-400 border-amber-400/30"
+									}`}
+								>
+									{cliStatus.copilot.loggedIn ? "connected" : "login needed"}
+								</span>
+							)}
+						</div>
+
+						{(cliStatus.codex.loggedIn ||
+							cliStatus.claude.loggedIn ||
+							cliStatus.copilot.loggedIn) && (
 							<p className="text-xs text-accent-green/80">
-								✓ CLI login detected — agents can use your subscription without
-								an API key
+								CLI login detected — agents can use your subscription without an
+								API key
 							</p>
 						)}
 					</div>

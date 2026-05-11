@@ -4,6 +4,7 @@ import { emit } from "../sse/handler.js";
 import { normalizeAdapterId } from "./adapter-policy.js";
 import { nextCronOccurrence } from "./cron.js";
 import { createLogger } from "./logger.js";
+import { recordRunChunk } from "./run-chunks.js";
 import { spawnServerRun } from "./server-runner.js";
 
 const log = createLogger("routine-scheduler");
@@ -173,12 +174,7 @@ export async function triggerRoutineRun(
 				now,
 			);
 
-		raw
-			.prepare(
-				`INSERT INTO chunks (run_id, sequence, content, chunk_type, recorded_at)
-				 VALUES (?, 0, ?, 'input', ?)`,
-			)
-			.run(runId, prompt, now);
+		recordRunChunk({ runId, type: "input", content: prompt, now });
 
 		raw
 			.prepare(

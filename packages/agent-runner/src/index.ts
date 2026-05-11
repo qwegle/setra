@@ -80,6 +80,7 @@ export {
 } from "./adapters/claude.js";
 export { GeminiAdapter, geminiAdapter } from "./adapters/gemini.js";
 export { CodexAdapter, codexAdapter } from "./adapters/codex.js";
+export { CopilotAdapter, copilotAdapter } from "./adapters/copilot.js";
 export { OpenCodeAdapter, opencodeAdapter } from "./adapters/opencode.js";
 export { AmpAdapter, ampAdapter } from "./adapters/amp.js";
 
@@ -280,6 +281,7 @@ import { awsBedrockAdapter } from "./adapters/aws-bedrock.js";
 import { azureOpenAIAdapter } from "./adapters/azure-openai.js";
 import { claudeAdapter } from "./adapters/claude.js";
 import { codexAdapter } from "./adapters/codex.js";
+import { copilotAdapter } from "./adapters/copilot.js";
 import { customOpenAiAdapter } from "./adapters/custom-openai.js";
 import { gcpVertexAdapter } from "./adapters/gcp-vertex.js";
 import { geminiAdapter } from "./adapters/gemini.js";
@@ -292,6 +294,7 @@ import { setraNativeAdapter } from "./setra-native/index.js";
 registerAdapter(claudeAdapter);
 registerAdapter(geminiAdapter);
 registerAdapter(codexAdapter);
+registerAdapter(copilotAdapter);
 registerAdapter(opencodeAdapter);
 registerAdapter(ampAdapter);
 

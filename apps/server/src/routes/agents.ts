@@ -12,6 +12,7 @@ import { Hono } from "hono";
 import type { agentRoster } from "../db/schema.js";
 import { isCloudAdapter, normalizeAdapterId } from "../lib/adapter-policy.js";
 import { getAgentExperience } from "../lib/agent-reflection.js";
+import { ensureGovernanceApproval } from "../lib/approval-gates.js";
 import { logActivity } from "../lib/audit.js";
 import { postChannelMessage } from "../lib/channel-hooks.js";
 import { getCompanyId } from "../lib/company-scope.js";
@@ -217,6 +218,35 @@ agentsRoute.post("/roster", zValidator("json", HireAgentSchema), async (c) => {
 	// Look up the template for system prompt / adapter info
 	const template = agentsRepo.getTemplate(body.templateId);
 	if (!template) return c.json({ error: "template not found" }, 404);
+
+	// Governance gate — companies that require approval for `agent_hire`
+	// see the request parked in the review queue and a 202 returned.
+	// The same call is idempotent: a re-submit returns the same approval.
+	const gate = await ensureGovernanceApproval({
+		companyId,
+		action: "agent_hire",
+		entityType: "agent_template",
+		entityId: `${body.templateId}:${body.displayName.trim().toLowerCase()}`,
+		title: `Hire ${body.displayName.trim()}`,
+		description: `Add a ${template.agent ?? body.templateId} agent named "${body.displayName.trim()}" to the roster.`,
+		requestedBy: "human",
+		riskLevel: "medium",
+	});
+	if (!gate.allow) {
+		return c.json(
+			{
+				ok: false,
+				gated: true,
+				approvalId: gate.approvalId,
+				approvalStatus: gate.status,
+				message:
+					gate.status === "rejected"
+						? "Hire request was rejected during governance review."
+						: "Hire request requires human approval before the agent is created.",
+			},
+			202,
+		);
+	}
 
 	// Generate a unique slug from display name
 	const baseSlug = body.displayName

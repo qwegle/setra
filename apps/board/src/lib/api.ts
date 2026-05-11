@@ -1368,13 +1368,18 @@ export const api = {
 					loggedIn: boolean;
 					version: string | null;
 				};
+				copilot: {
+					installed: boolean;
+					loggedIn: boolean;
+					version: string | null;
+				};
 			}>("/runtime/cli-status"),
-		installCli: (tool: "codex" | "claude") =>
+		installCli: (tool: "codex" | "claude" | "copilot") =>
 			request<{ ok: boolean; error?: string }>("/runtime/install-cli", {
 				method: "POST",
 				body: JSON.stringify({ tool }),
 			}),
-		loginCli: (tool: "codex" | "claude") =>
+		loginCli: (tool: "codex" | "claude" | "copilot") =>
 			request<{ ok: boolean; output?: string; error?: string }>(
 				"/runtime/cli-login",
 				{
@@ -2092,10 +2097,19 @@ export interface AgentRun {
 }
 
 export interface AgentRunLogChunk {
-	type: "assistant" | "tool_use" | "tool_result" | "system";
+	type:
+		| "assistant"
+		| "tool_use"
+		| "tool_result"
+		| "system"
+		| "input"
+		| "stdout"
+		| "stderr"
+		| "output";
 	timestamp: string;
 	content: string;
 	toolName?: string;
+	sequence?: number;
 }
 
 export interface AgentBudgetPolicy {

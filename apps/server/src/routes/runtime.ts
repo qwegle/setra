@@ -21,6 +21,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import { Hono } from "hono";
+import { isCodexLoggedIn } from "../lib/adapters/codex-runner.js";
+import { isCopilotLoggedIn } from "../lib/adapters/copilot-runner.js";
 import { tryGetCompanyId } from "../lib/company-scope.js";
 import { getCompanySettings } from "../lib/company-settings.js";
 import * as runtimeRepo from "../repositories/runtime.repo.js";
@@ -146,23 +148,6 @@ async function detectCli(
 	}
 }
 
-function isCodexLoggedIn(): boolean {
-	try {
-		const home = process.env["HOME"] ?? process.env["USERPROFILE"] ?? "";
-		const authFile = path.join(home, ".codex", "auth.json");
-		if (!fs.existsSync(authFile)) return false;
-		const data = JSON.parse(fs.readFileSync(authFile, "utf-8"));
-		return Boolean(
-			data?.tokens?.access_token ||
-				data?.tokens?.id_token ||
-				data?.access_token ||
-				data?.token,
-		);
-	} catch {
-		return false;
-	}
-}
-
 function isClaudeLoggedIn(): boolean {
 	try {
 		const output = execSync("claude auth status 2>/dev/null", {
@@ -202,11 +187,12 @@ function isClaudeLoggedIn(): boolean {
 }
 
 runtimeRoute.get("/cli-status", async (c) => {
-	const [codex, claude] = await Promise.all([
+	const [codex, claude, copilot] = await Promise.all([
 		detectCli("codex", isCodexLoggedIn),
 		detectCli("claude", isClaudeLoggedIn),
+		detectCli("copilot", isCopilotLoggedIn),
 	]);
-	return c.json({ codex, claude });
+	return c.json({ codex, claude, copilot });
 });
 
 runtimeRoute.post("/install-cli", async (c) => {
@@ -218,12 +204,16 @@ runtimeRoute.post("/install-cli", async (c) => {
 	const packages: Record<string, string> = {
 		codex: "@openai/codex",
 		claude: "@anthropic-ai/claude-code",
+		copilot: "@github/copilot",
 	};
 
 	const pkg = packages[tool];
 	if (!pkg) {
 		return c.json(
-			{ ok: false, error: `Unknown tool: ${tool}. Use "codex" or "claude".` },
+			{
+				ok: false,
+				error: `Unknown tool: ${tool}. Use "codex", "claude", or "copilot".`,
+			},
 			400,
 		);
 	}
@@ -253,36 +243,62 @@ runtimeRoute.post("/cli-login", async (c) => {
 	const commands: Record<string, string> = {
 		codex: "codex login",
 		claude: "claude login",
+		copilot: "copilot auth login",
 	};
 
 	const cmd = commands[tool];
 	if (!cmd) {
 		return c.json(
-			{ ok: false, error: `Unknown tool: ${tool}. Use "codex" or "claude".` },
+			{
+				ok: false,
+				error: `Unknown tool: ${tool}. Use "codex", "claude", or "copilot".`,
+			},
 			400,
 		);
 	}
 
 	const platform = process.platform;
+	// Headless detection — opening a Terminal app is meaningless on a server
+	// without a desktop session (SSH, container, systemd unit). Tell the
+	// caller to run the command on the host instead.
+	const headless =
+		(platform === "linux" &&
+			!process.env.DISPLAY &&
+			!process.env.WAYLAND_DISPLAY) ||
+		Boolean(process.env.SETRA_HEADLESS) ||
+		Boolean(process.env.SSH_CONNECTION) ||
+		Boolean(process.env.KUBERNETES_SERVICE_HOST);
+	if (headless) {
+		return c.json(
+			{
+				ok: false,
+				code: "HEADLESS",
+				tool,
+				command: cmd,
+				error: `This server is headless. Run \`${cmd}\` directly on the host shell, then call GET /api/runtime/cli-status to confirm.`,
+			},
+			409,
+		);
+	}
+
 	try {
 		if (platform === "darwin") {
-			// Open Terminal.app with the login command
 			exec(
 				`osascript -e 'tell application "Terminal" to do script "${cmd}"' -e 'tell application "Terminal" to activate'`,
 			);
 		} else if (platform === "linux") {
-			// Try common terminal emulators
 			exec(
 				`x-terminal-emulator -e "${cmd}" 2>/dev/null || gnome-terminal -- bash -c "${cmd}; read" 2>/dev/null || xterm -e "${cmd}" 2>/dev/null`,
 			);
 		} else {
-			// Windows
 			exec(`start cmd /k "${cmd}"`);
 		}
 		return c.json({
 			ok: true,
 			tool,
-			message: "Terminal opened — complete login there",
+			command: cmd,
+			message:
+				"Terminal opened — complete login there, then poll GET /api/runtime/cli-status for confirmation.",
 		});
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);

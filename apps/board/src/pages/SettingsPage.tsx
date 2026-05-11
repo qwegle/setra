@@ -837,9 +837,13 @@ export function SettingsPage() {
 			...selectableModelOptions,
 		];
 		if (!options.some((option) => option.id === currentValue)) {
+			const known = modelLabelById.get(currentValue);
+			const note = known
+				? `${known} (saved — provider key missing)`
+				: `${currentValue} (saved — provider key missing)`;
 			options.unshift({
 				id: currentValue,
-				label: `${modelLabelById.get(currentValue) ?? currentValue} (current)`,
+				label: note,
 				disabled: true,
 			});
 		}
@@ -877,9 +881,13 @@ export function SettingsPage() {
 			setDefaultModel(serverSettings.defaultModel);
 		if (serverSettings.smallModel) setSmallModel(serverSettings.smallModel);
 		if ((serverSettings as Record<string, unknown>).preferredAdapter)
-			setPreferredAdapter((serverSettings as Record<string, unknown>).preferredAdapter as string);
+			setPreferredAdapter(
+				(serverSettings as Record<string, unknown>).preferredAdapter as string,
+			);
 		if ((serverSettings as Record<string, unknown>).preferredModel)
-			setPreferredModel((serverSettings as Record<string, unknown>).preferredModel as string);
+			setPreferredModel(
+				(serverSettings as Record<string, unknown>).preferredModel as string,
+			);
 		if (serverSettings.governance) {
 			setDeployMode(
 				serverSettings.governance.deployMode as "manual" | "semi" | "auto",
@@ -1059,7 +1067,7 @@ export function SettingsPage() {
 	const [loggingInCli, setLoggingInCli] = useState<string | null>(null);
 	const [installingOllama, setInstallingOllama] = useState(false);
 	const [cliError, setCliError] = useState<string | null>(null);
-	const handleInstallCli = async (tool: "codex" | "claude") => {
+	const handleInstallCli = async (tool: "codex" | "claude" | "copilot") => {
 		setInstallingCli(tool);
 		setCliError(null);
 		try {
@@ -1073,7 +1081,7 @@ export function SettingsPage() {
 			setInstallingCli(null);
 		}
 	};
-	const handleLoginCli = async (tool: "codex" | "claude") => {
+	const handleLoginCli = async (tool: "codex" | "claude" | "copilot") => {
 		setLoggingInCli(tool);
 		setCliError(null);
 		try {
@@ -1520,15 +1528,102 @@ export function SettingsPage() {
 			<Card>
 				<div className="space-y-6">
 					<SectionIntro
+						icon={Terminal}
+						title="CLI tools"
+						description="Use your existing ChatGPT Plus, Claude Pro, or GitHub Copilot subscription instead of API keys. Once a CLI is installed and logged in, agents with the matching adapter can run without a separate key."
+					/>
+					<div className="space-y-3">
+						{(
+							[
+								{
+									key: "codex",
+									label: "Codex CLI (OpenAI)",
+									note: "Drives GPT-5.x agents using your ChatGPT subscription.",
+								},
+								{
+									key: "claude",
+									label: "Claude Code (Anthropic)",
+									note: "Drives Claude agents using your Claude Pro or Max plan.",
+								},
+								{
+									key: "copilot",
+									label: "GitHub Copilot CLI",
+									note: "Drives Copilot agents using your GitHub Copilot subscription.",
+								},
+							] as const
+						).map((tool) => {
+							const entry = cliStatus?.[tool.key];
+							const isInstalling = installingCli === tool.key;
+							const isLoggingIn = loggingInCli === tool.key;
+							return (
+								<div
+									key={tool.key}
+									className="flex flex-col gap-3 rounded-lg border border-border/50 bg-muted/10 p-4 sm:flex-row sm:items-center sm:justify-between"
+								>
+									<div className="flex items-start gap-3">
+										<Terminal className="mt-0.5 h-4 w-4 text-muted-foreground" />
+										<div>
+											<div className="text-sm font-medium text-foreground">
+												{tool.label}
+											</div>
+											<p className="text-xs text-muted-foreground">
+												{tool.note}
+											</p>
+											<p className="mt-1 text-[11px] text-muted-foreground">
+												{!entry
+													? "Status unavailable."
+													: !entry.installed
+														? "Not installed."
+														: entry.loggedIn
+															? `Installed${entry.version ? ` (${entry.version})` : ""} — logged in.`
+															: `Installed${entry.version ? ` (${entry.version})` : ""} — login required.`}
+											</p>
+										</div>
+									</div>
+									<div className="flex flex-wrap items-center gap-2">
+										{!entry?.installed ? (
+											<button
+												type="button"
+												onClick={() => handleInstallCli(tool.key)}
+												disabled={installingCli !== null}
+												className="rounded border border-setra-500/40 bg-setra-600/10 px-3 py-1 text-xs font-medium text-setra-300 transition-colors hover:bg-setra-600/20 disabled:opacity-50"
+											>
+												{isInstalling ? "Installing…" : "Install"}
+											</button>
+										) : !entry.loggedIn ? (
+											<button
+												type="button"
+												onClick={() => handleLoginCli(tool.key)}
+												disabled={loggingInCli !== null}
+												className="rounded border border-amber-400/40 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-500/20 disabled:opacity-50"
+											>
+												{isLoggingIn ? "Opening login…" : "Login"}
+											</button>
+										) : (
+											<span className="rounded border border-accent-green/30 px-2 py-0.5 text-[11px] uppercase tracking-wider text-accent-green">
+												connected
+											</span>
+										)}
+									</div>
+								</div>
+							);
+						})}
+					</div>
+					{cliError && <p className="text-sm text-red-400">{cliError}</p>}
+				</div>
+			</Card>
+			<Card>
+				<div className="space-y-6">
+					<SectionIntro
 						icon={Sparkles}
 						title="Default selections"
-						description="Choose the default primary and lightweight models used across the workspace. Only ready providers contribute selectable models."
+						description="Powers the in-app Assistant chat (top-right panel) and lightweight summaries. Hired agents pick their own adapter — including any CLI you've connected — under Agents → Roster."
 					/>
 					<div className="grid gap-4 md:grid-cols-2">
 						<Select
 							id="default-model"
 							label="Default model"
-							helperText="Used for main agent turns."
+							helperText="Used by the Assistant chat. Requires a saved API key for the matching provider."
 							value={defaultModel}
 							onChange={(event) => setDefaultModel(event.target.value)}
 						>
@@ -1544,93 +1639,27 @@ export function SettingsPage() {
 							{renderModelOptions(smallModelSelectOptions)}
 						</Select>
 					</div>
-					{/* Global default adapter — overrides auto-selection for all agents */}
-					<div className="mt-4 rounded-lg border border-zinc-700 bg-zinc-800/40 p-4">
-						<p className="mb-3 text-sm font-medium text-zinc-100">
-							Global default agent adapter
-						</p>
-						<p className="mb-3 text-xs text-zinc-400">
-							When set, every agent hired (by you or by the CEO agent) will
-							automatically use this adapter and model. Leave blank to use
-							auto-selection based on configured API keys.
-						</p>
-						<div className="grid gap-4 md:grid-cols-2">
-							<Select
-								id="preferred-adapter"
-								label="Preferred adapter"
-								helperText="Applies to all new agent hires."
-								value={preferredAdapter}
-								onChange={(event) => setPreferredAdapter(event.target.value)}
-							>
-								<option value="">Auto (use cheapest configured key)</option>
-								<option value="codex">Codex CLI (OpenAI)</option>
-								<option value="claude">Claude CLI (Anthropic)</option>
-								<option value="openai-api">OpenAI API</option>
-								<option value="anthropic-api">Anthropic API</option>
-								<option value="gemini-api">Gemini API</option>
-								<option value="openrouter">OpenRouter</option>
-								<option value="groq">Groq</option>
-								<option value="ollama">Ollama (local)</option>
-							</Select>
-							{preferredAdapter && (
-								<Select
-									id="preferred-model"
-									label="Preferred model"
-									helperText="Leave blank to use adapter default."
-									value={preferredModel}
-									onChange={(event) => setPreferredModel(event.target.value)}
-								>
-									<option value="">Adapter default</option>
-									{preferredAdapter === "codex" && (
-										<>
-											<option value="gpt-5.5">gpt-5.5</option>
-											<option value="gpt-5.4">gpt-5.4</option>
-											<option value="gpt-4o">gpt-4o</option>
-											<option value="o3">o3</option>
-											<option value="o4-mini">o4-mini</option>
-										</>
-									)}
-									{preferredAdapter === "claude" && (
-										<>
-											<option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-											<option value="claude-opus-4-5">claude-opus-4-5</option>
-											<option value="claude-haiku-4-5">claude-haiku-4-5</option>
-										</>
-									)}
-									{(preferredAdapter === "openai-api" || preferredAdapter === "openrouter") && (
-										<>
-											<option value="gpt-5.5">gpt-5.5</option>
-											<option value="gpt-5.4">gpt-5.4</option>
-											<option value="gpt-4o">gpt-4o</option>
-											<option value="gpt-4o-mini">gpt-4o-mini</option>
-										</>
-									)}
-									{(preferredAdapter === "anthropic-api") && (
-										<>
-											<option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-											<option value="claude-haiku-4-5">claude-haiku-4-5</option>
-										</>
-									)}
-									{preferredAdapter === "gemini-api" && (
-										<>
-											<option value="gemini-2.5-flash">gemini-2.5-flash</option>
-											<option value="gemini-2.5-pro">gemini-2.5-pro</option>
-										</>
-									)}
-									{preferredAdapter === "ollama" && (
-										<>
-											<option value="qwen2.5-coder:7b">qwen2.5-coder:7b</option>
-											<option value="llama3:8b">llama3:8b</option>
-										</>
-									)}
-								</Select>
-							)}
-						</div>
-					</div>
+					{cliStatus &&
+						(cliStatus.codex.loggedIn ||
+							cliStatus.claude.loggedIn ||
+							cliStatus.copilot.loggedIn) && (
+							<p className="text-xs text-muted-foreground">
+								CLI subscriptions detected (
+								{[
+									cliStatus.codex.loggedIn && "Codex",
+									cliStatus.claude.loggedIn && "Claude",
+									cliStatus.copilot.loggedIn && "Copilot",
+								]
+									.filter(Boolean)
+									.join(", ")}
+								). They are not selectable here — assign them to a hired agent
+								under Agents → Roster to use them.
+							</p>
+						)}
 					{selectableModelOptions.length === 0 && (
 						<p className="text-sm text-zinc-400">
-							No model is currently selectable. Add and save an API key, or use
-							a local Ollama model.
+							No model is currently selectable. Add and save an API key above,
+							or use a local Ollama model.
 						</p>
 					)}
 				</div>

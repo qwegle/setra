@@ -214,11 +214,10 @@ export function insertRun(
 		.run(runId, plotId, slug, modelId, now, now);
 }
 
+import { recordRunChunk } from "../lib/run-chunks.js";
+
 export function insertChunk(runId: string, task: string, now: string): void {
-	getRawDb()
-		.prepare(`INSERT INTO chunks (run_id, sequence, content, chunk_type, recorded_at)
-               VALUES (?, 0, ?, 'input', ?)`)
-		.run(runId, task, now);
+	recordRunChunk({ runId, type: "input", content: task, now });
 }
 
 // ─── Company queries ──────────────────────────────────────────────────────────

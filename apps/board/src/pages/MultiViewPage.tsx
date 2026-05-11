@@ -14,6 +14,7 @@ import {
 	Separator as PanelResizeHandle,
 } from "react-resizable-panels";
 import { Badge, Button, PageHeader } from "../components/ui";
+import { useRunChunkStream } from "../hooks/useRunChunkStream";
 import {
 	type Agent,
 	type AgentRun,
@@ -26,15 +27,19 @@ const DASHBOARD_CHANNEL = "general";
 const MIN_PANELS = 4;
 const MAX_PANELS = 6;
 
-const CHUNK_TYPE_STYLES: Record<
-	AgentRunLogChunk["type"],
-	{ className: string; prefix?: string }
+const CHUNK_TYPE_STYLES: Partial<
+	Record<AgentRunLogChunk["type"], { className: string; prefix?: string }>
 > = {
 	assistant: { className: "text-foreground" },
 	tool_use: { className: "text-setra-400", prefix: "[tool]" },
 	tool_result: { className: "text-muted-foreground", prefix: "[result]" },
 	system: { className: "text-accent-yellow", prefix: "[system]" },
+	input: { className: "text-muted-foreground italic", prefix: "[prompt]" },
+	stdout: { className: "text-foreground/80" },
+	stderr: { className: "text-accent-red", prefix: "[stderr]" },
+	output: { className: "text-foreground" },
 };
+const DEFAULT_CHUNK_STYLE = { className: "text-foreground" } as const;
 
 interface DashboardAgent extends Agent {
 	displayName: string;
@@ -113,9 +118,31 @@ function AgentTerminalPanel({ agent }: { agent: DashboardAgent }) {
 		queryFn: () =>
 			primaryRun ? api.agentDetail.getRunLog(agent.id, primaryRun.id) : [],
 		enabled: Boolean(primaryRun),
-		refetchInterval: live ? 5_000 : 15_000,
+		// Initial fetch loads history; live updates arrive via SSE below.
+		// Background poll kept at 30s to recover from missed events.
+		refetchInterval: 30_000,
 	});
-	const chunkCount = chunks.length;
+
+	// Merge SSE-pushed run:chunk events for the active run into the
+	// query-cache chunks so the panel updates without polling.
+	const { chunks: streamedChunks } = useRunChunkStream({
+		runId: primaryRun?.id ?? null,
+	});
+	const mergedChunks: AgentRunLogChunk[] = useMemo(() => {
+		if (streamedChunks.length === 0) return chunks;
+		const seen = new Set<string>();
+		const out: AgentRunLogChunk[] = [];
+		const push = (c: AgentRunLogChunk, seq?: number) => {
+			const key = `${seq ?? out.length}-${c.timestamp}-${c.content.slice(0, 32)}`;
+			if (seen.has(key)) return;
+			seen.add(key);
+			out.push(c);
+		};
+		for (const c of chunks) push(c, c.sequence);
+		for (const c of streamedChunks) push(c, c.sequence);
+		return out;
+	}, [chunks, streamedChunks]);
+	const chunkCount = mergedChunks.length;
 
 	useEffect(() => {
 		if (chunkCount > 0 && autoScroll && containerRef.current) {
@@ -230,7 +257,7 @@ function AgentTerminalPanel({ agent }: { agent: DashboardAgent }) {
 					onScroll={handleScroll}
 					className="h-full overflow-y-auto px-4 py-3 scroll-smooth"
 				>
-					{chunks.length === 0 ? (
+					{mergedChunks.length === 0 ? (
 						<p className="text-xs font-mono italic text-muted-foreground/40">
 							{primaryRun
 								? "No log entries yet…"
@@ -238,9 +265,9 @@ function AgentTerminalPanel({ agent }: { agent: DashboardAgent }) {
 						</p>
 					) : (
 						<div className="space-y-0.5">
-							{chunks.map((chunk) => {
+							{mergedChunks.map((chunk) => {
 								const style =
-									CHUNK_TYPE_STYLES[chunk.type] ?? CHUNK_TYPE_STYLES.assistant;
+									CHUNK_TYPE_STYLES[chunk.type] ?? DEFAULT_CHUNK_STYLE;
 								const prefix =
 									chunk.type === "tool_use" && chunk.toolName
 										? `[tool:${chunk.toolName}]`

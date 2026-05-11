@@ -1,0 +1,89 @@
+name: Enterprise Mirror
+
+# Mirrors approved branches and tags from this repository to the
+# private setra-enterprise repository so the enterprise distribution
+# stays in lockstep with mainline development.
+#
+# Required repository secrets:
+#   ENTERPRISE_MIRROR_URL    Full HTTPS URL of the target repo, for
+#                            example https://github.com/qwegle/setra-enterprise.git
+#   ENTERPRISE_MIRROR_TOKEN  Personal access token or fine-grained token
+#                            with `contents: write` on the target repo.
+#
+# If either secret is unset the job exits successfully without performing
+# any push, so the workflow is safe to enable in forks that do not
+# maintain an enterprise mirror.
+
+on:
+  push:
+    branches: [main, dev]
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ref to mirror (defaults to current branch)"
+        required: false
+        default: ""
+
+concurrency:
+  group: enterprise-mirror-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    name: Mirror to setra-enterprise
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify mirror configuration
+        id: verify
+        env:
+          MIRROR_URL: ${{ secrets.ENTERPRISE_MIRROR_URL }}
+          MIRROR_TOKEN: ${{ secrets.ENTERPRISE_MIRROR_TOKEN }}
+        run: |
+          if [ -z "$MIRROR_URL" ] || [ -z "$MIRROR_TOKEN" ]; then
+            echo "Enterprise mirror secrets not configured; skipping."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out full history
+        if: steps.verify.outputs.configured == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push branch or tag to enterprise mirror
+        if: steps.verify.outputs.configured == 'true'
+        env:
+          MIRROR_URL: ${{ secrets.ENTERPRISE_MIRROR_URL }}
+          MIRROR_TOKEN: ${{ secrets.ENTERPRISE_MIRROR_TOKEN }}
+          INPUT_REF: ${{ github.event.inputs.ref }}
+        run: |
+          set -euo pipefail
+          AUTHED_URL="$(printf '%s' "$MIRROR_URL" | sed -e "s#https://#https://x-access-token:${MIRROR_TOKEN}@#")"
+
+          if [ -n "${INPUT_REF:-}" ]; then
+            REF="${INPUT_REF}"
+          else
+            REF="${GITHUB_REF}"
+          fi
+
+          git config user.name "setra-mirror-bot"
+          git config user.email "setra-mirror-bot@users.noreply.github.com"
+
+          if [[ "$REF" == refs/heads/* ]]; then
+            BRANCH="${REF#refs/heads/}"
+            echo "Mirroring branch ${BRANCH}"
+            git push --force "$AUTHED_URL" "HEAD:refs/heads/${BRANCH}"
+          elif [[ "$REF" == refs/tags/* ]]; then
+            TAG="${REF#refs/tags/}"
+            echo "Mirroring tag ${TAG}"
+            git push --force "$AUTHED_URL" "refs/tags/${TAG}:refs/tags/${TAG}"
+          else
+            echo "Unsupported ref type: ${REF}"
+            exit 1
+          fi
