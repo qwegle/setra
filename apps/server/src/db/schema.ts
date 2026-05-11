@@ -715,6 +715,16 @@ export function ensureTables(): void {
 
 	try {
 		rawSqlite.exec(
+			`ALTER TABLE companies ADD COLUMN lan_discoverable INTEGER NOT NULL DEFAULT 0`,
+		);
+	} catch {}
+
+	try {
+		rawSqlite.exec(`ALTER TABLE company_invites ADD COLUMN note TEXT`);
+	} catch {}
+
+	try {
+		rawSqlite.exec(
 			`UPDATE routines SET is_active = COALESCE(is_active, enabled, 1) WHERE is_active IS NULL`,
 		);
 	} catch {

@@ -24,6 +24,7 @@ import {
 	Sparkles,
 	SplitSquareHorizontal,
 	Target,
+	Wifi,
 	X,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -54,6 +55,7 @@ const toolsNav = [
 	{ to: "/integrations", label: "Integrations", icon: ExternalLink },
 	{ to: "/environments", label: "Environments", icon: LayoutGrid },
 	{ to: "/files", label: "Files", icon: FolderTree },
+	{ to: "/connect", label: "Connect", icon: Wifi },
 ];
 
 const settingsNav = [

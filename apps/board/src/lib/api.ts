@@ -2079,6 +2079,98 @@ export const api = {
 				}[]
 			>("/costs/providers"),
 	},
+	lan: {
+		status: () =>
+			request<{
+				instanceId: string;
+				discoverable: boolean;
+				broadcasting: boolean;
+				addresses: string[];
+				port: number;
+				companyName: string;
+			}>("/lan/status"),
+		setDiscoverable: (enabled: boolean) =>
+			request<{ discoverable: boolean; broadcasting: boolean }>(
+				"/lan/discoverable",
+				{
+					method: "POST",
+					body: JSON.stringify({ enabled }),
+				},
+			),
+		peers: () =>
+			request<{
+				peers: Array<{
+					instanceId: string;
+					companyId: string;
+					companyName: string;
+					ownerEmail: string;
+					host: string;
+					address: string;
+					port: number;
+					proto: "http" | "https";
+					url: string;
+					lastSeen: number;
+				}>;
+			}>("/lan/peers"),
+		joinRequests: () =>
+			request<{
+				requests: Array<{
+					id: string;
+					email: string;
+					name: string | null;
+					message: string | null;
+					status: string;
+					sentAt: string;
+				}>;
+			}>("/lan/join-requests"),
+		approve: (id: string) =>
+			request<{ requestId: string; status: string }>(
+				`/lan/join-request/${id}/approve`,
+				{ method: "POST" },
+			),
+		reject: (id: string) =>
+			request<{ requestId: string; status: string }>(
+				`/lan/join-request/${id}/reject`,
+				{ method: "POST" },
+			),
+		requestJoin: async (
+			peerUrl: string,
+			body: {
+				companyId: string;
+				email: string;
+				name?: string;
+				message?: string;
+			},
+		) => {
+			const res = await globalThis.fetch(
+				`${peerUrl.replace(/\/$/, "")}/api/lan/join-request`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(body),
+				},
+			);
+			if (!res.ok) {
+				const text = await res.text().catch(() => res.statusText);
+				throw new Error(text || `Request failed (${res.status})`);
+			}
+			return res.json() as Promise<{ requestId: string; status: string }>;
+		},
+		pollJoinRequest: async (peerUrl: string, requestId: string) => {
+			const res = await globalThis.fetch(
+				`${peerUrl.replace(/\/$/, "")}/api/lan/join-request/${requestId}`,
+			);
+			if (!res.ok) throw new Error(`Poll failed (${res.status})`);
+			return res.json() as Promise<{ requestId: string; status: string }>;
+		},
+		probeRemote: async (peerUrl: string) => {
+			const res = await globalThis.fetch(
+				`${peerUrl.replace(/\/$/, "")}/api/health`,
+			);
+			if (!res.ok) throw new Error(`Probe failed (${res.status})`);
+			return res.json() as Promise<{ ok: boolean }>;
+		},
+	},
 };
 
 export interface AgentRun {

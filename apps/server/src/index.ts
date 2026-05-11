@@ -87,6 +87,7 @@ import { inboxRoute } from "./routes/inbox.js";
 import { instanceRoute } from "./routes/instance.js";
 import { integrationsRoute } from "./routes/integrations.js";
 import { issuesRoute } from "./routes/issues.js";
+import { lanRoute } from "./routes/lan.js";
 import { llmRoute } from "./routes/llm.js";
 import { marketingRoute, publicMarketingRoute } from "./routes/marketing.js";
 import { mcpRoute } from "./routes/mcp.js";
@@ -168,6 +169,7 @@ export async function createApp(
 	app.route("/api/llm", llmRoute);
 	app.route("/api/runtime", runtimeRoute);
 	app.route("/api/instance", instanceRoute);
+	app.route("/api/lan", lanRoute);
 	app.route("/api/clone", cloneRoute);
 	app.route("/api/parse-goal", parseGoalRoute);
 	app.route("/api/search", searchRoute);
@@ -235,6 +237,22 @@ export async function createApp(
 			return next();
 		}
 		return authGuard(c, next);
+	});
+
+	// LAN routes:
+	//  - POST /api/lan/join-request and GET /api/lan/join-request/:id are public
+	//    so peer Setra instances on the same Wi-Fi can hand off join requests
+	//    without sharing credentials. Everything else requires auth + company.
+	app.use("/api/lan/*", async (c, next) => {
+		const path = c.req.path;
+		const method = c.req.method;
+		const isPublicHandshake =
+			(method === "POST" && path === "/api/lan/join-request") ||
+			(method === "GET" && path.startsWith("/api/lan/join-request/"));
+		if (isPublicHandshake) return next();
+		return authGuard(c, async () => {
+			await requireCompany(c, next);
+		});
 	});
 
 	app.route("/api/projects", projectsRoute);
@@ -305,10 +323,18 @@ const isMain =
 
 if (isMain) {
 	const PORT = Number(process.env.SETRA_PORT ?? 3141);
+	// Bind to 0.0.0.0 so other devices on the local Wi-Fi can reach this
+	// instance for multi-developer collaboration. SETRA_BIND_HOST overrides
+	// when an operator wants to lock it down to loopback only.
+	const HOST = process.env.SETRA_BIND_HOST ?? "0.0.0.0";
 	const app = await createApp();
 
-	log.info("server listening", { port: PORT, url: `http://localhost:${PORT}` });
-	serve({ fetch: app.fetch, port: PORT });
+	log.info("server listening", {
+		host: HOST,
+		port: PORT,
+		url: `http://localhost:${PORT}`,
+	});
+	serve({ fetch: app.fetch, port: PORT, hostname: HOST });
 
 	if (process.env.NODE_ENV !== "test") {
 		registerRunQueueProcessor();
@@ -323,6 +349,38 @@ if (isMain) {
 			primeResumePackets();
 		} catch (err) {
 			log.warn("primeResumePackets failed", { err: String(err) });
+		}
+
+		// Start LAN browser unconditionally (passive listening — does not
+		// announce). The broadcaster only starts for companies that have
+		// opted into discoverability.
+		try {
+			const { startBrowser, startBroadcast } = await import(
+				"./lib/lan-discovery.js"
+			);
+			startBrowser();
+			const discoverable = getRawDb()
+				.prepare(
+					`SELECT id, name FROM companies WHERE lan_discoverable = 1`,
+				)
+				.all() as Array<{ id: string; name: string }>;
+			for (const co of discoverable) {
+				const owner = getRawDb()
+					.prepare(
+						`SELECT email FROM users WHERE company_id = ? AND role = 'owner'
+						 ORDER BY created_at ASC LIMIT 1`,
+					)
+					.get(co.id) as { email: string } | undefined;
+				startBroadcast({
+					companyId: co.id,
+					companyName: co.name,
+					ownerEmail: owner?.email ?? "",
+					port: PORT,
+				});
+				break; // bonjour-service supports one broadcast per process for now
+			}
+		} catch (err) {
+			log.warn("lan-discovery start failed", { err: String(err) });
 		}
 
 		// Apply API keys from settings.json to process.env for all companies
