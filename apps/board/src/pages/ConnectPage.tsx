@@ -260,6 +260,91 @@ function JoinDialog({
 	);
 }
 
+function PublicUrlEditor({
+	status,
+}: {
+	status:
+		| {
+				publicUrl: string | null;
+				instanceUrl: string;
+				companyId: string;
+		  }
+		| undefined;
+}) {
+	const qc = useQueryClient();
+	const [value, setValue] = useState("");
+	const [editing, setEditing] = useState(false);
+	useEffect(() => {
+		setValue(status?.publicUrl ?? "");
+	}, [status?.publicUrl]);
+	const save = useMutation({
+		mutationFn: (v: string | null) => api.lan.setPublicUrl(v),
+		onSuccess: () => {
+			setEditing(false);
+			qc.invalidateQueries({ queryKey: ["lan"] });
+		},
+	});
+	if (!status) return null;
+	return (
+		<Card className="p-4">
+			<div className="flex items-start justify-between gap-3">
+				<div className="min-w-0 flex-1">
+					<div className="text-sm font-medium">Public URL for invite links</div>
+					<p className="text-xs text-muted-foreground mt-0.5">
+						Override the auto-detected URL when this instance is reachable on
+						a public hostname or VPN.
+					</p>
+					{!editing ? (
+						<code className="block mt-2 px-2 py-1 bg-black/30 rounded text-xs font-mono break-all">
+							{status.publicUrl ?? status.instanceUrl}{" "}
+							{!status.publicUrl ? (
+								<span className="text-muted-foreground">(auto)</span>
+							) : null}
+						</code>
+					) : (
+						<input
+							type="url"
+							value={value}
+							onChange={(e) => setValue(e.target.value)}
+							placeholder="https://setra.acme.com"
+							className="mt-2 w-full px-3 py-1.5 bg-muted/30 border border-border rounded text-xs font-mono"
+						/>
+					)}
+				</div>
+				<div className="flex gap-2">
+					{!editing ? (
+						<Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+							Edit
+						</Button>
+					) : (
+						<>
+							<Button
+								size="sm"
+								variant="ghost"
+								onClick={() => {
+									setValue(status.publicUrl ?? "");
+									setEditing(false);
+								}}
+							>
+								Cancel
+							</Button>
+							<Button
+								size="sm"
+								onClick={() =>
+									save.mutate(value.trim() ? value.trim() : null)
+								}
+								disabled={save.isPending}
+							>
+								Save
+							</Button>
+						</>
+					)}
+				</div>
+			</div>
+		</Card>
+	);
+}
+
 export default function ConnectPage() {
 	const [tab, setTab] = useState<Tab>("nearby");
 	const [remoteUrl, setRemoteUrl] = useState("");
@@ -358,6 +443,8 @@ export default function ConnectPage() {
 					</div>
 				</Card>
 			) : null}
+
+			<PublicUrlEditor status={status.data} />
 
 			<div className="flex gap-1 border-b border-border">
 				{tabs.map((t) => (

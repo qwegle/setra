@@ -5,6 +5,7 @@ import {
 	getCompanySettings as getStoreSettings,
 	setCompanySettings as setStoreSettings,
 } from "../lib/company-settings.js";
+import { buildInviteUrl, getInstanceBaseUrl } from "../lib/instance-url.js";
 import * as companyRepo from "../repositories/company.repo.js";
 import {
 	CreateInviteSchema,
@@ -133,7 +134,15 @@ companyRoute.delete("/members/:id", async (c) => {
 companyRoute.get("/invites", async (c) => {
 	const cid = getCompanyId(c);
 	const rows = await companyRepo.listInvites(cid);
-	return c.json(rows);
+	const withUrl = rows.map((r) => ({
+		...r,
+		joinUrl: buildInviteUrl({
+			companyId: cid,
+			inviteId: r.id,
+			email: r.email,
+		}),
+	}));
+	return c.json(withUrl);
 });
 
 companyRoute.post(
@@ -143,6 +152,11 @@ companyRoute.post(
 		const cid = getCompanyId(c);
 		const body = c.req.valid("json");
 		const row = await companyRepo.createInvite(body.email, cid, body.role);
+		const joinUrl = buildInviteUrl({
+			companyId: cid,
+			inviteId: row.id,
+			email: body.email,
+		});
 
 		// Try sending invite email via Resend if API key is configured
 		const settings = getStoreSettings(cid) as Record<string, unknown>;
@@ -163,12 +177,8 @@ companyRoute.post(
 						subject: `You're invited to join ${companyName} on Setra`,
 						html: `<h2>You've been invited!</h2>
 <p><strong>${companyName}</strong> has invited you to join their workspace on Setra as a <strong>${row.role}</strong>.</p>
-<p>To accept this invite:</p>
-<ol>
-<li>Install the Setra app on your system</li>
-<li>Register with this email: <strong>${body.email}</strong></li>
-<li>You'll be automatically added to the workspace</li>
-</ol>
+<p><a href="${joinUrl}" style="display:inline-block;background:#6366f1;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:600">Accept invite & join workspace</a></p>
+<p style="color:#666;font-size:13px">Or open this link in your Setra app or browser:<br/><code>${joinUrl}</code></p>
 <p>This invite expires in 7 days.</p>
 <hr/>
 <p style="color:#666;font-size:12px">Sent via Setra — AI-powered enterprise platform</p>`,
@@ -179,7 +189,7 @@ companyRoute.post(
 			}
 		}
 
-		return c.json(row, 201);
+		return c.json({ ...row, joinUrl }, 201);
 	},
 );
 

@@ -8,7 +8,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Input } from "../components/ui";
 import { useAuth } from "../context/AuthContext";
 
@@ -241,14 +241,22 @@ function OrbitalRing() {
 
 export function LoginPage() {
 	const navigate = useNavigate();
+	const [params] = useSearchParams();
+	const invitedEmail = params.get("email") ?? "";
+	const inviteId = params.get("invite") ?? "";
 	const { isAuthenticated, isLoading, login, register } = useAuth();
-	const [mode, setMode] = useState<AuthMode>("signin");
+	const [mode, setMode] = useState<AuthMode>(
+		invitedEmail || inviteId ? "register" : "signin",
+	);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+	const [loginForm, setLoginForm] = useState({
+		email: invitedEmail,
+		password: "",
+	});
 	const [registerForm, setRegisterForm] = useState({
 		name: "",
-		email: "",
+		email: invitedEmail,
 		password: "",
 		companyName: "",
 	});
@@ -529,20 +537,28 @@ export function LoginPage() {
 										className={inputClass}
 										required
 									/>
-									<Input
-										label="Company name"
-										autoComplete="organization"
-										helperText="Only needed for the first account."
-										value={registerForm.companyName}
-										onChange={(event) =>
-											setRegisterForm((c) => ({
-												...c,
-												companyName: event.target.value,
-											}))
-										}
-										className={inputClass}
-										required
-									/>
+									{!inviteId ? (
+										<Input
+											label="Company name"
+											autoComplete="organization"
+											helperText="Only needed for the first account."
+											value={registerForm.companyName}
+											onChange={(event) =>
+												setRegisterForm((c) => ({
+													...c,
+													companyName: event.target.value,
+												}))
+											}
+											className={inputClass}
+											required
+										/>
+									) : (
+										<div className="rounded-md border border-setra-500/30 bg-setra-500/10 px-3 py-2 text-xs text-setra-200">
+											You were invited to join an existing workspace. Just
+											register with the email{" "}
+											<strong>{invitedEmail || "above"}</strong> to accept.
+										</div>
+									)}
 									{error ? (
 										<motion.div
 											initial={{ opacity: 0, height: 0 }}
