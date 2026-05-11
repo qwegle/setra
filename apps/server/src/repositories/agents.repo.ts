@@ -59,9 +59,16 @@ export const STALE_STATUS_EXPR = sql<string>`
 // ─── Agent Roster Queries ─────────────────────────────────────────────────────
 
 export function listRosterByCompany(companyId: string): AgentRosterRow[] {
+	// Strict tenant scoping — global (company_id IS NULL) rows are legacy
+	// orphans from older installs and must NOT leak into new tenants.
+	// The startup backfill in schema.ts migrates any orphan rows onto the
+	// first company; anything still NULL at this point is unowned and we
+	// treat it as invisible. The roster is built per-company on-demand:
+	// signup provisions only the CEO (via ensureCeoForCompany) and the CEO
+	// hires other roles using the hire_agent tool.
 	return getRawDb()
 		.prepare(
-			`SELECT * FROM agent_roster WHERE company_id = ? OR company_id IS NULL ORDER BY created_at ASC`,
+			`SELECT * FROM agent_roster WHERE company_id = ? ORDER BY created_at ASC`,
 		)
 		.all(companyId) as AgentRosterRow[];
 }

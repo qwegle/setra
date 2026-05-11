@@ -142,7 +142,7 @@ export async function runMigrations(migrationsDir?: string): Promise<void> {
 		const statements = sql
 			.split(/;\s*\n/)
 			.map((s) => s.trim())
-			.filter((s) => s.length > 0 && !s.startsWith("--"));
+			.filter((s) => s.length > 0);
 		const tx = raw.transaction(() => {
 			for (const stmt of statements) {
 				try {

@@ -1617,21 +1617,6 @@ const PROJECT_WORKSPACE_TYPES: Array<{
 	},
 ];
 
-const PROJECT_WIZARD_MODELS = [
-	{
-		id: "claude-sonnet-4-5",
-		label: "Claude",
-		description: "Balanced reasoning and coding",
-	},
-	{ id: "gpt-4o", label: "GPT", description: "Fast multimodal generalist" },
-	{
-		id: "gemini-2.5-pro",
-		label: "Gemini",
-		description: "Large context and planning",
-	},
-	{ id: "ollama", label: "Ollama", description: "Local model runtime" },
-] as const;
-
 function ProjectOnboardingWizard({
 	onClose,
 	onCompanyCreated,
@@ -1642,7 +1627,9 @@ function ProjectOnboardingWizard({
 		useState<ProjectWorkspaceType>("engineering");
 	const [projectName, setProjectName] = useState("");
 	const [projectDescription, setProjectDescription] = useState("");
-	const [modelId, setModelId] = useState<string>(PROJECT_WIZARD_MODELS[0].id);
+	// Seed the project with 1-3 starter tasks so the CEO has real work to
+	// chew on as soon as onboarding finishes. Empty strings are filtered out.
+	const [starterTasks, setStarterTasks] = useState<string[]>(["", "", ""]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -1692,11 +1679,14 @@ function ProjectOnboardingWizard({
 
 			const settingsRequest: RequestInit = {
 				method: "POST",
-				body: JSON.stringify({ defaultModel: modelId }),
+				body: JSON.stringify({}),
 			};
 			if (selectedCompanyId) {
 				settingsRequest.headers = { "x-company-id": selectedCompanyId };
 			}
+			// Touch /settings so the company-settings file exists; we no longer
+			// force a model here (the workspace wizard already captured keys +
+			// preferred model, and Setra auto-routes when one isn't set).
 			await request("/settings", settingsRequest);
 
 			const project = await api.projects.create({
@@ -1705,6 +1695,26 @@ function ProjectOnboardingWizard({
 					? { description: projectDescription.trim() }
 					: {}),
 			});
+
+			// Seed the project with the starter tasks the user typed. Each
+			// becomes a high-priority issue the CEO can immediately pick up
+			// and decompose. Failures here must not block onboarding.
+			const tasks = starterTasks
+				.map((t) => t.trim())
+				.filter((t) => t.length > 0);
+			for (const title of tasks) {
+				try {
+					await api.issues.create({
+						projectId: project.id,
+						title,
+						status: "todo",
+						priority: "high",
+					});
+				} catch {
+					/* per-task failure shouldn't fail the whole wizard */
+				}
+			}
+
 			onProjectCreated?.({ id: project.id });
 			onClose?.();
 		} catch (err) {
@@ -1717,13 +1727,13 @@ function ProjectOnboardingWizard({
 			setLoading(false);
 		}
 	}, [
-		modelId,
 		onClose,
 		onCompanyCreated,
 		onProjectCreated,
 		projectDescription,
 		projectName,
 		selectedWorkspace.label,
+		starterTasks,
 	]);
 
 	return (
@@ -1854,51 +1864,46 @@ function ProjectOnboardingWizard({
 						<div className="space-y-5">
 							<div>
 								<p className="text-lg font-medium text-white">
-									Connect your default agent model
+									Add your first tasks
 								</p>
 								<p className="mt-1 text-sm text-muted-foreground">
-									Pick the model Setra should use first when you launch agents.
+									Drop in 1–3 things you want done. Your CEO agent will pick
+									these up the moment setup finishes, break them into sub-tasks,
+									and hire the specialists it needs from the agent pool. You can
+									skip this and add tasks later.
 								</p>
 							</div>
-							<div className="grid gap-3 md:grid-cols-2">
-								{PROJECT_WIZARD_MODELS.map((item) => {
-									const active = modelId === item.id;
-									const Icon =
-										item.label === "Claude"
-											? Bot
-											: item.label === "GPT"
-												? Rocket
-												: item.label === "Gemini"
-													? Globe
-													: HardDrive;
-									return (
-										<button
-											key={item.id}
-											type="button"
-											onClick={() => setModelId(item.id)}
-											className={`rounded-xl border p-4 text-left transition ${
-												active
-													? "border-setra-500 bg-setra-500/10"
-													: "border-border/40 bg-white/[0.03] hover:border-setra-500/40"
-											}`}
-										>
-											<div className="flex items-start gap-3">
-												<div className="rounded-lg bg-white/5 p-2 text-setra-300">
-													<Icon className="h-4 w-4" />
-												</div>
-												<div>
-													<p className="font-medium text-white">{item.label}</p>
-													<p className="mt-1 text-sm text-muted-foreground">
-														{item.description}
-													</p>
-												</div>
-												{active ? (
-													<Check className="ml-auto h-4 w-4 text-setra-300" />
-												) : null}
-											</div>
-										</button>
-									);
-								})}
+							<div className="space-y-3">
+								{starterTasks.map((value, idx) => (
+									// biome-ignore lint/suspicious/noArrayIndexKey: position is the identity here
+									<div key={idx}>
+										<label className="mb-1 block text-xs uppercase tracking-[0.18em] text-muted-foreground/60">
+											Task {idx + 1}
+											{idx === 0 ? " (recommended)" : " (optional)"}
+										</label>
+										<input
+											value={value}
+											onChange={(event) => {
+												const next = [...starterTasks];
+												next[idx] = event.target.value;
+												setStarterTasks(next);
+											}}
+											placeholder={
+												idx === 0
+													? "e.g. Draft the architecture for our v1 API"
+													: idx === 1
+														? "e.g. Set up CI with lint, typecheck, and tests"
+														: "e.g. Write the README and contributing guide"
+											}
+											className="w-full rounded-lg border border-border/40 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-setra-500"
+										/>
+									</div>
+								))}
+							</div>
+							<div className="rounded-lg border border-setra-500/20 bg-setra-500/5 px-3 py-2 text-xs text-muted-foreground">
+								<span className="text-setra-300">Tip:</span> only the CEO is
+								provisioned at start. The CEO hires the rest of the team
+								on-demand based on what each task actually needs.
 							</div>
 						</div>
 					) : null}
