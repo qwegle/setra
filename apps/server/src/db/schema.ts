@@ -700,11 +700,6 @@ export function ensureTables(): void {
 		`ALTER TABLE runs ADD COLUMN first_chunk_at TEXT`,
 		`ALTER TABLE runs ADD COLUMN tool_calls_count INTEGER DEFAULT 0`,
 		`ALTER TABLE runs ADD COLUMN files_touched_count INTEGER DEFAULT 0`,
-		`ALTER TABLE runs ADD COLUMN task_id_ref TEXT`,
-		`ALTER TABLE team_messages ADD COLUMN task_id_ref TEXT`,
-		`ALTER TABLE plots ADD COLUMN branched_from_plot_id TEXT`,
-		`ALTER TABLE plots ADD COLUMN branched_from_run_id TEXT`,
-		`ALTER TABLE plots ADD COLUMN branched_at TEXT`,
 		`ALTER TABLE chunks ADD COLUMN tool_name TEXT`,
 	]) {
 		try {

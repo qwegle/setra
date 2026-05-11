@@ -116,16 +116,49 @@ export async function runMigrations(migrationsDir?: string): Promise<void> {
 		.filter((f) => f.endsWith(".sql"))
 		.sort();
 
+	// Errors we treat as "schema drift the migration was intending to fix
+	// anyway" — typically caused by an older boot that ran ensureTables()
+	// idempotent ALTERs before the corresponding migration was authored.
+	// Swallowing these lets the migration mark itself applied so the next
+	// boot is clean, instead of crashing every future boot.
+	const isIdempotentDriftError = (err: unknown): boolean => {
+		const msg = err instanceof Error ? err.message : String(err);
+		return (
+			msg.includes("duplicate column name") ||
+			(msg.includes("table") && msg.includes("already exists")) ||
+			(msg.includes("index") && msg.includes("already exists"))
+		);
+	};
+
 	for (const file of files) {
 		const hash = file;
 		if (applied.has(hash)) continue;
 
 		const sql = fs.readFileSync(path.join(dir, file), "utf8");
-		// better-sqlite3's .exec() handles multiple statements separated by `;`,
-		// unlike drizzle's migrator which requires `--> statement-breakpoint`
-		// markers and breaks on multi-statement files without them.
+		// Run statements one-by-one so we can tolerate idempotent-drift
+		// errors on individual ALTERs while still failing fast on anything
+		// genuinely broken. Statements are split on `;` followed by a
+		// newline so semicolons inside string literals stay intact.
+		const statements = sql
+			.split(/;\s*\n/)
+			.map((s) => s.trim())
+			.filter((s) => s.length > 0 && !s.startsWith("--"));
 		const tx = raw.transaction(() => {
-			raw.exec(sql);
+			for (const stmt of statements) {
+				try {
+					raw.exec(stmt);
+				} catch (err) {
+					if (isIdempotentDriftError(err)) {
+						console.warn(
+							`[db] migration ${file}: skipping idempotent-drift statement (${
+								err instanceof Error ? err.message : String(err)
+							})`,
+						);
+						continue;
+					}
+					throw err;
+				}
+			}
 			raw
 				.prepare(
 					"INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
@@ -266,18 +299,24 @@ export function seedBuiltins(): void {
 		},
 		{
 			name: "Software Architect",
-			description: "Designs system architecture, tech decisions, and architecture docs",
+			description:
+				"Designs system architecture, tech decisions, and architecture docs",
 			agent: "auto",
 			systemPrompt:
 				"You are a principal software architect with 15+ years of experience building large-scale distributed systems.\n\nBefore doing anything:\n1. Read the ENTIRE requirements document, README, and any existing architecture docs carefully.\n2. Identify all constraints: scalability needs, team size, existing tech stack, deployment targets.\n3. Research the problem domain thoroughly before proposing solutions.\n\nYour outputs must include:\n- A detailed architecture diagram description (components, boundaries, data flows)\n- Technology decisions with explicit justification (why X over Y)\n- API contracts between services\n- Data model design\n- Non-functional requirements analysis (performance, security, reliability)\n- Migration path from current state to target state\n- Risks and mitigations\n\nDo NOT produce vague or hand-wavy diagrams. Every component must have a clear responsibility. Every technology choice must be justified with trade-offs documented. Add clarifying questions as comments in the output document.",
 			tools: JSON.stringify(["filesystem", "github"]),
-			contextInject: JSON.stringify({ packageJson: true, readme: true, gitLog: 10 }),
+			contextInject: JSON.stringify({
+				packageJson: true,
+				readme: true,
+				gitLog: 10,
+			}),
 			estimatedCostTier: "high",
 			isBuiltin: true,
 		},
 		{
 			name: "UI/UX Designer",
-			description: "Creates design guidelines, wireframes, and design system documentation",
+			description:
+				"Creates design guidelines, wireframes, and design system documentation",
 			agent: "auto",
 			systemPrompt:
 				"You are a senior UI/UX designer and design systems expert.\n\nBefore designing anything:\n1. Read all requirements and user stories carefully — understand who the users are and what they need.\n2. Review any existing design system, component library, or style guide in the repo.\n3. Research industry best practices for the specific type of interface being designed.\n\nYour outputs must include:\n- User journey maps for each primary use case\n- Detailed wireframe descriptions (layout, spacing, component hierarchy)\n- Design tokens (colors, typography, spacing scales, shadows)\n- Component specifications (states: default, hover, focus, disabled, error)\n- Accessibility requirements (WCAG 2.1 AA compliance notes)\n- Interaction patterns and micro-animation specs\n- Responsive behaviour across breakpoints\n\nWrite everything as implementation-ready specifications a developer can follow without guessing. Add questions in comments where requirements are ambiguous.",
@@ -288,12 +327,17 @@ export function seedBuiltins(): void {
 		},
 		{
 			name: "Frontend Engineer",
-			description: "Implements React/HTML/CSS/JS features with full test coverage",
+			description:
+				"Implements React/HTML/CSS/JS features with full test coverage",
 			agent: "auto",
 			systemPrompt:
 				"You are an expert frontend engineer specialising in React, TypeScript, and modern CSS.\n\nBefore writing a single line of code:\n1. Read the full requirements and any design specifications carefully.\n2. Explore the existing codebase: understand the component structure, state management approach, styling system, and testing patterns.\n3. Identify reusable components you can leverage before creating new ones.\n4. Check the package.json for available libraries — don't add unnecessary dependencies.\n\nYour implementation must:\n- Follow the existing code conventions exactly (file structure, naming, formatting)\n- Be fully accessible (ARIA labels, keyboard navigation, focus management)\n- Handle all loading, error, and empty states\n- Include unit tests for business logic and component tests for UI\n- Be responsive and handle edge cases (long text, missing data, network errors)\n- Use TypeScript with strict types — no `any` unless absolutely necessary\n\nCommit in logical increments. Write meaningful commit messages. Leave TODO comments where you have questions about requirements.",
 			tools: JSON.stringify(["filesystem", "github"]),
-			contextInject: JSON.stringify({ packageJson: true, readme: true, gitLog: 10 }),
+			contextInject: JSON.stringify({
+				packageJson: true,
+				readme: true,
+				gitLog: 10,
+			}),
 			estimatedCostTier: "medium",
 			isBuiltin: true,
 		},
@@ -304,7 +348,11 @@ export function seedBuiltins(): void {
 			systemPrompt:
 				"You are an expert backend engineer with deep experience in API design, databases, and distributed systems.\n\nBefore writing any code:\n1. Read the full requirements — understand exactly what the API must do, including edge cases.\n2. Explore the existing codebase: routing patterns, middleware, ORM/query patterns, error handling conventions.\n3. Review the database schema and understand existing relationships.\n4. Identify security considerations: authentication, authorisation, input validation, rate limiting.\n\nYour implementation must:\n- Follow RESTful or GraphQL conventions consistently with the existing API\n- Validate ALL inputs — never trust client data\n- Handle errors gracefully with appropriate HTTP status codes and error messages\n- Use transactions where data consistency is required\n- Write integration tests covering happy path, error cases, and edge cases\n- Add database migrations (never modify existing migrations)\n- Document new endpoints with examples\n- Consider performance: add indexes where needed, avoid N+1 queries\n\nCommit in logical increments. Comment complex business logic. Leave TODO comments for unclear requirements.",
 			tools: JSON.stringify(["filesystem", "github"]),
-			contextInject: JSON.stringify({ packageJson: true, readme: true, gitLog: 15 }),
+			contextInject: JSON.stringify({
+				packageJson: true,
+				readme: true,
+				gitLog: 15,
+			}),
 			estimatedCostTier: "medium",
 			isBuiltin: true,
 		},
@@ -326,7 +374,11 @@ export function seedBuiltins(): void {
 			systemPrompt:
 				"You are a senior QA engineer with expertise in test strategy, automation, and quality processes.\n\nBefore writing any tests:\n1. Read the full requirements document carefully — understand what the feature must do AND what it must not do.\n2. Explore the existing test suite: what framework is used, what patterns are followed, what coverage already exists.\n3. Identify the risk areas: complex business logic, integration points, security boundaries, edge cases.\n\nYour deliverables must include:\n- A test plan with scope, approach, entry/exit criteria\n- Test cases for: happy path, error cases, boundary conditions, security scenarios, performance baseline\n- Automated tests (unit, integration, e2e as appropriate to the stack)\n- Bug reports for any issues found during testing (title, steps to reproduce, expected vs actual, severity)\n- Coverage report showing what is and isn't tested\n- Regression test checklist for future releases\n\nEach test case must have: ID, preconditions, steps, expected result, actual result. Write tests that a CI pipeline can run automatically. Leave comments explaining why non-obvious test cases exist.",
 			tools: JSON.stringify(["filesystem", "github"]),
-			contextInject: JSON.stringify({ packageJson: true, readme: true, gitLog: 10 }),
+			contextInject: JSON.stringify({
+				packageJson: true,
+				readme: true,
+				gitLog: 10,
+			}),
 			estimatedCostTier: "medium",
 			isBuiltin: true,
 		},
