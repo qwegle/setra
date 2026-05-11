@@ -46,67 +46,62 @@ const runsService = new RunsService(new SqliteRunsRepository(), domainEventBus);
 // ─── GET / — List agents ──────────────────────────────────────────────────────
 
 agentsRoute.get("/", async (c) => {
-	// Strict company-scoped roster lookup.
+	// Strict company-scoped roster lookup. Never fall back to a global
+	// roster — that would cross-leak every other tenant's agents into the
+	// caller's view (which is exactly the bug we're fixing). Missing or
+	// empty x-company-id ⇒ empty roster.
 	const cid = getCompanyId(c);
-	const rosterRows = cid
-		? agentsRepo.listRosterByCompany(cid)
-		: agentsRepo.listRosterGlobal();
+	if (!cid) return c.json([]);
+	const rosterRows = agentsRepo.listRosterByCompany(cid);
 
-	if (rosterRows.length > 0) {
-		return c.json(
-			rosterRows.map((r) => {
-				const stats = agentsRepo.getAgentStats(r.slug);
-				const activeRun = agentsRepo.getActiveRun(r.slug);
-				const score = getAgentScore(r.slug);
-				const experience = cid ? getAgentExperience(r.slug, cid) : null;
-				const runtimeStatus =
-					typeof (r as { status?: string }).status === "string"
-						? (r as { status?: string }).status
-						: "idle";
-				const status = r.is_active ? runtimeStatus : "inactive";
-				const completedRuns = score.successes + score.failures;
+	return c.json(
+		rosterRows.map((r) => {
+			const stats = agentsRepo.getAgentStatsForCompany(r.slug, cid);
+			const activeRun = agentsRepo.getActiveRunForCompany(r.slug, cid);
+			const score = getAgentScore(r.slug);
+			const experience = getAgentExperience(r.slug, cid);
+			const runtimeStatus =
+				typeof (r as { status?: string }).status === "string"
+					? (r as { status?: string }).status
+					: "idle";
+			const status = r.is_active ? runtimeStatus : "inactive";
+			const completedRuns = score.successes + score.failures;
 
-				return {
-					id: r.id,
-					slug: r.slug,
-					displayName: r.display_name,
-					role: r.slug,
-					model: r.model_id ?? null,
-					adapterType: r.adapter_type,
-					isActive: Boolean(r.is_active),
-					status,
-					runMode: (r as { run_mode?: string }).run_mode ?? "on_demand",
-					continuousIntervalMs:
-						(r as { continuous_interval_ms?: number | null })
-							.continuous_interval_ms ?? 60_000,
-					idlePrompt:
-						(r as { idle_prompt?: string | null }).idle_prompt ?? null,
-					lastRunEndedAt:
-						(r as { last_run_ended_at?: string | null }).last_run_ended_at ??
-						null,
-					totalCostUsd: stats?.totalCostUsd ?? 0,
-					totalInputTokens: stats?.totalInputTokens ?? 0,
-					totalOutputTokens: stats?.totalOutputTokens ?? 0,
-					totalCacheReadTokens: stats?.totalCacheReadTokens ?? 0,
-					lastActiveAt: stats?.lastActiveAt ?? null,
-					totalRuns: stats?.totalRuns ?? 0,
-					currentIssueId: activeRun?.issue_id ?? null,
-					credibility: score.credibility,
-					successRate:
-						completedRuns > 0
-							? Math.round((score.successes / completedRuns) * 100)
-							: null,
-					experienceLevel: experience?.level ?? "Novice",
-					topSkills:
-						experience?.skills.slice(0, 3).map((skill) => skill.name) ?? [],
-				};
-			}),
-		);
-	}
-
-	// Fall back to runs-based aggregation with stable slug as id
-	const rows = await agentsRepo.listRunsAggregate();
-	return c.json(rows);
+			return {
+				id: r.id,
+				slug: r.slug,
+				displayName: r.display_name,
+				role: r.slug,
+				model: r.model_id ?? null,
+				adapterType: r.adapter_type,
+				isActive: Boolean(r.is_active),
+				status,
+				runMode: (r as { run_mode?: string }).run_mode ?? "on_demand",
+				continuousIntervalMs:
+					(r as { continuous_interval_ms?: number | null })
+						.continuous_interval_ms ?? 60_000,
+				idlePrompt: (r as { idle_prompt?: string | null }).idle_prompt ?? null,
+				lastRunEndedAt:
+					(r as { last_run_ended_at?: string | null }).last_run_ended_at ??
+					null,
+				totalCostUsd: stats?.totalCostUsd ?? 0,
+				totalInputTokens: stats?.totalInputTokens ?? 0,
+				totalOutputTokens: stats?.totalOutputTokens ?? 0,
+				totalCacheReadTokens: stats?.totalCacheReadTokens ?? 0,
+				lastActiveAt: stats?.lastActiveAt ?? null,
+				totalRuns: stats?.totalRuns ?? 0,
+				currentIssueId: activeRun?.issue_id ?? null,
+				credibility: score.credibility,
+				successRate:
+					completedRuns > 0
+						? Math.round((score.successes / completedRuns) * 100)
+						: null,
+				experienceLevel: experience?.level ?? "Novice",
+				topSkills:
+					experience?.skills.slice(0, 3).map((skill) => skill.name) ?? [],
+			};
+		}),
+	);
 });
 
 // ─── GET /heartbeat — per-agent heartbeat observability ───────────────────────

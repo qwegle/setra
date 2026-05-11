@@ -94,6 +94,32 @@ export function getAgentStats(slug: string): AgentStats | null {
 		.get(slug) as AgentStats | null;
 }
 
+/**
+ * Company-scoped variant of getAgentStats — runs are joined through
+ * plots → board_projects → company_id so a slug that exists in multiple
+ * companies (e.g. "ceo") does not inherit run history from siblings.
+ */
+export function getAgentStatsForCompany(
+	slug: string,
+	companyId: string,
+): AgentStats | null {
+	return getRawDb()
+		.prepare(`
+    SELECT
+      coalesce(sum(r.cost_usd), 0)            as totalCostUsd,
+      coalesce(sum(r.prompt_tokens), 0)       as totalInputTokens,
+      coalesce(sum(r.completion_tokens), 0)   as totalOutputTokens,
+      coalesce(sum(r.cache_read_tokens), 0)   as totalCacheReadTokens,
+      max(r.started_at)                       as lastActiveAt,
+      count(*)                                as totalRuns
+    FROM runs r
+    JOIN plots p ON p.id = r.plot_id
+    JOIN board_projects bp ON bp.id = p.project_id
+    WHERE r.agent = ? AND bp.company_id = ?
+  `)
+		.get(slug, companyId) as AgentStats | null;
+}
+
 export function getAgentStatsExtended(slug: string): AgentStatsExtended | null {
 	return getRawDb()
 		.prepare(`
@@ -124,6 +150,24 @@ export function getActiveRun(slug: string): ActiveRunInfo | null {
     ORDER BY r.started_at DESC LIMIT 1
   `)
 		.get(slug) as ActiveRunInfo | null;
+}
+
+/** Company-scoped variant — see getAgentStatsForCompany. */
+export function getActiveRunForCompany(
+	slug: string,
+	companyId: string,
+): ActiveRunInfo | null {
+	return getRawDb()
+		.prepare(`
+    SELECT i.id as issue_id
+    FROM runs r
+    JOIN plots p ON p.id = r.plot_id
+    JOIN board_projects bp ON bp.id = p.project_id
+    LEFT JOIN board_issues i ON i.linked_plot_id = r.plot_id
+    WHERE r.agent = ? AND r.status = 'running' AND bp.company_id = ?
+    ORDER BY r.started_at DESC LIMIT 1
+  `)
+		.get(slug, companyId) as ActiveRunInfo | null;
 }
 
 export function getLatestHeartbeatForAgent(
