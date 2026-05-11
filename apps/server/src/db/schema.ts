@@ -724,6 +724,10 @@ export function ensureTables(): void {
 	} catch {}
 
 	try {
+		rawSqlite.exec(`ALTER TABLE companies ADD COLUMN public_url TEXT`);
+	} catch {}
+
+	try {
 		rawSqlite.exec(
 			`UPDATE routines SET is_active = COALESCE(is_active, enabled, 1) WHERE is_active IS NULL`,
 		);

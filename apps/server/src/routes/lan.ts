@@ -16,6 +16,7 @@ import { getRawDb } from "@setra/db";
 import { Hono } from "hono";
 import { z } from "zod";
 import { tryGetCompanyId } from "../lib/company-scope.js";
+import { getInstanceBaseUrl } from "../lib/instance-url.js";
 import {
 	getInstanceId,
 	getLanAddresses,
@@ -57,6 +58,9 @@ lanRoute.get("/status", (c) => {
 	const companyId = tryGetCompanyId(c);
 	if (!companyId) return c.json({ error: "company required" }, 400);
 	const row = getCompanyRow(companyId);
+	const publicUrl = getRawDb()
+		.prepare(`SELECT public_url FROM companies WHERE id = ?`)
+		.get(companyId) as { public_url: string | null } | undefined;
 	return c.json({
 		instanceId: getInstanceId(),
 		discoverable: row?.lan_discoverable === 1,
@@ -64,7 +68,31 @@ lanRoute.get("/status", (c) => {
 		addresses: getLanAddresses(),
 		port: Number(process.env.SETRA_PORT ?? 3141),
 		companyName: row?.name ?? "",
+		companyId,
+		publicUrl: publicUrl?.public_url ?? null,
+		instanceUrl: getInstanceBaseUrl(companyId),
 	});
+});
+
+const PublicUrlSchema = z.object({
+	publicUrl: z.string().url().nullable(),
+});
+
+lanRoute.post("/public-url", async (c) => {
+	const companyId = tryGetCompanyId(c);
+	if (!companyId) return c.json({ error: "company required" }, 400);
+	const role = c.get("userRole") as string | undefined;
+	if (role !== "owner" && role !== "admin") {
+		return c.json({ error: "owner or admin required" }, 403);
+	}
+	const body = PublicUrlSchema.safeParse(
+		await c.req.json().catch(() => ({})),
+	);
+	if (!body.success) return c.json({ error: "invalid body" }, 400);
+	getRawDb()
+		.prepare(`UPDATE companies SET public_url = ? WHERE id = ?`)
+		.run(body.data.publicUrl, companyId);
+	return c.json({ publicUrl: body.data.publicUrl });
 });
 
 lanRoute.get("/peers", (c) => {
@@ -110,7 +138,41 @@ const JoinRequestSchema = z.object({
 	message: z.string().max(500).optional(),
 });
 
+// In-memory per-IP rate limit for the public join-request endpoint.
+// Resets per process restart — good enough as defense-in-depth alongside the
+// global rate limiter, owner-approval gate, and the fact that successful
+// requests only ever create *pending* rows.
+const JOIN_REQ_LIMIT = 5;
+const JOIN_REQ_WINDOW_MS = 60 * 60 * 1000;
+const joinRequestHits = new Map<string, number[]>();
+
+function clientIp(c: import("hono").Context): string {
+	const xff = c.req.header("x-forwarded-for");
+	if (xff) return xff.split(",")[0]!.trim();
+	const realIp = c.req.header("x-real-ip");
+	if (realIp) return realIp.trim();
+	const info = (c.env as { incoming?: { socket?: { remoteAddress?: string } } })
+		?.incoming?.socket?.remoteAddress;
+	return info ?? "unknown";
+}
+
+function rateLimited(ip: string): boolean {
+	const now = Date.now();
+	const cutoff = now - JOIN_REQ_WINDOW_MS;
+	const hits = (joinRequestHits.get(ip) ?? []).filter((t) => t > cutoff);
+	if (hits.length >= JOIN_REQ_LIMIT) {
+		joinRequestHits.set(ip, hits);
+		return true;
+	}
+	hits.push(now);
+	joinRequestHits.set(ip, hits);
+	return false;
+}
+
 lanRoute.post("/join-request", async (c) => {
+	if (rateLimited(clientIp(c))) {
+		return c.json({ error: "too many requests" }, 429);
+	}
 	const parsed = JoinRequestSchema.safeParse(await c.req.json().catch(() => ({})));
 	if (!parsed.success) return c.json({ error: "invalid body" }, 400);
 	const { companyId, email, name, message } = parsed.data;

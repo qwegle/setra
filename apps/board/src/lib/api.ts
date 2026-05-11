@@ -2088,6 +2088,9 @@ export const api = {
 				addresses: string[];
 				port: number;
 				companyName: string;
+				companyId: string;
+				publicUrl: string | null;
+				instanceUrl: string;
 			}>("/lan/status"),
 		setDiscoverable: (enabled: boolean) =>
 			request<{ discoverable: boolean; broadcasting: boolean }>(
@@ -2097,6 +2100,11 @@ export const api = {
 					body: JSON.stringify({ enabled }),
 				},
 			),
+		setPublicUrl: (publicUrl: string | null) =>
+			request<{ publicUrl: string | null }>("/lan/public-url", {
+				method: "POST",
+				body: JSON.stringify({ publicUrl }),
+			}),
 		peers: () =>
 			request<{
 				peers: Array<{
@@ -2529,10 +2537,18 @@ export const companySettings = {
 					role: string;
 					sentAt: string;
 					expiresAt: string;
+					joinUrl?: string;
 				}[]
 			>("/company/invites"),
 		create: (email: string, role: string) =>
-			request<void>("/company/invites", {
+			request<{
+				id: string;
+				email: string;
+				role: string;
+				sentAt: string;
+				expiresAt: string;
+				joinUrl?: string;
+			}>("/company/invites", {
 				method: "POST",
 				body: JSON.stringify({ email, role }),
 			}),
