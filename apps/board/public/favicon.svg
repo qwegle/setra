@@ -1,0 +1,45 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Setra">
+  <title>Setra</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E0E7FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded-square plate -->
+  <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224" fill="url(#bg)"/>
+
+  <!-- Subtle inner highlight to suggest dimensionality at large sizes -->
+  <rect x="32" y="32" width="960" height="960" rx="200" ry="200" fill="none"
+        stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+
+  <!-- Bold stylised "S" — formed as a stroked path that traces an S
+       through three "node" positions. Read as a letter at any size and
+       as an agent-pool network at large sizes. -->
+  <path d="M 740 296
+           H 412
+           A 124 124 0 0 0 412 544
+           H 612
+           A 124 124 0 0 1 612 792
+           H 284"
+        fill="none"
+        stroke="url(#s)"
+        stroke-width="124"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Three pool nodes overlaid on the path's turning points.
+       Bigger than the stroke so they read as "nodes in a network"
+       at icon sizes >= 64px. Below that they merge with the stroke
+       which is fine — the S still reads. -->
+  <g fill="#FFFFFF">
+    <circle cx="740" cy="296" r="78"/>
+    <circle cx="512" cy="544" r="78"/>
+    <circle cx="284" cy="792" r="78"/>
+  </g>
+</svg>
