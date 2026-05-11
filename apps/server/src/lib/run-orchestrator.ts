@@ -1,4 +1,6 @@
+import { spawn as spawnAsync, spawnSync } from "node:child_process";
 import { getRawDb } from "@setra/db";
+import { createMessage as createCollabMessage } from "../repositories/collaboration.repo.js";
 import { isOfflineForCompany } from "../repositories/runtime.repo.js";
 import { readProjectContext } from "../routes/project-context.js";
 import { emit } from "../sse/handler.js";
@@ -18,7 +20,7 @@ import {
 import { callCopilotExecOnce } from "./adapters/copilot-runner.js";
 import { callGeminiWithTools } from "./adapters/gemini-runner.js";
 import { callOpenAiWithTools } from "./adapters/openai-runner.js";
-import { postChannelMessage } from "./channel-hooks.js";
+import { postChannelMessage, postProjectMessage } from "./channel-hooks.js";
 import { publishAgentCompletionMessage } from "./company-broker.js";
 import { getCompanySettings } from "./company-settings.js";
 import { postProjectHelpRequest } from "./escalation.js";
@@ -31,6 +33,7 @@ import {
 	storeRuntimeMemory,
 } from "./prompt-builder.js";
 import { jobQueue } from "./queue.js";
+import { resolveAutoAdapter } from "./resolve-auto-adapter.js";
 import { consumeResumePacketFor } from "./resume-packet-store.js";
 import { withRetry } from "./retry.js";
 import { persistRunSystemPrompt, recordRunChunk } from "./run-chunks.js";
@@ -52,6 +55,8 @@ import type {
 const log = createLogger("server-runner");
 const HEARTBEAT_MS = 60_000;
 const RUN_TIMEOUT_MS = 5 * 60 * 1000;
+// Codex CLI can take longer to start up and process; give it a larger window.
+const CODEX_TIMEOUT_MS = 10 * 60 * 1000;
 
 function loadRuntimeKeys(companyId: string | null): RuntimeKeys {
 	const settings = (getCompanySettings(companyId) ?? {}) as Record<
@@ -150,6 +155,52 @@ function syncAgentStatusFromRuns(agent: AgentRow): void {
 function extractFirstUrl(text: string): string | null {
 	const match = text.match(/https?:\/\/\S+/i);
 	return match?.[0] ?? null;
+}
+
+/**
+ * Strips internal agent metadata from codex output before it is shown in the
+ * user-facing collaboration channel. Removes:
+ *  - "Delegation for @X: ..." lines and the subsequent "Context:" block
+ *  - JSON object blobs (lines that look like {…})
+ *  - exec / succeeded / failed shell output lines
+ *  - [server-runner] prefixed lines
+ */
+function sanitizeAgentReply(raw: string): string {
+	const lines = raw.split("\n");
+	const out: string[] = [];
+	let skipUntilBlank = false;
+
+	for (const line of lines) {
+		const t = line.trim();
+
+		// Entering a delegation/context block — skip until next blank line
+		if (/^Delegation for @/i.test(t) || /^Context:\s*/i.test(t)) {
+			skipUntilBlank = true;
+			continue;
+		}
+		if (skipUntilBlank) {
+			if (t === "") {
+				skipUntilBlank = false;
+			}
+			continue;
+		}
+
+		if (!t) {
+			out.push("");
+			continue;
+		}
+		if (/^\{/.test(t) && /\}$/.test(t)) continue; // JSON blob
+		if (/^(exec|succeeded in|failed in)\b/.test(t)) continue;
+		if (/^\[server-runner\]/.test(t)) continue;
+
+		out.push(line);
+	}
+
+	// Collapse 3+ consecutive blank lines to 1
+	return out
+		.join("\n")
+		.replace(/\n{3,}/g, "\n\n")
+		.trim();
 }
 
 function buildPipelineInitialState(
@@ -530,6 +581,114 @@ export function registerRunQueueProcessor(): void {
 	});
 }
 
+/**
+ * Run `codex exec` as a child process (non-interactive, full-auto).
+ * Codex CLI v0.128+ uses its own auth (codex login) — no API key needed.
+ * Uses async spawn to avoid blocking the event loop during the run.
+ */
+async function callCodexOnce(
+	model: string,
+	systemPrompt: string | null,
+	task: string,
+	cwd?: string,
+): Promise<import("./types.js").LlmCallResult> {
+	const args = [
+		"exec",
+		"-m",
+		model,
+		"--dangerously-bypass-approvals-and-sandbox",
+		"--skip-git-repo-check",
+	];
+	if (cwd) args.push("-C", cwd);
+	if (systemPrompt)
+		args.push("-c", `instructions=${JSON.stringify(systemPrompt)}`);
+	args.push(task);
+
+	return new Promise((resolve, reject) => {
+		const proc = spawnAsync("codex", args, {
+			...(cwd ? { cwd } : {}),
+			// Explicitly close stdin so codex doesn't block waiting for input.
+			// pipe stdout/stderr to collect output; pipe stdin so it's not inherited.
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+
+		const chunks: Buffer[] = [];
+		proc.stdout?.on("data", (d: Buffer) => chunks.push(d));
+		proc.stderr?.on("data", (d: Buffer) => chunks.push(d));
+
+		proc.on("error", (err) =>
+			reject(new Error(`codex exec failed: ${err.message}`)),
+		);
+
+		proc.on("close", () => {
+			const output = Buffer.concat(chunks).toString("utf8");
+			// Strip ANSI escape codes
+			// eslint-disable-next-line no-control-regex
+			const clean = output.replace(/\x1b\[[0-9;]*[mGKHFABCDJsu]/g, "");
+
+			// Parse token usage from codex output.
+			// Format: "tokens used\n1,760" (total) or "prompt tokens: N" / "completion tokens: N"
+			const parseNum = (re: RegExp) => {
+				const m = re.exec(clean);
+				return m ? Number.parseInt((m[1] ?? "0").replace(/,/g, ""), 10) : 0;
+			};
+			const promptTokens = parseNum(/prompt tokens:\s+([\d,]+)/i);
+			const completionTokens = parseNum(/completion tokens:\s+([\d,]+)/i);
+			// "tokens used\nN,NNN" — fallback when per-type breakdown isn't present
+			const totalTokens = parseNum(/tokens used\n([\d,]+)/i);
+			const costMatch = /cost:\s+\$?([\d.]+)/i.exec(clean);
+			const costUsd = costMatch ? Number.parseFloat(costMatch[1] ?? "0") : 0;
+
+			// Extract just the agent's human-readable reply.
+			// codex output format (v0.128 exec mode):
+			//   header lines  →  user  →  <task>  →  codex  →  <reply+tool calls>  →  tokens used  →  N
+			// Inside the reply section, skip exec blocks and JSON memory blobs.
+			const lines = clean.split("\n");
+			const replyLines: string[] = [];
+			let inReply = false;
+			let skipUntilBlank = false;
+			for (const line of lines) {
+				const trimmed = line.trim();
+				if (/^codex$/i.test(trimmed)) {
+					inReply = true;
+					continue;
+				}
+				if (/^user$/i.test(trimmed) && inReply) break;
+				if (/^Usage$/i.test(trimmed)) break;
+				if (/^tokens used$/i.test(trimmed)) break;
+				if (!inReply) continue;
+				// Skip exec tool output blocks (exec header + body)
+				if (/^exec$/.test(trimmed)) {
+					skipUntilBlank = true;
+					continue;
+				}
+				if (skipUntilBlank) {
+					if (trimmed === "") skipUntilBlank = false;
+					continue;
+				}
+				// Skip lines that are pure JSON objects (memory tool output)
+				if (/^\{/.test(trimmed) && /\}$/.test(trimmed)) continue;
+				// Skip "succeeded in Nms:" / "failed in Nms:" tool result headers
+				if (/^(succeeded|failed) in \d+ms:?$/.test(trimmed)) continue;
+				replyLines.push(line);
+			}
+			const content =
+				replyLines.length > 0 ? replyLines.join("\n").trim() : clean.trim();
+
+			resolve({
+				content,
+				usage: {
+					promptTokens: promptTokens || (totalTokens > 0 ? totalTokens : 0),
+					completionTokens,
+					cacheReadTokens: 0,
+					cacheWriteTokens: 0,
+				},
+				costUsd,
+			});
+		});
+	});
+}
+
 export async function spawnServerRun(input: SpawnRunInput): Promise<void> {
 	registerRunQueueProcessor();
 	const existing = getRawDb()
@@ -549,7 +708,7 @@ export async function spawnServerRun(input: SpawnRunInput): Promise<void> {
 }
 
 export async function executeServerRun(input: SpawnRunInput): Promise<void> {
-	const { runId, agentSlug, issueId, companyId } = input;
+	const { runId, agentSlug, issueId, companyId, sourceChannel } = input;
 	const run = loadRun(runId);
 	if (!run) {
 		log.warn("run not found", { runId });
@@ -564,6 +723,17 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		return;
 	}
 	let adapterId = normalizeAdapterId(agent.adapter_type);
+
+	// If the agent was stored as "auto" (or is empty/unknown), resolve it now
+	// using global preferred adapter or cost-priority fallback.
+	let resolvedModel: string | null = null;
+	if (!adapterId || adapterId === "auto") {
+		const resolved = resolveAutoAdapter("auto", agent.model_id, companyId);
+		if (resolved.adapter) {
+			adapterId = resolved.adapter;
+			resolvedModel = resolved.model;
+		}
+	}
 	const offline = isOfflineForCompany(companyId);
 	if (offline && isCloudAdapter(adapterId)) {
 		setRunStatus(runId, {
@@ -631,9 +801,12 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		codex: "gpt-5.5",
 		copilot: "claude-sonnet-4.6",
 	};
+	// Treat "auto" as unset — fall through to resolvedModel or defaultModel
+	const isAutoOrEmpty = (v: string | null | undefined) => !v || v === "auto";
 	let model =
-		run.agent_version ??
-		agent.model_id ??
+		(!isAutoOrEmpty(run.agent_version) ? run.agent_version : null) ??
+		(!isAutoOrEmpty(agent.model_id) ? agent.model_id : null) ??
+		resolvedModel ??
 		defaultModel[adapterId] ??
 		"claude-haiku-4-5";
 	const prefixToAdapter: Record<string, string> = {
@@ -920,16 +1093,21 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 			});
 		}
 		const trimmedContent = result.content.trim();
-		if (issueId && trimmedContent) {
+		// Build a clean version: strip internal metadata blocks before showing to users.
+		// Removes: JSON blobs, exec output, server-runner lines, delegation/context blocks.
+		const channelReply = sanitizeAgentReply(trimmedContent);
+
+		// Post clean content as issue comment (low threshold — even short replies matter)
+		if (issueId && channelReply) {
 			if (
-				trimmedContent.length > 50 &&
-				!trimmedContent.startsWith("🔄") &&
-				!trimmedContent.startsWith("[server-runner]")
+				channelReply.length > 20 &&
+				!channelReply.startsWith("🔄") &&
+				!channelReply.startsWith("[server-runner]")
 			) {
 				addAutomationIssueComment(
 					issueId,
 					issue?.companyId ?? companyId,
-					trimmedContent.slice(0, 5000),
+					channelReply.slice(0, 5000),
 					agent.slug,
 				);
 			}
@@ -942,6 +1120,30 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 				issueId: issueId ?? null,
 				runId,
 			});
+		}
+		if (
+			companyId &&
+			sourceChannel &&
+			channelReply &&
+			channelReply.length > 10 &&
+			!channelReply.startsWith("🚀") &&
+			!channelReply.startsWith("✅")
+		) {
+			try {
+				createCollabMessage({
+					channel: sourceChannel,
+					content: channelReply.slice(0, 5000),
+					fromAgent: agent.slug,
+					companyId,
+				});
+				emit("collab:message", { channel: sourceChannel, companyId });
+			} catch (err) {
+				log.warn("failed to post agent reply to channel", {
+					channel: sourceChannel,
+					agentSlug: agent.slug,
+					error: err,
+				});
+			}
 		}
 		setRunStatus(runId, {
 			status: "completed",
@@ -964,6 +1166,57 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 					costUsd: result.costUsd,
 				},
 			);
+		}
+		// Auto-commit when all issues in the project are done
+		if (issueId && companyId) {
+			try {
+				const issueForProject = loadIssue(issueId);
+				if (issueForProject?.projectId) {
+					const raw = getRawDb();
+					const openCount =
+						(
+							raw
+								.prepare(
+									`SELECT COUNT(*) as c FROM board_issues WHERE project_id = ? AND status NOT IN ('done','cancelled','rejected')`,
+								)
+								.get(issueForProject.projectId) as { c: number } | undefined
+						)?.c ?? 1;
+					if (openCount === 0) {
+						const projectRow = raw
+							.prepare(
+								`SELECT name, workspace_path FROM board_projects WHERE id = ?`,
+							)
+							.get(issueForProject.projectId) as
+							| { name: string; workspace_path: string | null }
+							| undefined;
+						if (projectRow?.workspace_path) {
+							const { execSync } = await import("node:child_process");
+							const wp = projectRow.workspace_path;
+							const projName = projectRow.name;
+							try {
+								execSync(
+									`git -C ${JSON.stringify(wp)} add -A && git -C ${JSON.stringify(wp)} diff --staged --quiet || git -C ${JSON.stringify(wp)} commit -m "chore: all issues complete — auto-checkpoint for ${projName}"`,
+									{ shell: "/bin/sh" },
+								);
+								log.info("auto-committed project checkpoint", {
+									projectId: issueForProject.projectId,
+									projectName: projName,
+								});
+								postProjectMessage(
+									companyId,
+									issueForProject.projectId,
+									"system",
+									`✅ All tasks complete — auto-committed checkpoint for **${projName}**`,
+								);
+							} catch (commitErr) {
+								log.warn("auto-commit failed", { error: commitErr });
+							}
+						}
+					}
+				}
+			} catch {
+				/* best-effort */
+			}
 		}
 		void onRunCompleted(runId, 0).catch((error) => {
 			log.warn("run completion hook failed", {

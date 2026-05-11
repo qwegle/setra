@@ -62,31 +62,165 @@ const ProjectRequirementsSchema = z.object({
 });
 
 const DatabaseConnectSchema = z.object({
-	name: z.string().trim().min(1),
-	type: z.enum(["postgres", "mysql", "mssql", "mongodb", "sqlite"]),
-	host: z.string().trim().min(1),
-	port: z.number().int().positive(),
-	database: z.string().trim().min(1),
+	// Either a full connection string (NeonDB / MongoDB Atlas style)
+	connectionString: z.string().optional(),
+	// Or manual fields
+	name: z.string().trim().min(1).optional(),
+	type: z.enum(["postgres", "mysql", "mssql", "mongodb", "sqlite"]).optional(),
+	host: z.string().trim().optional(),
+	port: z.number().int().positive().optional(),
+	database: z.string().trim().optional(),
 	username: z.string().optional(),
 	password: z.string().optional(),
 });
 
 const DatabaseQuerySchema = z.object({
-	connectionId: z.string().trim().min(1),
 	query: z.string().trim().min(1),
 });
 
 interface DatabaseConnection {
 	id: string;
 	name: string;
-	type: "postgres" | "mysql" | "mssql" | "mongodb" | "sqlite";
-	host: string;
-	port: number;
-	database: string;
-	status: "connected" | "disconnected" | "error";
+	type: string;
+	connectionString?: string;
+	host?: string;
+	port?: number;
+	database?: string;
+	status: "connected" | "error";
+	createdAt: string;
 }
 
-const projectDatabaseConnections = new Map<string, DatabaseConnection[]>();
+// ── In-process run state ─────────────────────────────────────────────────────
+import { type ChildProcess, spawn } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+
+const activeRuns = new Map<
+	string,
+	{
+		process: ChildProcess;
+		lines: string[];
+		url: string | null;
+		startedAt: string;
+	}
+>();
+
+function detectRunCommand(workspacePath: string): string {
+	try {
+		const pkg = JSON.parse(
+			readFileSync(path.join(workspacePath, "package.json"), "utf8"),
+		);
+		const scripts = pkg.scripts ?? {};
+		for (const name of ["dev", "start", "serve", "preview"]) {
+			if (scripts[name]) return `npm run ${name}`;
+		}
+	} catch {
+		/* not a node project */
+	}
+	if (existsSync(path.join(workspacePath, "Cargo.toml"))) return "cargo run";
+	if (existsSync(path.join(workspacePath, "manage.py")))
+		return "python manage.py runserver";
+	if (existsSync(path.join(workspacePath, "go.mod"))) return "go run .";
+	// Static HTML — serve with Python's built-in HTTP server on a fixed port
+	if (existsSync(path.join(workspacePath, "index.html")))
+		return "python3 -m http.server 8090";
+	return "python3 -m http.server 8090";
+}
+
+function detectUrlFromLine(line: string): string | null {
+	// Python http.server: "Serving HTTP on 0.0.0.0 port 8080 (http://0.0.0.0:8080/) ..."
+	const pyMatch = line.match(/Serving HTTP on .+ port (\d+)/i);
+	if (pyMatch) return `http://localhost:${pyMatch[1]}`;
+	const m =
+		line.match(/https?:\/\/localhost:[0-9]+/i) ??
+		line.match(/Local:\s*(https?:\/\/[^\s]+)/i) ??
+		line.match(/➜\s+Local:\s*(https?:\/\/[^\s]+)/i);
+	return m ? (m[1] ?? m[0]) : null;
+}
+
+// ── Production checklist defaults ───────────────────────────────────────────
+interface ChecklistItem {
+	id: string;
+	category: string;
+	title: string;
+	description: string;
+	status: "pending" | "pass" | "fail";
+}
+
+const DEFAULT_CHECKLIST: Omit<ChecklistItem, "status">[] = [
+	{
+		id: "no-secrets",
+		category: "Security",
+		title: "No hardcoded secrets",
+		description: "Codebase has no API keys or passwords committed",
+	},
+	{
+		id: "env-vars",
+		category: "Security",
+		title: "Environment variables documented",
+		description: ".env.example is present and up to date",
+	},
+	{
+		id: "deps-audit",
+		category: "Security",
+		title: "Dependencies audited",
+		description: "No critical vulnerabilities in npm/pip dependencies",
+	},
+	{
+		id: "tests-pass",
+		category: "Quality",
+		title: "All tests pass",
+		description: "CI test suite completes without failures",
+	},
+	{
+		id: "error-handling",
+		category: "Quality",
+		title: "Error handling complete",
+		description: "No unhandled promise rejections or missing error boundaries",
+	},
+	{
+		id: "db-migrated",
+		category: "Infrastructure",
+		title: "Database migrations applied",
+		description: "All schema migrations are committed and documented",
+	},
+	{
+		id: "env-set",
+		category: "Infrastructure",
+		title: "Production env configured",
+		description: "All environment variables are set in production",
+	},
+	{
+		id: "monitoring",
+		category: "Infrastructure",
+		title: "Error monitoring configured",
+		description: "Sentry, Datadog, or equivalent is set up",
+	},
+	{
+		id: "readme",
+		category: "Documentation",
+		title: "README updated",
+		description: "README covers setup, configuration, and deployment",
+	},
+	{
+		id: "changelog",
+		category: "Documentation",
+		title: "CHANGELOG updated",
+		description: "Unreleased changes are documented",
+	},
+	{
+		id: "perf-check",
+		category: "Performance",
+		title: "Performance benchmarked",
+		description: "Key flows tested under load (Lighthouse, k6, etc.)",
+	},
+	{
+		id: "responsive",
+		category: "Performance",
+		title: "Responsive & accessible",
+		description: "UI works on mobile and passes basic accessibility checks",
+	},
+];
 
 function getScopedProject(projectId: string, companyId: string | null) {
 	const project = projectsRepo.getProjectFull(projectId);
@@ -428,6 +562,35 @@ projectsRoute.get("/:id", async (c) => {
 	return c.json(row);
 });
 
+// ── Helper: read/write project settings_json ─────────────────────────────────
+function readProjectSettings(project: { settingsJson: string | null }): Record<
+	string,
+	unknown
+> {
+	try {
+		return JSON.parse(project.settingsJson ?? "{}") ?? {};
+	} catch {
+		return {};
+	}
+}
+function saveProjectSettings(
+	projectId: string,
+	settings: Record<string, unknown>,
+): void {
+	projectsRepo.updateProjectFields(projectId, {
+		settingsJson: JSON.stringify(settings),
+	});
+}
+
+// ── Database connections (persisted in settings_json) ─────────────────────────
+projectsRoute.get("/:id/database", async (c) => {
+	const cid = getCompanyId(c);
+	const project = getScopedProject(c.req.param("id"), cid);
+	if (!project) return c.json({ error: "not found" }, 404);
+	const settings = readProjectSettings(project);
+	return c.json((settings.dbConnections as DatabaseConnection[]) ?? []);
+});
+
 projectsRoute.post(
 	"/:id/database/connect",
 	zValidator("json", DatabaseConnectSchema),
@@ -437,22 +600,57 @@ projectsRoute.post(
 		const project = getScopedProject(projectId, cid);
 		if (!project) return c.json({ error: "not found" }, 404);
 		const body = c.req.valid("json");
+
+		// Auto-detect type from connection string
+		let detectedType = body.type ?? "postgres";
+		let detectedName = body.name ?? "Database";
+		if (body.connectionString) {
+			if (body.connectionString.startsWith("mongodb")) detectedType = "mongodb";
+			else if (body.connectionString.includes("mysql")) detectedType = "mysql";
+			else detectedType = "postgres";
+			// Extract db name from connection string for display
+			const parts = body.connectionString.split("/");
+			detectedName =
+				body.name ?? parts[parts.length - 1]?.split("?")[0] ?? "Database";
+		}
+
 		const connection: DatabaseConnection = {
 			id: crypto.randomUUID(),
-			name: body.name,
-			type: body.type,
-			host: body.host,
-			port: body.port,
-			database: body.database,
+			name: detectedName,
+			type: detectedType,
+			...(body.connectionString
+				? { connectionString: body.connectionString.replace(/:[^:@]*@/, ":***@") }
+				: {}),
+			...(body.host ? { host: body.host } : {}),
+			...(body.port ? { port: body.port } : {}),
+			...(body.database ? { database: body.database } : {}),
 			status: "connected",
+			createdAt: new Date().toISOString(),
 		};
-		projectDatabaseConnections.set(projectId, [
-			...(projectDatabaseConnections.get(projectId) ?? []),
-			connection,
-		]);
+
+		const settings = readProjectSettings(project);
+		const existing = (settings.dbConnections as DatabaseConnection[]) ?? [];
+		settings.dbConnections = [...existing, connection];
+		saveProjectSettings(projectId, settings);
+		await logActivity(c, "project.database.connected", "project", projectId, {
+			type: detectedType,
+		});
 		return c.json(connection, 201);
 	},
 );
+
+projectsRoute.delete("/:id/database/:connId", async (c) => {
+	const cid = getCompanyId(c);
+	const projectId = c.req.param("id");
+	const connId = c.req.param("connId");
+	const project = getScopedProject(projectId, cid);
+	if (!project) return c.json({ error: "not found" }, 404);
+	const settings = readProjectSettings(project);
+	const existing = (settings.dbConnections as DatabaseConnection[]) ?? [];
+	settings.dbConnections = existing.filter((conn) => conn.id !== connId);
+	saveProjectSettings(projectId, settings);
+	return c.json({ ok: true });
+});
 
 projectsRoute.post(
 	"/:id/database/query",
@@ -462,25 +660,155 @@ projectsRoute.post(
 		const projectId = c.req.param("id");
 		const project = getScopedProject(projectId, cid);
 		if (!project) return c.json({ error: "not found" }, 404);
-		const body = c.req.valid("json");
-		const connection = (projectDatabaseConnections.get(projectId) ?? []).find(
-			(entry) => entry.id === body.connectionId,
-		);
-		if (!connection) {
-			return c.json({ error: "Database connection not found" }, 404);
-		}
 		return c.json({
-			columns: ["status", "message", "query"],
+			columns: ["message"],
 			rows: [
 				{
-					status: connection.status,
-					message: `Live ${connection.type} querying is not configured on the server yet.`,
-					query: body.query,
+					message:
+						"Live query execution coming soon. Connection string is saved.",
 				},
 			],
 		});
 	},
 );
+
+// ── Run management ────────────────────────────────────────────────────────────
+projectsRoute.get("/:id/run", async (c) => {
+	const projectId = c.req.param("id");
+	const run = activeRuns.get(projectId);
+	if (!run) return c.json({ running: false, lines: [], url: null });
+	return c.json({
+		running: true,
+		lines: run.lines.slice(-80),
+		url: run.url,
+		startedAt: run.startedAt,
+	});
+});
+
+projectsRoute.post("/:id/run", async (c) => {
+	const cid = getCompanyId(c);
+	const projectId = c.req.param("id");
+	const project = getScopedProject(projectId, cid);
+	if (!project) return c.json({ error: "not found" }, 404);
+	if (!project.workspacePath)
+		return c.json(
+			{ error: "No workspace path configured for this project" },
+			422,
+		);
+
+	if (activeRuns.has(projectId))
+		return c.json({ error: "Already running" }, 409);
+
+	const command = detectRunCommand(project.workspacePath);
+	const [cmd, ...args] = command.split(" ");
+	const child = spawn(cmd!, args, {
+		cwd: project.workspacePath,
+		env: { ...process.env, FORCE_COLOR: "0", PYTHONUNBUFFERED: "1" },
+		shell: true,
+	});
+
+	// For python3 http.server, extract port from command and set URL immediately
+	const staticPortMatch = command.match(/http\.server\s+(\d+)/);
+	const initialUrl = staticPortMatch ? `http://localhost:${staticPortMatch[1]}` : null;
+
+	const state = {
+		process: child,
+		lines: [] as string[],
+		url: initialUrl as string | null,
+		startedAt: new Date().toISOString(),
+	};
+	activeRuns.set(projectId, state);
+
+	const onData = (chunk: Buffer) => {
+		const text = chunk.toString();
+		for (const line of text.split("\n")) {
+			if (!line.trim()) continue;
+			state.lines.push(line);
+			if (state.lines.length > 500) state.lines.shift();
+			if (!state.url) state.url = detectUrlFromLine(line);
+		}
+	};
+	child.stdout?.on("data", onData);
+	child.stderr?.on("data", onData);
+	child.on("exit", () => activeRuns.delete(projectId));
+
+	await logActivity(c, "project.run.started", "project", projectId, {
+		command,
+	});
+	return c.json({ ok: true, command, startedAt: state.startedAt });
+});
+
+projectsRoute.delete("/:id/run", async (c) => {
+	const projectId = c.req.param("id");
+	const run = activeRuns.get(projectId);
+	if (!run) return c.json({ error: "Not running" }, 404);
+	run.process.kill();
+	activeRuns.delete(projectId);
+	return c.json({ ok: true });
+});
+
+// ── Production readiness checklist ────────────────────────────────────────────
+projectsRoute.get("/:id/production-checklist", async (c) => {
+	const cid = getCompanyId(c);
+	const project = getScopedProject(c.req.param("id"), cid);
+	if (!project) return c.json({ error: "not found" }, 404);
+	const settings = readProjectSettings(project);
+	return c.json((settings.productionChecklist as ChecklistItem[]) ?? []);
+});
+
+projectsRoute.post("/:id/production-checklist", async (c) => {
+	const cid = getCompanyId(c);
+	const projectId = c.req.param("id");
+	const project = getScopedProject(projectId, cid);
+	if (!project) return c.json({ error: "not found" }, 404);
+	const settings = readProjectSettings(project);
+
+	const checklist: ChecklistItem[] = DEFAULT_CHECKLIST.map((item) => ({
+		...item,
+		status: "pending",
+	}));
+	settings.productionChecklist = checklist;
+	saveProjectSettings(projectId, settings);
+	await logActivity(
+		c,
+		"project.production.checklist.generated",
+		"project",
+		projectId,
+	);
+	return c.json(checklist);
+});
+
+projectsRoute.patch("/:id/production-checklist/:itemId", async (c) => {
+	const cid = getCompanyId(c);
+	const projectId = c.req.param("id");
+	const itemId = c.req.param("itemId");
+	const project = getScopedProject(projectId, cid);
+	if (!project) return c.json({ error: "not found" }, 404);
+	const body = await c.req.json<{ status: "pending" | "pass" | "fail" }>();
+	const settings = readProjectSettings(project);
+	const list = (settings.productionChecklist as ChecklistItem[]) ?? [];
+	const idx = list.findIndex((item) => item.id === itemId);
+	if (idx === -1) return c.json({ error: "item not found" }, 404);
+	list[idx]!.status = body.status;
+	settings.productionChecklist = list;
+	saveProjectSettings(projectId, settings);
+	return c.json(list[idx]);
+});
+
+// ── Project discussion channel ────────────────────────────────────────────────
+projectsRoute.get("/:id/channel", async (c) => {
+	const cid = getCompanyId(c);
+	const projectId = c.req.param("id");
+	const project = getScopedProject(projectId, cid);
+	if (!project) return c.json({ error: "not found" }, 404);
+	const { getRawDb } = await import("@setra/db");
+	const channel = getRawDb()
+		.prepare(
+			`SELECT slug, name FROM team_channels WHERE project_id = ? AND company_id = ? LIMIT 1`,
+		)
+		.get(projectId, cid) as { slug: string; name: string } | undefined;
+	return c.json(channel ?? null);
+});
 
 projectsRoute.get("/:id/issues", (c) => {
 	const rows = projectsRepo.getProjectIssues(

@@ -457,6 +457,33 @@ llmRoute.get("/status", async (c) => {
 	if (cid) applyKeysToEnv(cid);
 
 	const settings = cid ? getCompanySettings(cid) : {};
+
+	// CLI adapters (codex, claude) don't need API keys — check binary availability
+	const preferredAdapter = (settings as Record<string, unknown>).preferred_adapter as string | undefined;
+	const preferredModel = (settings as Record<string, unknown>).preferred_model as string | undefined;
+	const cliAdapters: Record<string, string> = {
+		codex: "codex",
+		codex_local: "codex",
+		claude: "claude",
+		claude_local: "claude",
+		gemini: "gemini",
+		gemini_local: "gemini",
+	};
+	const cliCmd = preferredAdapter ? cliAdapters[preferredAdapter.toLowerCase()] : undefined;
+	if (cliCmd) {
+		const { spawnSync } = await import("node:child_process");
+		const which = spawnSync("which", [cliCmd], { encoding: "utf8" });
+		const available = which.status === 0 && !!which.stdout?.trim();
+		const displayModel = preferredModel || (cliCmd === "codex" ? "gpt-5.5" : "auto");
+		return c.json({
+			modelId: displayModel,
+			modelName: displayModel,
+			provider: cliCmd,
+			configured: available,
+			live: available,
+		});
+	}
+
 	const defaultModelId = settings.default_model || null;
 	const model = defaultModelId
 		? (MODEL_CATALOG.find((m) => m.id === defaultModelId) ?? null)

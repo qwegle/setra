@@ -1,12 +1,16 @@
 /**
- * CodexAdapter — wraps the OpenAI Codex CLI (`codex` binary).
+ * CodexAdapter — wraps the OpenAI Codex CLI (`codex exec` subcommand).
  *
- * Codex CLI reference flags:
- *   --model <id>              gpt-4o | gpt-4o-mini | o1
- *   --approval-mode <mode>    "auto" | "suggest" | "full-auto"
- *   --quiet                   Suppress non-essential output
- *   --mcp-config <path>       MCP config (if supported by version)
- *   <task>                    Positional task argument
+ * Verified flags for codex-cli v0.128+:
+ *   exec                                      Non-interactive subcommand
+ *   -m, --model <id>                          Any OpenAI model (gpt-4o, gpt-5.5, o3, …)
+ *   --dangerously-bypass-approvals-and-sandbox Skip all confirmations (full-auto equivalent)
+ *   -C <dir>                                  Working directory
+ *   --skip-git-repo-check                     Allow running outside a git repo
+ *   --color never                             No ANSI color in output
+ *
+ * Note: --approval-mode, --quiet, and --mcp-config do NOT exist in v0.128.
+ * MCP servers must be pre-configured in ~/.codex/config.toml.
  */
 
 import { execFileSync } from "child_process";
@@ -24,16 +28,9 @@ export const CODEX_RATE_LIMIT_PATTERNS: readonly RegExp[] = [
 
 const CODEX_COMPLETION_PATTERNS: readonly RegExp[] = [
 	/Task\s+complete\./i,
-	/cost:\s+\$[\d.]+/i, // The cost line is always last in Codex's Usage block
+	/cost:\s+\$[\d.]+/i,
 ] as const;
 
-// Real Codex CLI output format (see tests/fixtures/codex-pty-output.txt):
-//   Usage
-//     prompt tokens:     1,234
-//     completion tokens: 456
-//     total tokens:      1,690
-//     cached tokens:     891
-//     cost:              $0.0156
 // eslint-disable-next-line no-control-regex
 const STRIP_ANSI_RE = /\x1b\[[0-9;]*[mGKHFABCDJsu]/g;
 const CODEX_COST_RE = /cost:\s+\$?([\d.]+)/i;
@@ -44,7 +41,8 @@ const CODEX_CACHED_TOKENS_RE = /cached tokens:\s+([\d,]+)/i;
 export class CodexAdapter implements AgentAdapter {
 	readonly name = "codex" as const;
 	readonly displayName = "Codex CLI (OpenAI)";
-	readonly supportsModels = ["gpt-4o", "gpt-4o-mini", "o1"] as const;
+	// Open-ended: codex supports any OpenAI model; we pass the ID through as-is.
+	readonly supportsModels = [] as const;
 	readonly defaultModel = "gpt-4o";
 
 	async isAvailable(): Promise<boolean> {
@@ -56,18 +54,24 @@ export class CodexAdapter implements AgentAdapter {
 		}
 	}
 
-	buildCommand(plot: Plot, run: Run, mcpConfigPath: string): SpawnOptions {
-		const model = this.resolveModel(run.model);
+	buildCommand(plot: Plot, run: Run, _mcpConfigPath: string): SpawnOptions {
+		const model = run.model?.trim() || this.defaultModel;
 
+		// codex exec -m <model> --dangerously-bypass-approvals-and-sandbox
+		//   --skip-git-repo-check --color never -C <cwd> <task>
 		const args: string[] = [
-			"--model",
+			"exec",
+			"-m",
 			model,
-			"--approval-mode",
-			"full-auto",
-			"--quiet",
+			"--dangerously-bypass-approvals-and-sandbox",
+			"--skip-git-repo-check",
+			"--color",
+			"never",
 		];
 
-		args.push(...this.buildMcpArgs(mcpConfigPath));
+		if (plot.worktreePath) {
+			args.push("-C", plot.worktreePath);
+		}
 
 		if (run.systemPromptAppend) {
 			args.push(...this.buildSystemPromptArgs(run.systemPromptAppend));
@@ -84,16 +88,19 @@ export class CodexAdapter implements AgentAdapter {
 				SETRA_AGENT: this.name,
 				SETRA_MODEL: model,
 			},
+			// cwd still set so shell inherits it; -C is the codex-level override
 			cwd: plot.worktreePath,
 		};
 	}
 
 	buildSystemPromptArgs(systemPrompt: string): string[] {
+		// codex exec supports --instructions for system-level context
 		return ["--instructions", systemPrompt];
 	}
 
-	buildMcpArgs(mcpConfigPath: string): string[] {
-		return ["--mcp-config", mcpConfigPath];
+	// MCP is configured globally in ~/.codex/config.toml — no CLI flag in v0.128
+	buildMcpArgs(_mcpConfigPath: string): string[] {
+		return [];
 	}
 
 	parseTokenUsage(output: string): TokenUsage | null {
@@ -109,7 +116,7 @@ export class CodexAdapter implements AgentAdapter {
 			promptTokens: parseNum(promptMatch[1]),
 			completionTokens: parseNum(completionMatch[1]),
 			cacheReadTokens: parseNum(CODEX_CACHED_TOKENS_RE.exec(clean)?.[1]),
-			cacheWriteTokens: 0, // Codex CLI does not report cache writes
+			cacheWriteTokens: 0,
 		};
 	}
 
@@ -127,12 +134,6 @@ export class CodexAdapter implements AgentAdapter {
 
 	detectCompletion(output: string): boolean {
 		return CODEX_COMPLETION_PATTERNS.some((p) => p.test(output));
-	}
-
-	private resolveModel(modelId: string): string {
-		if (!this.supportsModels.includes(modelId as never))
-			return this.defaultModel;
-		return modelId;
 	}
 }
 

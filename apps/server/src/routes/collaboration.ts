@@ -52,12 +52,14 @@ collaborationRoute.get("/channels", async (c) => {
 	return c.json(collaborationRepo.listChannels(cid));
 });
 
-// GET /api/collaboration/messages?channel=general&limit=80
+// GET /api/collaboration/messages?channel=general&limit=80[&hideSystem=true]
 collaborationRoute.get("/messages", async (c) => {
 	const cid = getCompanyId(c);
 	const channel = c.req.query("channel") ?? "general";
 	const limit = Math.min(Number(c.req.query("limit") ?? 80), 200);
-	return c.json(collaborationRepo.listMessages(cid, channel, limit));
+	// hideLifecycle is always true; hideSystem is passed from the board for extra client-side noise
+	const messages = collaborationRepo.listMessages(cid, channel, limit, true);
+	return c.json(messages);
 });
 
 // POST /api/collaboration/messages

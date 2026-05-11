@@ -91,6 +91,8 @@ export interface SpawnRunInput {
 	issueId?: string | null;
 	task?: string | null;
 	companyId: string | null;
+	/** Collaboration channel that triggered this run (e.g. "general", "proj-todo-app") */
+	sourceChannel?: string | null;
 }
 
 export interface TextCallInput {

@@ -24,6 +24,7 @@ import {
 	type AgentRunMode,
 	type AgentStatus,
 	api,
+	request,
 } from "../lib/api";
 import { cn, formatCost, formatTokens, timeAgo } from "../lib/utils";
 
@@ -318,7 +319,7 @@ function AgentCard({
 							</div>
 							<div className="min-w-0">
 								<p className="truncate text-sm font-semibold text-white">
-									{agent.role}
+									{agent.displayName || agent.role || agent.slug}
 								</p>
 								<p className="truncate font-mono text-xs text-zinc-400">
 									{agent.slug}
@@ -336,7 +337,15 @@ function AgentCard({
 
 					<div className="flex items-center gap-2 text-xs text-zinc-400">
 						<span className="text-zinc-500">Model:</span>
-						<span className="font-mono">{agent.model ?? "auto"}</span>
+						<span className="font-mono">
+							{agent.model && agent.model !== "auto"
+								? agent.model
+								: agent.adapterType === "codex"
+									? "gpt-5.5 (auto)"
+									: agent.adapterType === "claude"
+										? "claude (auto)"
+										: "auto"}
+						</span>
 					</div>
 
 					<div className="space-y-2">
@@ -505,6 +514,22 @@ function HireAgentModal({
 	const [templateId, setTemplateId] = useState("");
 	const [modelId, setModelId] = useState<string>("auto");
 	const [adapterType, setAdapterType] = useState<string>("auto");
+
+	// Pre-populate from global preferred adapter setting
+	const { data: globalSettings } = useQuery({
+		queryKey: ["settings-preferred-adapter"],
+		queryFn: () =>
+			request<{ preferredAdapter?: string; preferredModel?: string }>("/settings"),
+		enabled: open,
+		staleTime: 30_000,
+	});
+	useEffect(() => {
+		if (!open) return;
+		if (globalSettings?.preferredAdapter) {
+			setAdapterType(globalSettings.preferredAdapter);
+			if (globalSettings.preferredModel) setModelId(globalSettings.preferredModel);
+		}
+	}, [open, globalSettings?.preferredAdapter, globalSettings?.preferredModel]);
 	const [templates, setTemplates] = useState<
 		{
 			id: string;
@@ -685,24 +710,35 @@ function HireAgentModal({
 					helperText="Optional display name shown in the roster."
 				/>
 
-				<Select
-					label="Model"
-					value={modelId}
-					onChange={(event) => setModelId(event.target.value)}
-					helperText="Use Auto to let Setra pick the best configured provider."
-				>
-					{models.map((model) => (
-						<option
-							key={model.id}
-							value={model.id}
-							disabled={!model.configured && model.id !== "auto"}
-						>
-							{model.label}
-							{!model.configured && model.id !== "auto" ? " — no API key" : ""}
-						</option>
-					))}
-					{models.length === 0 && <option value="auto">Auto</option>}
-				</Select>
+				{/* For CLI adapters, model is managed by the CLI itself — no selection needed */}
+				{["claude", "codex", "gemini", "amp", "opencode"].includes(adapterType) ? (
+					<div className="rounded-md border border-zinc-700/50 bg-zinc-800/40 px-3 py-2.5 text-sm text-zinc-400">
+						<span className="font-medium text-zinc-300">Model:</span> managed by{" "}
+						<span className="font-mono text-zinc-200">{adapterType}</span> CLI
+						{adapterType === "codex" && modelId && modelId !== "auto" && (
+							<span className="ml-1 text-zinc-300">({modelId})</span>
+						)}
+					</div>
+				) : (
+					<Select
+						label="Model"
+						value={modelId}
+						onChange={(event) => setModelId(event.target.value)}
+						helperText="Use Auto to let Setra pick the best configured provider."
+					>
+						{models.map((model) => (
+							<option
+								key={model.id}
+								value={model.id}
+								disabled={!model.configured && model.id !== "auto"}
+							>
+								{model.label}
+								{!model.configured && model.id !== "auto" ? " — no API key" : ""}
+							</option>
+						))}
+						{models.length === 0 && <option value="auto">Auto</option>}
+					</Select>
+				)}
 
 				<Select
 					label="Runner"

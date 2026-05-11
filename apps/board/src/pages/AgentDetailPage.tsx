@@ -206,7 +206,7 @@ export function AgentDetailPage() {
 					</div>
 					<div>
 						<h1 className="text-xl font-semibold text-foreground">
-							{agent.role ?? agent.slug}
+							{agent.displayName || agent.role || agent.slug}
 						</h1>
 						<p className="text-sm text-muted-foreground mt-0.5">
 							{agent.adapterType} · {agent.modelId ?? agent.model}
@@ -791,7 +791,13 @@ function ConfigurationTab({
 						</label>
 						<div className="flex items-center gap-2">
 							<span className="flex-1 rounded-md border border-border/50 bg-card/40 px-3 py-2 font-mono text-foreground text-sm">
-								{agent.modelId ?? agent.model ?? "auto (smart selection)"}
+								{agent.modelId && agent.modelId !== "auto"
+									? agent.modelId
+									: agent.adapterType === "codex"
+										? "gpt-5.5 (default)"
+										: agent.adapterType === "claude"
+											? "auto (smart selection)"
+											: agent.model ?? "auto (smart selection)"}
 							</span>
 						</div>
 						<p className="mt-1 text-[11px] text-muted-foreground/60">
@@ -1642,7 +1648,7 @@ function ChatTab({ agent, agentId }: { agent: AgentDetail; agentId: string }) {
 		[sendMessage],
 	);
 
-	const agentName = agent.role ?? agent.slug ?? "Agent";
+	const agentName = agent.displayName || agent.role || agent.slug || "Agent";
 
 	function isAgentMessage(msg: ChatMessage) {
 		return msg.agentSlug !== "human" && msg.agentSlug !== user?.email;

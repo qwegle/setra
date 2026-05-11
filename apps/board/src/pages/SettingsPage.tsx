@@ -579,6 +579,14 @@ export function SettingsPage() {
 		"model.small",
 		"claude-haiku-4-5",
 	);
+	const [preferredAdapter, setPreferredAdapter] = useLocalSetting(
+		"adapter.preferred",
+		"",
+	);
+	const [preferredModel, setPreferredModel] = useLocalSetting(
+		"adapter.preferred_model",
+		"",
+	);
 	const [deployMode, setDeployMode] = useLocalSetting<
 		"manual" | "semi" | "auto"
 	>("governance.deployMode", "manual");
@@ -872,6 +880,14 @@ export function SettingsPage() {
 		if (serverSettings.defaultModel)
 			setDefaultModel(serverSettings.defaultModel);
 		if (serverSettings.smallModel) setSmallModel(serverSettings.smallModel);
+		if ((serverSettings as Record<string, unknown>).preferredAdapter)
+			setPreferredAdapter(
+				(serverSettings as Record<string, unknown>).preferredAdapter as string,
+			);
+		if ((serverSettings as Record<string, unknown>).preferredModel)
+			setPreferredModel(
+				(serverSettings as Record<string, unknown>).preferredModel as string,
+			);
 		if (serverSettings.governance) {
 			setDeployMode(
 				serverSettings.governance.deployMode as "manual" | "semi" | "auto",
@@ -955,6 +971,8 @@ export function SettingsPage() {
 					webSearchEnabled,
 					defaultModel,
 					smallModel,
+					preferredAdapter: preferredAdapter || undefined,
+					preferredModel: preferredModel || undefined,
 					governance: {
 						deployMode,
 						autoApprove,

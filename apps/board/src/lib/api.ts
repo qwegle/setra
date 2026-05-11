@@ -350,7 +350,9 @@ export interface SdlcStats {
 export interface Agent {
 	id: string;
 	slug: string;
+	displayName: string;
 	role: string;
+	adapterType?: string;
 	model: string | null;
 	status: AgentStatus;
 	currentIssueId: string | null;
@@ -411,6 +413,46 @@ export interface ProjectBreakResponse {
 	breakId: string;
 	endsAt: string;
 	agents: Array<{ id: string; slug: string; displayName: string }>;
+}
+
+export interface DatabaseConnection {
+	id: string;
+	name: string;
+	type: string;
+	connectionString?: string;
+	host?: string;
+	port?: number;
+	database?: string;
+	status: "connected" | "error";
+	createdAt: string;
+}
+
+export interface RunStatus {
+	running: boolean;
+	lines: string[];
+	url: string | null;
+	startedAt?: string;
+}
+
+export interface ChecklistItem {
+	id: string;
+	category: string;
+	title: string;
+	description: string;
+	status: "pending" | "pass" | "fail";
+}
+
+export interface CollabMessage {
+	id: string;
+	channel: string;
+	fromAgent: string;
+	content: string;
+	createdAt: string;
+}
+
+export interface ProjectChannel {
+	slug: string;
+	name: string;
 }
 
 export interface AgentHeartbeat {
@@ -1150,6 +1192,15 @@ export const api = {
 			}),
 		status: (projectId: string) =>
 			fetch<GitStatusResponse>(`/projects/${projectId}/git/status`),
+		revert: (projectId: string, sha: string, hard = false) =>
+			post<{ ok: boolean; head: string }>(`/projects/${projectId}/git/revert`, {
+				sha,
+				hard,
+			}),
+		remote: (projectId: string) =>
+			fetch<{ remoteUrl: string | null; branch: string }>(
+				`/projects/${projectId}/git/remote`,
+			),
 	},
 	projectWorkspace: {
 		exec: (
@@ -1201,6 +1252,78 @@ export const api = {
 		post<ContextRefreshResult>(`/projects/${projectId}/refresh-context`),
 	startBreak: (projectId: string) =>
 		post<ProjectBreakResponse>(`/projects/${projectId}/break`),
+
+	projectDb: {
+		list: (projectId: string) =>
+			request<DatabaseConnection[]>(`/projects/${projectId}/database`),
+		connect: (
+			projectId: string,
+			data: {
+				connectionString?: string;
+				name?: string;
+				type?: string;
+				host?: string;
+				port?: number;
+				database?: string;
+				username?: string;
+				password?: string;
+			},
+		) =>
+			post<DatabaseConnection>(`/projects/${projectId}/database/connect`, data),
+		remove: (projectId: string, connId: string) =>
+			request<{ ok: boolean }>(`/projects/${projectId}/database/${connId}`, {
+				method: "DELETE",
+			}),
+		query: (projectId: string, query: string) =>
+			post<{ columns: string[]; rows: Record<string, unknown>[] }>(
+				`/projects/${projectId}/database/query`,
+				{ query },
+			),
+	},
+
+	projectRun: {
+		status: (projectId: string) =>
+			request<RunStatus>(`/projects/${projectId}/run`),
+		start: (projectId: string) =>
+			post<{ ok: boolean; command: string; startedAt: string }>(
+				`/projects/${projectId}/run`,
+			),
+		stop: (projectId: string) =>
+			request<{ ok: boolean }>(`/projects/${projectId}/run`, {
+				method: "DELETE",
+			}),
+	},
+
+	projectProduction: {
+		get: (projectId: string) =>
+			request<ChecklistItem[]>(`/projects/${projectId}/production-checklist`),
+		generate: (projectId: string) =>
+			post<ChecklistItem[]>(`/projects/${projectId}/production-checklist`),
+		updateItem: (
+			projectId: string,
+			itemId: string,
+			status: "pending" | "pass" | "fail",
+		) =>
+			request<ChecklistItem>(
+				`/projects/${projectId}/production-checklist/${itemId}`,
+				{ method: "PATCH", body: JSON.stringify({ status }) },
+			),
+	},
+
+	projectDiscussion: {
+		channel: (projectId: string) =>
+			request<ProjectChannel | null>(`/projects/${projectId}/channel`),
+		messages: (channel: string) =>
+			request<CollabMessage[]>(
+				`/collaboration/messages?channel=${encodeURIComponent(channel)}&limit=100&hideSystem=true`,
+			),
+		send: (channel: string, content: string) =>
+			post<{ id: string; createdAt: string }>("/collaboration/messages", {
+				channel,
+				body: content,
+				agentSlug: "human",
+			}),
+	},
 	budget: {
 		summary: () => request<BudgetSummary>("/budget/summary"),
 		settings: () =>
@@ -1772,7 +1895,7 @@ export const api = {
 					pinned?: number | boolean | null;
 				}>
 			>(
-				`/collaboration/messages?channel=${encodeURIComponent(channel)}&limit=${limit}`,
+				`/collaboration/messages?channel=${encodeURIComponent(channel)}&limit=${limit}&hideSystem=true`,
 			),
 		post: (data: { channel: string; body: string; agentSlug?: string }) =>
 			request<{ id: string }>("/collaboration/messages", {
