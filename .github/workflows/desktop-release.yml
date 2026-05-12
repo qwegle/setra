@@ -1,0 +1,106 @@
+name: Desktop Release
+
+# Builds installable desktop binaries (Windows .exe, macOS .dmg, Linux .AppImage)
+# from the apps/desktop Electron app. Runs on tag push (v*) or manual dispatch
+# from the Actions tab. Each runner produces only its native artifacts because
+# code signing + native deps (better-sqlite3, node-pty) are platform-specific.
+#
+# To trigger manually:
+#   gh workflow run desktop-release.yml --ref <branch>
+# To trigger via tag:
+#   git tag -a v0.1.0 -m "..." && git push origin v0.1.0
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build from"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target_args: "--mac --arm64"
+            artifact_glob: "apps/desktop/dist/*.dmg"
+            artifact_name: setra-macos-arm64
+          - os: macos-13
+            target_args: "--mac --x64"
+            artifact_glob: "apps/desktop/dist/*.dmg"
+            artifact_name: setra-macos-x64
+          - os: windows-latest
+            target_args: "--win --x64"
+            artifact_glob: "apps/desktop/dist/*.exe"
+            artifact_name: setra-windows-x64
+          - os: ubuntu-latest
+            target_args: "--linux AppImage --x64"
+            artifact_glob: "apps/desktop/dist/*.AppImage"
+            artifact_name: setra-linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.ref || github.ref }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace deps (excluding desktop)
+        run: pnpm build --filter=!@setra/desktop
+
+      - name: Build board UI
+        run: pnpm --filter @setra/board build
+
+      - name: Build electron app
+        run: pnpm --filter @setra/desktop exec electron-vite build
+
+      - name: Strip workspace symlinks (electron-builder rejects them)
+        shell: bash
+        run: |
+          rm -rf apps/desktop/node_modules/@setra
+          node apps/desktop/scripts/prune-broken-workspace-links.cjs
+
+      - name: Package installer
+        working-directory: apps/desktop
+        shell: bash
+        env:
+          # Skip notarization / code signing in CI — set APPLE_ID / CSC_LINK
+          # secrets later for signed releases.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: pnpm exec electron-builder --config electron-builder.config.ts ${{ matrix.target_args }} --publish=never
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_glob }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Attach to GitHub Release (tag pushes only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_glob }}
+          fail_on_unmatched_files: false
