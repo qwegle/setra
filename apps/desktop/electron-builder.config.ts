@@ -143,23 +143,11 @@ const config: Configuration = {
 		target: [
 			{
 				target: "dmg",
-				arch: [
-					process.env["CI"]
-						? "universal"
-						: process.arch === "arm64"
-							? "arm64"
-							: "x64",
-				],
+				arch: [process.arch === "arm64" ? "arm64" : "x64"],
 			},
 			{
 				target: "zip",
-				arch: [
-					process.env["CI"]
-						? "universal"
-						: process.arch === "arm64"
-							? "arm64"
-							: "x64",
-				],
+				arch: [process.arch === "arm64" ? "arm64" : "x64"],
 			},
 		],
 		artifactName: "setra-${version}-mac-${arch}.${ext}",
