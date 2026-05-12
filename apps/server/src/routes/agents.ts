@@ -248,7 +248,10 @@ agentsRoute.post("/roster", zValidator("json", HireAgentSchema), async (c) => {
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, "-")
 		.replace(/(^-|-$)/g, "");
-	const existingCount = agentsRepo.countAgentsWithSlugPrefix(baseSlug);
+	const existingCount = agentsRepo.countAgentsWithSlugPrefix(
+		baseSlug,
+		companyId,
+	);
 	const slug =
 		existingCount > 0 ? `${baseSlug}-${existingCount + 1}` : baseSlug;
 

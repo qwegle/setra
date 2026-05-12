@@ -2163,48 +2163,12 @@ function WorkspaceOnboardingWizard({
 				order: 0,
 			});
 
-			// Ensure a template exists for this agent name, then hire it. Without this,
-			// the org tree and roster stay empty after onboarding.
-			setLaunchStatus(`Setting up ${agentName.trim() || "your first agent"}…`);
-			try {
-				const templates = await api.agents.templates
-					.list()
-					.catch(() => [] as any[]);
-				let template = templates.find(
-					(t: any) => t.name?.toLowerCase() === agentName.trim().toLowerCase(),
-				);
-				if (!template) {
-					template = await api.agents.templates
-						.create({
-							name: agentName.trim(),
-							description: `${agentName.trim()} for ${companyName.trim()}`,
-							agent: adapterType || "auto",
-							...(model ? { model } : {}),
-							systemPrompt:
-								systemPrompt.trim() ||
-								`You are the ${agentName.trim()} of ${companyName.trim()}. ` +
-									(companyGoal.trim()
-										? `The company goal is: ${companyGoal.trim()}. `
-										: "") +
-									`Coordinate work, delegate tasks, and keep the team moving.`,
-							estimatedCostTier: "medium",
-						})
-						.catch(() => null);
-				}
-				if (template?.id) {
-					await api.agents.roster
-						.hire({
-							templateId: template.id,
-							displayName: agentName.trim(),
-							reportsTo: null,
-							companyId,
-						})
-						.catch(() => null);
-				}
-			} catch {
-				// Non-fatal — onboarding still continues even if agent setup fails;
-				// you can add one from the Agents page later.
-			}
+			// NOTE: We intentionally do NOT hire any agent here. The server-side
+			// `ensureCeoForCompany` (triggered by POST /api/projects below) is the
+			// only path that provisions the company's CEO. Every other role —
+			// dev, qa, designer, … — is hired on-demand by the CEO via the
+			// `hire_agent` tool as work dictates. Seeding extras here was the
+			// root cause of the "why do I have 3 agents already?" complaint.
 
 			// Create first project to house the issue (use company name)
 			setLaunchStatus("Setting up your first project…");

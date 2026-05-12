@@ -962,7 +962,10 @@ export async function executeToolCall(
 				.toLowerCase()
 				.replace(/[^a-z0-9]+/g, "-")
 				.replace(/(^-|-$)/g, "");
-			const existingCount = agentsRepo.countAgentsWithSlugPrefix(baseSlug);
+			const existingCount = agentsRepo.countAgentsWithSlugPrefix(
+				baseSlug,
+				input.issue?.companyId ?? input.agent.company_id ?? null,
+			);
 			const slug =
 				existingCount > 0 ? `${baseSlug}-${existingCount + 1}` : baseSlug;
 			const companyId =

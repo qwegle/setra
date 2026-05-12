@@ -297,8 +297,7 @@ export function getAgentBySlugScoped(
 		.prepare(
 			`SELECT id, slug, status, model_id
 			   FROM agent_roster
-			  WHERE slug = ? AND (company_id = ? OR company_id IS NULL)
-			  ORDER BY (company_id IS NULL) ASC
+			  WHERE slug = ? AND company_id = ?
 			  LIMIT 1`,
 		)
 		.get(slug, companyId) as
@@ -321,7 +320,18 @@ export function getTemplate(templateId: string) {
 		| undefined;
 }
 
-export function countAgentsWithSlugPrefix(prefix: string): number {
+export function countAgentsWithSlugPrefix(
+	prefix: string,
+	companyId?: string | null,
+): number {
+	if (companyId) {
+		const result = getRawDb()
+			.prepare(
+				`SELECT count(*) as n FROM agent_roster WHERE slug LIKE ? AND company_id = ?`,
+			)
+			.get(`${prefix}%`, companyId) as { n: number };
+		return result.n;
+	}
 	const result = getRawDb()
 		.prepare(`SELECT count(*) as n FROM agent_roster WHERE slug LIKE ?`)
 		.get(`${prefix}%`) as { n: number };

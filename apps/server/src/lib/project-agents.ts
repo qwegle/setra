@@ -75,7 +75,7 @@ export function getScopedAgentOrThrow(
 			`SELECT id, slug, display_name AS displayName, status
 			   FROM agent_roster
 			  WHERE id = ?
-			    AND (company_id = ? OR company_id IS NULL)
+			    AND company_id = ?
 			  LIMIT 1`,
 		)
 		.get(agentRosterId, companyId) as
@@ -118,7 +118,7 @@ export function listProjectAgents(
 			 JOIN agent_roster ar ON ar.id = pa.agent_roster_id
 			 LEFT JOIN agent_templates t ON t.id = ar.template_id
 			WHERE pa.project_id = ?
-			  AND (ar.company_id = ? OR ar.company_id IS NULL)
+			  AND ar.company_id = ?
 			ORDER BY CASE pa.role WHEN 'lead' THEN 0 WHEN 'owner' THEN 1 ELSE 2 END,
 			         ar.display_name COLLATE NOCASE ASC`,
 		)
@@ -131,7 +131,7 @@ export function getLeadershipAgents(companyId: string): LeadershipAgentRow[] {
 		.prepare(
 			`SELECT id, slug, display_name AS displayName
 			   FROM agent_roster
-			  WHERE (company_id = ? OR company_id IS NULL)
+			  WHERE company_id = ?
 			    AND is_active = 1
 			    AND (
 					lower(slug) IN ('ceo', 'cto')
