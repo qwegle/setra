@@ -64,8 +64,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build workspace deps (excluding desktop)
-        run: pnpm build --filter=!@setra/desktop
+      - name: Build workspace deps (excluding desktop + native-compute)
+        run: pnpm build --filter=!@setra/desktop --filter=!@setra/native-compute
 
       - name: Build board UI
         run: pnpm --filter @setra/board build
