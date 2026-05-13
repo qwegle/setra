@@ -65,7 +65,7 @@ function StatusPill({
 		);
 	}
 	return (
-		<Badge variant="secondary" className="gap-1">
+		<Badge variant="info" className="gap-1">
 			<Shield className="h-3 w-3" /> Private
 		</Badge>
 	);
@@ -133,8 +133,8 @@ function JoinDialog({
 			api.lan.requestJoin(peer.url, {
 				companyId: peer.companyId,
 				email,
-				name: name || undefined,
-				message: message || undefined,
+				...(name ? { name } : {}),
+				...(message ? { message } : {}),
 			}),
 		onSuccess: (res) => {
 			setSubmitted({ id: res.requestId, status: res.status });
@@ -403,7 +403,7 @@ export default function ConnectPage() {
 		<div className="space-y-5">
 			<PageHeader
 				title="Connect"
-				description="Find and join other Setra workspaces on your network — or invite teammates to join yours."
+				subtitle="Find and join other Setra workspaces on your network — or invite teammates to join yours."
 				actions={
 					<div className="flex items-center gap-2">
 						<StatusPill
@@ -413,7 +413,7 @@ export default function ConnectPage() {
 						<Button
 							size="sm"
 							variant={
-								status.data?.discoverable ? "secondary" : "default"
+								status.data?.discoverable ? "secondary" : "primary"
 							}
 							onClick={() => toggle.mutate(!(status.data?.discoverable ?? false))}
 							disabled={toggle.isPending}

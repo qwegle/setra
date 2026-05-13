@@ -39,7 +39,9 @@ const CHUNK_TYPE_STYLES: Partial<
 	stderr: { className: "text-accent-red", prefix: "[stderr]" },
 	output: { className: "text-foreground" },
 };
-const DEFAULT_CHUNK_STYLE = { className: "text-foreground" } as const;
+const DEFAULT_CHUNK_STYLE: { className: string; prefix?: string } = {
+	className: "text-foreground",
+};
 
 interface DashboardAgent extends Agent {
 	displayName: string;

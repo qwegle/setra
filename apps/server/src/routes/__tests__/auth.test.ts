@@ -64,6 +64,7 @@ async function buildApp() {
 		createCompany: mockCreateCompany,
 		listCompanies: mockListCompanies,
 		ensureAssistantForCompany: vi.fn(),
+		ensureCeoForCompany: vi.fn(),
 	}));
 	const [{ authRoute }, authLib] = await Promise.all([
 		import("../auth.js"),

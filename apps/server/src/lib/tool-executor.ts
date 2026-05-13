@@ -21,7 +21,10 @@ import * as integrationsRepo from "../repositories/integrations.repo.js";
 import * as issuesRepo from "../repositories/issues.repo.js";
 import { domainEventBus } from "../sse/handler.js";
 import { callAdapterTextOnce } from "./adapters/adapter-dispatch.js";
-import { companyRequiresApproval } from "./approval-gates.js";
+import {
+	companyRequiresApproval,
+	ensureGovernanceApproval,
+} from "./approval-gates.js";
 import { publishDelegationMessage } from "./company-broker.js";
 import { addAutomationIssueComment } from "./issue-comments.js";
 import { createLogger } from "./logger.js";
@@ -955,6 +958,35 @@ export async function executeToolCall(
 		const customPrompt = input.args.systemPrompt
 			? String(input.args.systemPrompt)
 			: null;
+		const hiringCompanyId =
+			input.issue?.companyId ?? input.agent.company_id ?? null;
+		if (hiringCompanyId) {
+			const gate = await ensureGovernanceApproval({
+				companyId: hiringCompanyId,
+				action: "agent_hire",
+				entityType: "agent_hire",
+				entityId: `hire:${input.agent.id ?? input.agent.slug}:${displayName || templateId}:${Date.now()}`,
+				title: `Hire ${displayName || templateId || "agent"}`,
+				description: `Agent ${input.agent.slug} requested to hire "${displayName || templateId}" using template "${templateId}".`,
+				requestedBy: input.agent.slug,
+				riskLevel: "medium",
+			});
+			if (!gate.allow) {
+				return {
+					content: JSON.stringify({
+						pending_approval: true,
+						approvalId: gate.approvalId,
+						status: gate.status ?? "pending",
+						message:
+							gate.status === "rejected"
+								? "Hire was rejected by an approver."
+								: "Hire requires human approval in the Approvals workflow.",
+					}),
+					usage,
+					costUsd: 0,
+				};
+			}
+		}
 		try {
 			const template = agentsRepo.getTemplate(templateId);
 			if (!template) throw new Error(`Template '${templateId}' not found`);

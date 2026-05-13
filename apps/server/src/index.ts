@@ -168,7 +168,6 @@ export async function createApp(
 	app.route("/api/auth", authRoute);
 	app.route("/api/companies", companiesRoute);
 	app.route("/api/llm", llmRoute);
-	app.route("/api/runtime", runtimeRoute);
 	app.route("/api/instance", instanceRoute);
 	app.route("/api/lan", lanRoute);
 	app.route("/api/clone", cloneRoute);
@@ -226,6 +225,8 @@ export async function createApp(
 		"/api/search/*",
 		"/api/instance/*",
 		"/api/runs/*",
+		"/api/runtime",
+		"/api/runtime/*",
 	]) {
 		app.use(mount, authGuard);
 	}
@@ -259,6 +260,7 @@ export async function createApp(
 	});
 
 	app.route("/api/projects", projectsRoute);
+	app.route("/api/runtime", runtimeRoute);
 	app.route("/api/projects", projectSecretsRoute);
 	app.route("/api/projects", projectGitRoute);
 	app.route("/api/projects", projectWorkspaceRoute);

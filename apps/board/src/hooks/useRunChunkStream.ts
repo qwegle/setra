@@ -37,16 +37,17 @@ function parse(e: MessageEvent): RunChunkEvent | null {
 		return null;
 	}
 	if (!raw.runId || !raw.agentId || !raw.type) return null;
-	return {
+	const ev: RunChunkEvent = {
 		runId: raw.runId,
 		agentId: raw.agentId,
 		companyId: raw.companyId ?? null,
 		type: raw.type,
 		content: raw.content ?? "",
-		toolName: raw.toolName ?? undefined,
-		sequence: raw.sequence,
 		timestamp: raw.recordedAt ?? new Date().toISOString(),
 	};
+	if (raw.toolName) ev.toolName = raw.toolName;
+	if (typeof raw.sequence === "number") ev.sequence = raw.sequence;
+	return ev;
 }
 
 export interface UseRunChunkStreamOptions {

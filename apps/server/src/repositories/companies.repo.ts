@@ -181,7 +181,7 @@ export function ensureCeoForCompany(params: {
 	companyId: string;
 	companyName: string;
 	companyGoal?: string | null;
-	projectName: string;
+	projectName?: string | null;
 	projectDescription?: string | null;
 	workspacePath?: string | null;
 }): void {
@@ -213,7 +213,7 @@ export function ensureCeoForCompany(params: {
 		const systemPrompt = [
 			`You are the CEO of ${companyName}.`,
 			companyGoal ? `Company goal: ${companyGoal}` : null,
-			`Current project: ${projectName}.`,
+			projectName ? `Current project: ${projectName}.` : null,
 			projectDescription ? `Project brief: ${projectDescription}` : null,
 			workspacePath ? `Project workspace: ${workspacePath}` : null,
 			"You are the FIRST and ONLY employee at this company. There is no engineering team yet — you build the team on demand.",
@@ -229,12 +229,14 @@ export function ensureCeoForCompany(params: {
 		rawSqlite
 			.prepare(
 				`INSERT INTO agent_roster
-          (id, company_id, slug, display_name, model_id, adapter_type, system_prompt, status, is_active)
-         VALUES (?, ?, ?, 'CEO', 'auto', 'auto', ?, 'idle', 1)`,
+          (id, company_id, slug, display_name, model_id, adapter_type, system_prompt, status, is_active, run_mode, continuous_interval_ms)
+         VALUES (?, ?, ?, 'CEO', 'auto', 'auto', ?, 'idle', 1, 'continuous', 300000)`,
 			)
 			.run(crypto.randomUUID(), companyId, safeSlug(slug), systemPrompt);
-	} catch {
-		// Best effort only — project creation should not fail if CEO provisioning fails.
+	} catch (err) {
+		// Best effort only — signup / project creation should not fail if CEO provisioning fails.
+		// eslint-disable-next-line no-console
+		console.warn("[ensureCeoForCompany] failed", err);
 	}
 }
 

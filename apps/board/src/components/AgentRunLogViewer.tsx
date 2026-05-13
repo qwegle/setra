@@ -9,14 +9,16 @@ interface Props {
 	isLive: boolean;
 }
 
-const CHUNK_TYPE_STYLES: Record<
-	AgentRunLogChunk["type"],
-	{ className: string; prefix?: string }
+const CHUNK_TYPE_STYLES: Partial<
+	Record<AgentRunLogChunk["type"], { className: string; prefix?: string }>
 > = {
 	assistant: { className: "text-foreground" },
 	tool_use: { className: "text-setra-400", prefix: "[tool]" },
 	tool_result: { className: "text-muted-foreground", prefix: "[result]" },
 	system: { className: "text-accent-yellow", prefix: "[system]" },
+};
+const DEFAULT_CHUNK_STYLE: { className: string; prefix?: string } = {
+	className: "text-foreground",
 };
 
 export function AgentRunLogViewer({ runId, agentId, isLive }: Props) {
@@ -100,7 +102,7 @@ export function AgentRunLogViewer({ runId, agentId, isLive }: Props) {
 				)}
 				{chunks.map((chunk) => {
 					const style =
-						CHUNK_TYPE_STYLES[chunk.type] ?? CHUNK_TYPE_STYLES.assistant;
+						CHUNK_TYPE_STYLES[chunk.type] ?? DEFAULT_CHUNK_STYLE;
 					const prefix =
 						chunk.type === "tool_use" && chunk.toolName
 							? `[tool:${chunk.toolName}]`

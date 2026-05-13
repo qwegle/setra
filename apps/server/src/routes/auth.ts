@@ -95,6 +95,12 @@ authRoute.post("/register", async (c) => {
 			return c.json({ error: "Failed to create company" }, 500);
 		}
 		targetCompany = { id: created.id };
+		// Provision the CEO immediately at signup — the CEO is employee #1
+		// for every brand-new workspace and hires the rest of the team on demand.
+		companiesRepo.ensureCeoForCompany({
+			companyId: created.id,
+			companyName,
+		});
 	}
 	const role = isFirstUser
 		? "owner"
