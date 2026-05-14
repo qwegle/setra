@@ -10,21 +10,31 @@ setra is being built in stages to stay stable while moving from internal usage t
 
 Goal: make internal workflows reliable end-to-end.
 
-Scope:
+Shipped:
 
-- CLI, TUI, and Desktop baseline
-- multi-agent broker + role routing
-- token/cost monitoring
-- offline mode foundations
-- security workflows (Sentinel)
-- wiki and kanban workflows
-- company templates and skill system
+- [x] CLI, TUI, and Desktop baseline
+- [x] Multi-agent broker + role routing
+- [x] Token/cost monitoring
+- [x] Offline mode foundations
+- [x] Security workflows (Sentinel)
+- [x] Wiki and kanban workflows
+- [x] Company templates and skill system
+- [x] Adaptive skill promotion with quality monitoring
+- [x] Continuous mode for long-running tasks
+- [x] Approval gates for sensitive actions (hire, destructive tools, SSH/DB writes)
+- [x] Resend-powered email alerts
+- [x] Electron desktop releases (macOS DMG, Windows EXE, Linux AppImage)
+- [x] CLI-only adapters (Claude, Codex, Gemini, Cursor, OpenCode)
+- [x] Soft-deprecation of legacy API keys
+- [x] Two-screen Connect-a-CLI onboarding
+- [x] Recharts analytics dashboard
+- [x] Cream-light Beacons-style theme
 
 Exit criteria:
 
-- stable build across core packages
-- critical tests passing
-- clear operator docs
+- [x] Stable build across core packages (361 tests, both server + board builds green)
+- [x] Critical tests passing
+- [x] Clear operator docs
 
 ---
 
