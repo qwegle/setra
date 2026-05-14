@@ -26,6 +26,7 @@ import { autonomousDispatchCycle } from "./autonomous-loop.js";
 import { getAllSettings, getCompanySettings } from "./company-settings.js";
 import { cronMatches, nextCronOccurrence } from "./cron.js";
 import { registerDispatcherTickHandler } from "./dispatcher-scheduler.js";
+import { decomposeReadyGoals } from "./goal-engine.js";
 import { buildIssueBranchName } from "./issue-branch.js";
 import { createLogger } from "./logger.js";
 import type { Plan, PlanSubtask } from "./plan-engine.js";
@@ -1004,6 +1005,15 @@ export async function dispatchOnce(): Promise<DispatchResult> {
 		skippedAtCap: 0,
 		perCompany: {},
 	};
+	// Decompose any ready goals before scanning the issue queue so a fresh
+	// root issue is dispatchable in the same tick.
+	try {
+		await decomposeReadyGoals();
+	} catch (error) {
+		log.warn("decomposeReadyGoals threw", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
 	const raw = getRawDb();
 	const companies = raw.prepare(`SELECT id FROM companies`).all() as Array<{
 		id: string;
