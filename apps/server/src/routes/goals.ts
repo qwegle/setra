@@ -62,3 +62,23 @@ goalsRoute.delete("/:id", async (c) => {
 	await logActivity(c, "goal.deleted", "goal", row.id);
 	return c.json({ ok: true });
 });
+
+goalsRoute.post("/:id/decompose", async (c) => {
+	const cid = getCompanyId(c);
+	const id = c.req.param("id");
+	const existing = await goalsRepo.getGoalById(id, cid);
+	if (!existing) return c.json({ error: "not found" }, 404);
+	try {
+		const { decomposeGoal } = await import("../lib/goal-engine.js");
+		const result = await decomposeGoal(id);
+		await logActivity(c, "goal.decomposed", "goal", id, result);
+		return c.json(result);
+	} catch (error) {
+		return c.json(
+			{
+				error: error instanceof Error ? error.message : String(error),
+			},
+			500,
+		);
+	}
+});
