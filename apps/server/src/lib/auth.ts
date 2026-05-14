@@ -62,12 +62,12 @@ export function verifyToken(token: string): TokenPayload {
 		throw new Error("Invalid token signature");
 	}
 	const payload = JSON.parse(body) as TokenPayload;
-	if (
-		!payload.userId ||
-		!payload.email ||
-		!payload.companyId ||
-		!payload.role
-	) {
+	if (!payload.userId || !payload.email || !payload.role) {
+		throw new Error("Invalid token payload");
+	}
+	// companyId may be empty string for users who registered but have not yet
+	// joined or created a workspace. The /onboarding routes handle that case.
+	if (typeof payload.companyId !== "string") {
 		throw new Error("Invalid token payload");
 	}
 	if (payload.exp && payload.exp < Date.now()) {
