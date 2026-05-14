@@ -9,6 +9,7 @@ import { Hono } from "hono";
 import { getCompanyEvents } from "../lib/agent-event-bus.js";
 import { getCompanyId } from "../lib/company-scope.js";
 import { applyKeysToEnv, getCompanySettings } from "../lib/company-settings.js";
+import { callCodexExecOnce } from "../lib/adapters/codex-runner.js";
 import {
 	type AdapterId,
 	resolveAutoAdapter,
@@ -328,11 +329,11 @@ router.post("/chat", zValidator("json", ChatSchema), async (c) => {
 		chosenModel = defaultModel;
 	}
 
-	if (!providerKind) {
+	if (!providerKind && resolved.adapter !== "codex_local") {
 		return c.json(
 			{
 				error:
-					"No AI provider configured. Go to Settings → AI Providers to add an API key.",
+					"No AI provider configured. Go to Settings → AI Providers to add an API key, or pick a CLI adapter (Codex, Claude, Gemini).",
 			},
 			400,
 		);
@@ -404,6 +405,65 @@ ${body.companyGoal ? `Company goal: ${body.companyGoal}` : ""}${eventSummary}${p
 	// also read from `s` so company overrides win even if env had stale values
 	// from another company in this process).
 	let lastError: string | null = null;
+
+	// CLI adapters (codex_local, claude_local, gemini_local) shell out to the
+	// installed CLI binary instead of calling the cloud HTTP API. They reuse
+	// the user's existing CLI auth (e.g. `codex login`) so no API key is
+	// required in Setra. Currently wired: codex_local. Other CLI variants
+	// fall through to their HTTP cousins until a runner exists.
+	if (resolved.adapter === "codex_local") {
+		try {
+			const userText = body.messages
+				.filter((m) => m.role === "user")
+				.map((m) => m.content)
+				.join("\n\n")
+				.trim();
+			const result = await callCodexExecOnce({
+				model: chosenModel?.startsWith("gpt") ? chosenModel : "gpt-5.4",
+				systemPrompt,
+				task: userText || "Hello.",
+				timeoutMs: 90_000,
+			});
+			const { text, actions } = await parseActions(result.content, cid);
+			if (result.usage) {
+				recordLlmCost({
+					agentSlug: costSlug,
+					model: chosenModel ?? "codex",
+					usage: {
+						prompt_tokens: result.usage.promptTokens,
+						completion_tokens: result.usage.completionTokens,
+					},
+					source: "ai-chat",
+					companyId: cid,
+				});
+			}
+			return c.json({ reply: text, model: "codex_local", actions });
+		} catch (e) {
+			const err = e as Error & { code?: string };
+			if (err.code === "CODEX_LOGIN_REQUIRED") {
+				return c.json(
+					{
+						error:
+							"Codex CLI is not signed in. Open a terminal and run: codex login",
+					},
+					400,
+				);
+			}
+			if (err.code === "CODEX_NOT_INSTALLED") {
+				return c.json(
+					{
+						error:
+							"Codex CLI not found. Install with: npm install -g @openai/codex",
+					},
+					400,
+				);
+			}
+			return c.json(
+				{ error: `Codex CLI error: ${err.message ?? "unknown"}` },
+				500,
+			);
+		}
+	}
 
 	if (providerKind === "anthropic") {
 		try {

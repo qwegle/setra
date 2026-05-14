@@ -4,8 +4,8 @@
 
 @layer base {
 	:root {
-		/* Cream / parchment palette is the SINGLE base theme. No dark fallback —
-		   Setra is a light-only enterprise UI. */
+		/* DEFAULT THEME = cream/light. Setra ships light by default but
+		   supports a dark theme via the `.dark` class on <html>. */
 		--background: 36 38% 96%;            /* #faf6ef cream */
 		--foreground: 30 18% 14%;            /* deep slate-brown */
 		--card: 36 50% 99%;                  /* near-white with warm tint */
@@ -26,32 +26,63 @@
 		--input: 36 22% 86%;
 		--ring: 32 60% 30%;
 		--radius: 0.5rem;
+		/* Sidebar/rail surface — one shade darker than --background so the
+		   left rail visually recedes from the main canvas. */
+		--rail: 36 30% 91%;                  /* slightly darker cream */
+		--rail-foreground: 30 18% 14%;
 		color-scheme: light;
 	}
 
+	/* Explicit `.light` class kept for backward compat. Mirrors :root. */
 	.light {
-		/* Kept for backward compat with components that explicitly add .light.
-		   Values mirror :root above. */
 		--background: 36 38% 96%;
 		--foreground: 30 18% 14%;
 		--card: 36 50% 99%;
 		--card-foreground: 30 18% 14%;
 		--popover: 36 50% 99%;
 		--popover-foreground: 30 18% 14%;
-		--muted: 36 28% 92%;                 /* sand */
+		--muted: 36 28% 92%;
 		--muted-foreground: 30 10% 42%;
-		--primary: 213 76% 47%;
-		--primary-foreground: 0 0% 100%;
+		--primary: 32 60% 30%;
+		--primary-foreground: 36 50% 97%;
 		--secondary: 36 30% 90%;
 		--secondary-foreground: 30 18% 14%;
 		--accent: 36 30% 90%;
 		--accent-foreground: 30 18% 14%;
 		--destructive: 0 76% 52%;
 		--destructive-foreground: 0 0% 100%;
-		--border: 36 22% 86%;                /* warm sand border */
+		--border: 36 22% 86%;
 		--input: 36 22% 86%;
-		--ring: 213 76% 47%;
+		--ring: 32 60% 30%;
+		--rail: 36 30% 91%;
+		--rail-foreground: 30 18% 14%;
 		color-scheme: light;
+	}
+
+	/* Dark theme — applied when <html> has the `.dark` class. */
+	.dark {
+		--background: 222 18% 7%;            /* near-black blue */
+		--foreground: 210 20% 92%;
+		--card: 222 16% 11%;
+		--card-foreground: 210 20% 92%;
+		--popover: 222 16% 11%;
+		--popover-foreground: 210 20% 92%;
+		--muted: 222 14% 16%;
+		--muted-foreground: 215 12% 65%;
+		--primary: 213 76% 55%;
+		--primary-foreground: 0 0% 100%;
+		--secondary: 222 14% 18%;
+		--secondary-foreground: 210 20% 92%;
+		--accent: 222 14% 18%;
+		--accent-foreground: 210 20% 92%;
+		--destructive: 0 76% 52%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 222 14% 22%;
+		--input: 222 14% 18%;
+		--ring: 213 76% 55%;
+		--rail: 222 18% 5%;                  /* slightly darker than canvas */
+		--rail-foreground: 210 20% 92%;
+		color-scheme: dark;
 	}
 
 	* {
@@ -62,8 +93,8 @@
 		color-scheme: light;
 	}
 
-	html.light {
-		color-scheme: light;
+	html.dark {
+		color-scheme: dark;
 	}
 
 	body {
