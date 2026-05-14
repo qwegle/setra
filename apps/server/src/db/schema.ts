@@ -269,6 +269,13 @@ export const skills = sqliteTable("skills", {
 	isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
 	usageCount: integer("usage_count").notNull().default(0),
 	lastUsedAt: text("last_used_at"),
+	// Learning-loop fields: skills promoted from successful agent_reflections
+	// carry isLearned=1. sourceRunId / sourceAgentSlug / lessonsLearned let us
+	// trace a learned skill back to the run that produced it.
+	isLearned: integer("is_learned", { mode: "boolean" }).notNull().default(false),
+	sourceRunId: text("source_run_id"),
+	sourceAgentSlug: text("source_agent_slug"),
+	lessonsLearned: text("lessons_learned"),
 	...ts,
 });
 
@@ -529,6 +536,10 @@ export function ensureTables(): void {
       is_active INTEGER NOT NULL DEFAULT 1,
       usage_count INTEGER NOT NULL DEFAULT 0,
       last_used_at TEXT,
+      is_learned INTEGER NOT NULL DEFAULT 0,
+      source_run_id TEXT,
+      source_agent_slug TEXT,
+      lessons_learned TEXT,
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
@@ -629,6 +640,10 @@ export function ensureTables(): void {
 		`ALTER TABLE adapter_configs ADD COLUMN company_id TEXT`,
 		`ALTER TABLE plugins ADD COLUMN company_id TEXT`,
 		`ALTER TABLE skills ADD COLUMN company_id TEXT`,
+		`ALTER TABLE skills ADD COLUMN is_learned INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE skills ADD COLUMN source_run_id TEXT`,
+		`ALTER TABLE skills ADD COLUMN source_agent_slug TEXT`,
+		`ALTER TABLE skills ADD COLUMN lessons_learned TEXT`,
 		`ALTER TABLE artifacts ADD COLUMN company_id TEXT`,
 		// Migration 0004_enterprise_board adds these columns + indexes on a
 		// pre-existing ensureTables artifacts table. Without these ADD COLUMNs

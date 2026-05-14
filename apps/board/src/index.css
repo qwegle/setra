@@ -21,24 +21,26 @@
 	}
 
 	.light {
-		--background: 0 0% 98%;
-		--foreground: 222 47% 11%;
-		--card: 0 0% 100%;
-		--card-foreground: 222 47% 11%;
-		--popover: 0 0% 100%;
-		--popover-foreground: 222 47% 11%;
-		--muted: 210 40% 96%;
-		--muted-foreground: 215 16% 47%;
+		/* Beacons-style cream palette — warm off-white, soft beige borders,
+		   keep Setra blue as the primary accent so brand stays intact. */
+		--background: 40 45% 96%;
+		--foreground: 25 30% 16%;
+		--card: 40 50% 99%;
+		--card-foreground: 25 30% 16%;
+		--popover: 40 50% 99%;
+		--popover-foreground: 25 30% 16%;
+		--muted: 38 35% 92%;
+		--muted-foreground: 28 14% 42%;
 		--primary: 213 76% 47%;
 		--primary-foreground: 0 0% 100%;
-		--secondary: 210 40% 96%;
-		--secondary-foreground: 222 47% 11%;
-		--accent: 210 40% 96%;
-		--accent-foreground: 222 47% 11%;
-		--destructive: 0 84% 60%;
-		--destructive-foreground: 0 0% 98%;
-		--border: 214 32% 91%;
-		--input: 214 32% 91%;
+		--secondary: 38 35% 92%;
+		--secondary-foreground: 25 30% 16%;
+		--accent: 28 90% 82%;
+		--accent-foreground: 25 35% 18%;
+		--destructive: 0 70% 52%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 36 25% 86%;
+		--input: 36 25% 88%;
 		--ring: 213 76% 47%;
 		color-scheme: light;
 	}
@@ -68,6 +70,26 @@
 				transparent 60%
 			);
 		min-height: 100vh;
+	}
+
+	/* Cream/Beacons-style gradient when light theme is active. Warm peach +
+	   soft amber bloom against a creamy off-white background. */
+	html.light body {
+		background-image: radial-gradient(
+				ellipse at 15% 0%,
+				rgba(252, 197, 167, 0.45) 0%,
+				transparent 55%
+			),
+			radial-gradient(
+				ellipse at 90% 12%,
+				rgba(255, 222, 173, 0.35) 0%,
+				transparent 50%
+			),
+			radial-gradient(
+				ellipse at 80% 100%,
+				rgba(232, 180, 200, 0.28) 0%,
+				transparent 55%
+			);
 	}
 
 	/* Scrollbar */
@@ -165,42 +187,43 @@
 	color: hsl(222 47% 11%) !important;
 }
 
-/* Background flips */
+/* Light mode background flips — warm cream cards instead of cold white,
+   so hardcoded dark-mode surfaces feel like Beacons rather than chalky. */
 .light .bg-zinc-800,
 .light .bg-zinc-900,
 .light .bg-zinc-950 {
-	background-color: hsl(0 0% 100%) !important;
+	background-color: hsl(40 50% 99%) !important;
 }
 .light .bg-zinc-800\/50,
 .light .bg-zinc-800\/70,
 .light .bg-zinc-900\/50,
 .light .bg-zinc-900\/80 {
-	background-color: hsl(210 40% 98% / 0.7) !important;
+	background-color: hsl(38 40% 95% / 0.75) !important;
 }
 .light .bg-zinc-700 {
-	background-color: hsl(210 40% 96%) !important;
+	background-color: hsl(38 35% 92%) !important;
 }
 
 .light .bg-gray-800,
 .light .bg-gray-900 {
-	background-color: hsl(0 0% 100%) !important;
+	background-color: hsl(40 50% 99%) !important;
 }
 
 .light .bg-slate-800,
 .light .bg-slate-900 {
-	background-color: hsl(0 0% 100%) !important;
+	background-color: hsl(40 50% 99%) !important;
 }
 
 /* Border flips */
 .light .border-zinc-600,
 .light .border-zinc-700,
 .light .border-zinc-800 {
-	border-color: hsl(214 32% 91%) !important;
+	border-color: hsl(36 25% 86%) !important;
 }
 
 .light .border-gray-700,
 .light .border-gray-800 {
-	border-color: hsl(214 32% 91%) !important;
+	border-color: hsl(36 25% 86%) !important;
 }
 
 /* Keep text-white on primary/colored buttons (don't flip those) */
@@ -217,11 +240,11 @@
 
 /* Scrollbar light mode */
 .light ::-webkit-scrollbar-track {
-	background: hsl(210 40% 96%);
+	background: hsl(38 35% 94%);
 }
 .light ::-webkit-scrollbar-thumb {
-	background: hsl(214 32% 82%);
+	background: hsl(36 25% 80%);
 }
 .light ::-webkit-scrollbar-thumb:hover {
-	background: hsl(214 32% 72%);
+	background: hsl(36 25% 70%);
 }

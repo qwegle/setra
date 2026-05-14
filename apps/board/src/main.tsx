@@ -5,7 +5,10 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./context/AuthContext";
+import { bootstrapTheme } from "./lib/theme";
 import "./index.css";
+
+bootstrapTheme();
 
 const queryClient = new QueryClient({
 	defaultOptions: {

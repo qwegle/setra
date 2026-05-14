@@ -15,6 +15,7 @@ import { getAgentScore } from "./credibility.js";
 import { ENTERPRISE_STANDARDS } from "./enterprise-standards.js";
 import { createLogger } from "./logger.js";
 import { getMatchingRules, loadProjectRules } from "./project-rules.js";
+import { listTopLearnedSkills } from "./skill-promotion.js";
 import type { AgentRow, IssueRow } from "./types.js";
 
 const log = createLogger("prompt-builder");
@@ -743,6 +744,30 @@ export async function buildSystemPrompt(
 
 	const rolePrompt = buildRoleSpecificPrompt(agent, issue, task);
 	const skillsSection = buildSkillsSection(agent, issue, task);
+	let learnedSkillsSection = "";
+	try {
+		if (companyId) {
+			const learned = listTopLearnedSkills(companyId, 5);
+			if (learned.length > 0) {
+				const lines = ["## Learned Skills (from your team's prior runs)"];
+				for (const skill of learned) {
+					const headline = skill.description?.trim() || skill.name;
+					const lesson = skill.lessons_learned?.trim();
+					lines.push(
+						`- **${skill.name}** (used ${skill.usage_count}× by ${skill.source_agent_slug ?? "team"}): ${headline}` +
+							(lesson ? `\n  Lesson: ${lesson}` : ""),
+					);
+				}
+				lines.push(
+					"",
+					"Apply these proven patterns when relevant; they came from your team's own successful runs.",
+				);
+				learnedSkillsSection = `\n\n${lines.join("\n")}`;
+			}
+		}
+	} catch {
+		/* best-effort */
+	}
 	return [
 		base,
 		ENTERPRISE_STANDARDS,
@@ -755,6 +780,7 @@ export async function buildSystemPrompt(
 		projectRulesSection,
 		rolePrompt,
 		skillsSection,
+		learnedSkillsSection,
 		mcpGuidance + mcpToolsList,
 		issue ? `Parent issue: ${issue.slug} — ${issue.title}` : null,
 	]

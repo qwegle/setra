@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { getRawDb } from "@setra/db";
 import { publishInsight } from "./gossip.js";
+import { promoteReflectionToSkill } from "./skill-promotion.js";
 
 export interface RunOutcome {
 	runId: string;
@@ -135,6 +136,22 @@ export function createRunReflection(outcome: RunOutcome): void {
 				`While working on: ${outcome.issueTitle || "unknown task"}`,
 				skillTags,
 			);
+		}
+
+		// Closed learning loop: promote successful reflections into reusable
+		// `skills` rows so future runs benefit. Best-effort, non-fatal.
+		if (outcome.outcome === "success") {
+			promoteReflectionToSkill({
+				runId: outcome.runId,
+				agentSlug: outcome.agentSlug,
+				companyId: outcome.companyId,
+				outcome: outcome.outcome,
+				issueTitle: outcome.issueTitle,
+				skillTags,
+				lessonsLearned,
+				costUsd: outcome.costUsd,
+				durationMs: outcome.durationMs,
+			});
 		}
 	} catch (error) {
 		console.warn("[agent-reflection] failed:", error);

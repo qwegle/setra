@@ -635,7 +635,7 @@ export function SettingsPage() {
 	);
 	const [theme, setTheme] = useLocalSetting<"dark" | "light" | "system">(
 		"appearance:theme",
-		"dark",
+		"light",
 	);
 	const [uiScale, setUiScale] = useLocalSetting<number>(
 		"appearance:uiScale",
