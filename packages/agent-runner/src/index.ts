@@ -279,6 +279,13 @@ export {
 	type LoopDetectorOptions,
 	type LoopSignal,
 } from "./pipeline/index.js";
+export {
+	wrapWithSandbox,
+	defaultReadOnlyPaths,
+	type SandboxMode,
+	type SandboxOptions,
+	type SandboxWrapResult,
+} from "./sandbox-spawn.js";
 
 // ─── Auto-registration ────────────────────────────────────────────────────────
 //

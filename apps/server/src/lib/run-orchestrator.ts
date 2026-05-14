@@ -1,4 +1,8 @@
 import { spawn as spawnAsync, spawnSync } from "node:child_process";
+import {
+	defaultReadOnlyPaths,
+	wrapWithSandbox,
+} from "@setra/agent-runner";
 import { getRawDb } from "@setra/db";
 import { createMessage as createCollabMessage } from "../repositories/collaboration.repo.js";
 import { isOfflineForCompany } from "../repositories/runtime.repo.js";
@@ -605,7 +609,12 @@ async function callCodexOnce(
 	args.push(task);
 
 	return new Promise((resolve, reject) => {
-		const proc = spawnAsync("codex", args, {
+		const wrapped = wrapWithSandbox("codex", args, {
+			projectRoot: cwd ?? process.cwd(),
+			readOnlyPaths: defaultReadOnlyPaths(),
+			allowNetwork: true,
+		});
+		const proc = spawnAsync(wrapped.command, wrapped.args, {
 			...(cwd ? { cwd } : {}),
 			// Explicitly close stdin so codex doesn't block waiting for input.
 			// pipe stdout/stderr to collect output; pipe stdin so it's not inherited.
