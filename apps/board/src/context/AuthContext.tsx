@@ -27,20 +27,30 @@ interface AuthResponse {
 	company?: {
 		id: string;
 	};
+	needsCompany?: boolean;
+}
+
+export interface RegisterInput {
+	firstName: string;
+	lastName: string;
+	email: string;
+	phone: string;
+	password: string;
+	securityQuestion: string;
+	securityAnswer: string;
+	acceptedTerms: boolean;
 }
 
 interface AuthContextValue {
 	user: AuthUser | null;
 	isAuthenticated: boolean;
+	needsCompany: boolean;
 	isAdmin: boolean;
 	isLoading: boolean;
 	login: (email: string, password: string) => Promise<AuthUser>;
-	register: (
-		email: string,
-		password: string,
-		name: string,
-		companyName: string,
-	) => Promise<AuthUser>;
+	register: (input: RegisterInput) => Promise<AuthResponse>;
+	setActiveCompany: (companyId: string) => void;
+	refreshSession: (token: string) => Promise<void>;
 	logout: () => Promise<void>;
 }
 
@@ -71,12 +81,14 @@ function clearStoredSession() {
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const navigate = useNavigate();
 	const [user, setUser] = useState<AuthUser | null>(null);
+	const [needsCompany, setNeedsCompany] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 
 	const storeSession = useCallback((payload: AuthResponse) => {
 		localStorage.setItem(AUTH_TOKEN_KEY, payload.token);
-		persistSelectedCompany(payload.user.companyId);
+		if (payload.user.companyId) persistSelectedCompany(payload.user.companyId);
 		setUser(payload.user);
+		setNeedsCompany(payload.needsCompany === true || !payload.user.companyId);
 	}, []);
 
 	useEffect(() => {
@@ -91,8 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		void request<{ user: AuthUser }>("/auth/me")
 			.then(({ user: nextUser }) => {
 				if (cancelled) return;
-				persistSelectedCompany(nextUser.companyId);
+				if (nextUser.companyId) persistSelectedCompany(nextUser.companyId);
 				setUser(nextUser);
+				setNeedsCompany(!nextUser.companyId);
 			})
 			.catch(() => {
 				if (cancelled) return;
@@ -121,21 +134,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	);
 
 	const register = useCallback(
-		async (
-			email: string,
-			password: string,
-			name: string,
-			companyName: string,
-		) => {
+		async (input: RegisterInput) => {
 			const payload = await request<AuthResponse>("/auth/register", {
 				method: "POST",
-				body: JSON.stringify({ email, password, name, companyName }),
+				body: JSON.stringify(input),
 			});
 			storeSession(payload);
-			return payload.user;
+			return payload;
 		},
 		[storeSession],
 	);
+
+	const setActiveCompany = useCallback((companyId: string) => {
+		persistSelectedCompany(companyId);
+		setUser((prev) => (prev ? { ...prev, companyId } : prev));
+		setNeedsCompany(!companyId);
+	}, []);
+
+	const refreshSession = useCallback(async (token: string) => {
+		localStorage.setItem(AUTH_TOKEN_KEY, token);
+		const { user: nextUser } = await request<{ user: AuthUser }>("/auth/me");
+		if (nextUser.companyId) persistSelectedCompany(nextUser.companyId);
+		setUser(nextUser);
+		setNeedsCompany(!nextUser.companyId);
+	}, []);
 
 	const logout = useCallback(async () => {
 		try {
@@ -147,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		} finally {
 			clearStoredSession();
 			setUser(null);
+			setNeedsCompany(false);
 			navigate("/login", { replace: true });
 		}
 	}, [navigate]);
@@ -155,13 +178,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		() => ({
 			user,
 			isAuthenticated: user !== null,
+			needsCompany,
 			isAdmin: user?.role === "owner" || user?.role === "admin",
 			isLoading,
 			login,
 			register,
+			setActiveCompany,
+			refreshSession,
 			logout,
 		}),
-		[isLoading, login, logout, register, user],
+		[
+			isLoading,
+			login,
+			logout,
+			needsCompany,
+			refreshSession,
+			register,
+			setActiveCompany,
+			user,
+		],
 	);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

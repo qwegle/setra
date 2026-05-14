@@ -15,10 +15,12 @@ import { ApprovalsPage } from "./pages/ApprovalsPage";
 import { ClonePage } from "./pages/ClonePage";
 import { CollaborationPage } from "./pages/CollaborationPage";
 import { CompanySettingsPage } from "./pages/CompanySettingsPage";
+import CompanySetupPage from "./pages/CompanySetupPage";
 import ConnectPage from "./pages/ConnectPage";
 import { CostsPage } from "./pages/CostsPage";
 import { EnvironmentsPage } from "./pages/EnvironmentsPage";
 import { FilesPage } from "./pages/FilesPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import { GoalsPage } from "./pages/GoalsPage";
 import { HealthPage } from "./pages/HealthPage";
 import { InboxPage } from "./pages/InboxPage";
@@ -45,7 +47,7 @@ function AgentRedirect() {
 }
 
 function RequireAuth() {
-	const { isAuthenticated, isLoading } = useAuth();
+	const { isAuthenticated, isLoading, needsCompany } = useAuth();
 	const location = useLocation();
 
 	if (isLoading) {
@@ -60,6 +62,10 @@ function RequireAuth() {
 		return <Navigate to="/login" replace state={{ from: location }} />;
 	}
 
+	if (needsCompany && location.pathname !== "/onboarding/company") {
+		return <Navigate to="/onboarding/company" replace />;
+	}
+
 	return <Outlet />;
 }
 
@@ -67,7 +73,9 @@ export default function App() {
 	return (
 		<Routes>
 			<Route path="/login" element={<LoginPage />} />
+			<Route path="/forgot-password" element={<ForgotPasswordPage />} />
 			<Route element={<RequireAuth />}>
+				<Route path="/onboarding/company" element={<CompanySetupPage />} />
 				<Route element={<AppShell />}>
 					<Route index element={<Navigate to="/overview" replace />} />
 					<Route path="/overview" element={<OverviewPage />} />
