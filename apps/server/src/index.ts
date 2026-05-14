@@ -76,6 +76,7 @@ import { authRoute } from "./routes/auth.js";
 import { budgetRoute } from "./routes/budget.js";
 import { cloneRoute } from "./routes/clone.js";
 import { cliStatusRoute } from "./routes/cli-status.js";
+import { analyticsRoute } from "./routes/analytics.js";
 import { collaborationRoute } from "./routes/collaboration.js";
 import { companiesRoute } from "./routes/companies.js";
 import { companyRoute } from "./routes/company.js";
@@ -283,6 +284,7 @@ export async function createApp(
 	app.route("/api/routines", routinesRoute);
 	app.route("/api/inbox", inboxRoute);
 	app.route("/api/activity", activityRoute);
+	app.route("/api/analytics", analyticsRoute);
 	app.route("/api/costs", costsRoute);
 	app.route("/api/company", companyRoute);
 	app.route("/api/workspaces", workspacesRoute);
