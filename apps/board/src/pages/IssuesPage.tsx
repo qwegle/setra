@@ -109,7 +109,7 @@ function IssueTestBadge({
 	}
 	if (testStatus === "running") {
 		return (
-			<span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+			<span className="inline-flex items-center gap-1 rounded-full bg-[#7a5421]/10 px-2 py-0.5 text-[10px] font-medium text-[#7a5421]">
 				<Loader2 className="h-3 w-3 animate-spin" /> Testing...
 			</span>
 		);
@@ -494,7 +494,7 @@ export function IssuesPage() {
 						).length;
 						const colors: Record<IssueStatus, string> = {
 							backlog: "bg-surface-2 text-text-secondary",
-							todo: "bg-blue-500/10 text-blue-400",
+							todo: "bg-[#7a5421]/10 text-[#7a5421]",
 							in_progress: "bg-amber-500/10 text-amber-400",
 							in_review: "bg-purple-500/10 text-purple-400",
 							done: "bg-green-500/10 text-green-400",
@@ -653,7 +653,7 @@ export function IssuesPage() {
 														<div className="flex gap-1.5">
 															<button
 																type="submit"
-																className="px-2.5 py-1 text-xs rounded bg-setra-600 hover:bg-setra-500 text-white transition-colors"
+																className="px-2.5 py-1 text-xs rounded bg-setra-600 hover:bg-setra-500 text-[#2b2418] transition-colors"
 															>
 																Add
 															</button>
@@ -696,7 +696,7 @@ export function IssuesPage() {
 			/>
 
 			{showProjectSettings && projectId && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-ground-950/80 backdrop-blur-sm">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/80 backdrop-blur-sm">
 					<div className="glass rounded-xl border border-border/60 w-full max-w-2xl p-6 flex flex-col gap-5">
 						<div className="flex items-center justify-between">
 							<div>
@@ -862,7 +862,7 @@ export function IssuesPage() {
 								disabled={
 									saveProjectSettings.isPending || !projectSettingsDraft
 								}
-								className="px-4 py-1.5 bg-setra-600 hover:bg-setra-500 text-white text-sm rounded-md transition-colors disabled:opacity-50"
+								className="px-4 py-1.5 bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-sm rounded-md transition-colors disabled:opacity-50"
 							>
 								{saveProjectSettings.isPending ? "Saving…" : "Save Settings"}
 							</button>
@@ -878,7 +878,7 @@ export function IssuesPage() {
 
 			{/* Goal parser modal */}
 			{showGoalParser && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-ground-950/80 backdrop-blur-sm">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/80 backdrop-blur-sm">
 					<div className="glass rounded-xl border border-border/60 w-full max-w-xl p-6 flex flex-col gap-4">
 						<div className="flex items-center justify-between">
 							<div className="flex items-center gap-2">
@@ -917,7 +917,7 @@ export function IssuesPage() {
 								<button
 									onClick={handleParseGoal}
 									disabled={!goalText.trim() || parsing}
-									className="flex items-center gap-1.5 px-4 py-1.5 bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-white text-sm rounded-md transition-colors"
+									className="flex items-center gap-1.5 px-4 py-1.5 bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-[#2b2418] text-sm rounded-md transition-colors"
 								>
 									{parsing ? (
 										<>
@@ -982,7 +982,7 @@ export function IssuesPage() {
 									<button
 										onClick={acceptParsedIssues}
 										disabled={accepting}
-										className="px-4 py-1.5 bg-setra-600 hover:bg-setra-500 text-white text-sm rounded-md transition-colors disabled:opacity-50"
+										className="px-4 py-1.5 bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-sm rounded-md transition-colors disabled:opacity-50"
 									>
 										{accepting
 											? "Adding…"

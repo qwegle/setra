@@ -81,7 +81,7 @@ export function ToolsPanel({ projectId, onToast }: ToolsPanelProps) {
 					<button
 						type="button"
 						onClick={() => saveContextMut.mutate()}
-						className="rounded-md px-3 py-1 text-xs text-white"
+						className="rounded-md px-3 py-1 text-xs text-[#2b2418]"
 						style={{ backgroundColor: REPLIT.accent }}
 					>
 						Save
@@ -92,7 +92,7 @@ export function ToolsPanel({ projectId, onToast }: ToolsPanelProps) {
 						value={contextDraft}
 						onChange={(event) => setContextDraft(event.target.value)}
 						placeholder="Describe architecture, conventions, constraints, and work in progress for AI helpers..."
-						className="min-h-[360px] w-full rounded-md border bg-[#0E1525] p-3 text-sm text-white outline-none"
+						className="min-h-[360px] w-full rounded-md border bg-[#0E1525] p-3 text-sm text-[#2b2418] outline-none"
 						style={{ borderColor: REPLIT.border }}
 					/>
 				</div>
@@ -122,14 +122,14 @@ export function ToolsPanel({ projectId, onToast }: ToolsPanelProps) {
 								}}
 							>
 								<div className="flex items-center gap-2 text-[11px] text-[#9DA2A6]">
-									<span className="rounded bg-[#1C2333] px-1.5 py-0.5 text-white">
+									<span className="rounded bg-[#1C2333] px-1.5 py-0.5 text-[#2b2418]">
 										{activity.status}
 									</span>
 									<span className="truncate">{activity.agentSlug}</span>
 									<span className="ml-auto">{timeAgo(activity.updatedAt)}</span>
 								</div>
 								{activity.issueTitle ? (
-									<p className="mt-1 text-xs text-white">
+									<p className="mt-1 text-xs text-[#2b2418]">
 										{activity.issueTitle}
 									</p>
 								) : null}
@@ -168,7 +168,7 @@ export function ToolsPanel({ projectId, onToast }: ToolsPanelProps) {
 									backgroundColor: REPLIT.background,
 								}}
 							>
-								<p className="text-sm text-white">{issue.title}</p>
+								<p className="text-sm text-[#2b2418]">{issue.title}</p>
 								<p className="mt-1 text-[11px] text-[#5F6B7A]">
 									{issue.status.replaceAll("_", " ")}
 								</p>

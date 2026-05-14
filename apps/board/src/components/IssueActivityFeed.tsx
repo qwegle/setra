@@ -106,7 +106,7 @@ export function IssueActivityFeed({ activity }: IssueActivityFeedProps) {
 								<div className="flex items-center gap-2">
 									{/* Actor avatar */}
 									<div className="w-[20px] h-[20px] rounded-full bg-setra-600/70 flex items-center justify-center shrink-0">
-										<span className="text-[8px] font-mono font-medium text-white">
+										<span className="text-[8px] font-mono font-medium text-[#2b2418]">
 											{initials(entry.actor)}
 										</span>
 									</div>

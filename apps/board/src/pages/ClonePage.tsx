@@ -197,7 +197,7 @@ export function ClonePage() {
 							"flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0",
 							isLocked
 								? "bg-muted hover:bg-muted/80 text-foreground"
-								: "bg-setra-600 hover:bg-setra-500 text-white shadow-lg shadow-setra-600/20",
+								: "bg-setra-600 hover:bg-setra-500 text-[#2b2418] shadow-lg shadow-setra-600/20",
 						)}
 					>
 						{isLocked ? (
@@ -348,7 +348,7 @@ export function ClonePage() {
 													disabled={
 														answer.isPending || !answerDraft[q.id]?.trim()
 													}
-													className="px-3 py-1.5 text-xs rounded-md bg-setra-600 hover:bg-setra-500 text-white transition-colors flex items-center gap-1 disabled:opacity-40"
+													className="px-3 py-1.5 text-xs rounded-md bg-setra-600 hover:bg-setra-500 text-[#2b2418] transition-colors flex items-center gap-1 disabled:opacity-40"
 												>
 													<ChevronRight className="w-3.5 h-3.5" />
 												</button>

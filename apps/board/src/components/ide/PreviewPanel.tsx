@@ -28,7 +28,7 @@ export function PreviewPanel({ url, onUrlChange }: PreviewPanelProps) {
 				<input
 					value={url}
 					onChange={(event) => onUrlChange(event.target.value)}
-					className="h-10 w-72 rounded-md border px-3 font-mono text-sm text-white outline-none transition focus:border-[#0079F2]"
+					className="h-10 w-72 rounded-md border px-3 font-mono text-sm text-[#2b2418] outline-none transition focus:border-[#0079F2]"
 					style={{
 						borderColor: REPLIT.border,
 						backgroundColor: REPLIT.background,
@@ -38,7 +38,7 @@ export function PreviewPanel({ url, onUrlChange }: PreviewPanelProps) {
 				<button
 					type="button"
 					onClick={() => window.open(url, "_blank")}
-					className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm font-semibold text-white transition hover:opacity-90"
+					className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm font-semibold text-[#2b2418] transition hover:opacity-90"
 					style={{ backgroundColor: REPLIT.accent }}
 				>
 					<ExternalLink className="h-4 w-4" /> Open in Browser

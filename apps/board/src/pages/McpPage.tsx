@@ -755,7 +755,7 @@ export function McpPage() {
 
 			<Dialog.Root open={dialogOpen} onOpenChange={handleDialogChange}>
 				<Dialog.Portal>
-					<Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
+					<Dialog.Overlay className="fixed inset-0 bg-[#fdfaf3]/60 backdrop-blur-sm z-40" />
 					<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl bg-card border border-border/50 rounded-xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
 						<div className="flex items-center justify-between gap-4">
 							<Dialog.Title className="text-sm font-semibold text-foreground">

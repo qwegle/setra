@@ -115,8 +115,8 @@ function ActorAvatar({ actor }: { actor: string }) {
 
 	if (actor === "system") {
 		return (
-			<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800/70">
-				<Bot className="h-4 w-4 text-zinc-400" aria-hidden="true" />
+			<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#d9c6a3] bg-white/70">
+				<Bot className="h-4 w-4 text-[#6f6044]" aria-hidden="true" />
 			</div>
 		);
 	}
@@ -126,8 +126,8 @@ function ActorAvatar({ actor }: { actor: string }) {
 			className={cn(
 				"flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold",
 				agentActor
-					? "border-blue-500/30 bg-blue-500/15 font-mono text-blue-300"
-					: "border-zinc-700 bg-zinc-800 text-zinc-200",
+					? "border-[#c9a25f]/30 bg-[#7a5421]/15 font-mono text-[#7a5421]"
+					: "border-[#d9c6a3] bg-white text-[#3b3224]",
 			)}
 		>
 			{initials}
@@ -245,17 +245,17 @@ function PayloadDetails({ entry }: { entry: ActivityEntry }) {
 		if (details.length === 0) return null;
 
 		return (
-			<div className="ml-11 mt-3 rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3">
+			<div className="ml-11 mt-3 rounded-lg border border-[#d9c6a3]/50 bg-[#faf3e3]/50 p-3">
 				<div className="space-y-2">
 					{details.map((detail, index) => (
 						<div
 							key={`${detail.label}-${index}`}
 							className="flex gap-3 text-xs"
 						>
-							<span className="w-20 shrink-0 font-medium text-zinc-400">
+							<span className="w-20 shrink-0 font-medium text-[#6f6044]">
 								{detail.label}
 							</span>
-							<span className="break-all text-zinc-200">{detail.value}</span>
+							<span className="break-all text-[#3b3224]">{detail.value}</span>
 						</div>
 					))}
 				</div>
@@ -282,7 +282,7 @@ function ActivityRow({
 	const hasPayload = Boolean(entry.payload);
 
 	return (
-		<div className="rounded-lg border border-zinc-700/50 bg-zinc-900/40 p-4">
+		<div className="rounded-lg border border-[#d9c6a3]/50 bg-[#faf3e3]/40 p-4">
 			<button
 				type="button"
 				onClick={onToggle}
@@ -296,26 +296,26 @@ function ActivityRow({
 							{eventLabel(entry.event)}
 						</Badge>
 						<span
-							className="text-xs text-zinc-500"
+							className="text-xs text-[#8a7a5c]"
 							title={new Date(entry.created_at).toLocaleString()}
 						>
 							{timeAgo(entry.created_at)}
 						</span>
 					</div>
-					<div className="flex items-center gap-2 text-sm text-zinc-200">
+					<div className="flex items-center gap-2 text-sm text-[#3b3224]">
 						<EventIcon
-							className="h-4 w-4 shrink-0 text-zinc-500"
+							className="h-4 w-4 shrink-0 text-[#8a7a5c]"
 							aria-hidden="true"
 						/>
 						<p className="leading-relaxed">
-							<span className="font-medium text-white">{actorDisplay}</span>{" "}
-							<span className="text-zinc-400">{verb}</span>
-							{entity && <span className="text-blue-300"> {entity.name}</span>}
+							<span className="font-medium text-[#2b2418]">{actorDisplay}</span>{" "}
+							<span className="text-[#6f6044]">{verb}</span>
+							{entity && <span className="text-[#7a5421]"> {entity.name}</span>}
 						</p>
 					</div>
 				</div>
 				{hasPayload && (
-					<span className="pt-1 text-zinc-500">
+					<span className="pt-1 text-[#8a7a5c]">
 						{isExpanded ? (
 							<ChevronUp className="h-4 w-4" aria-hidden="true" />
 						) : (
@@ -374,8 +374,8 @@ function Pagination({
 	if (totalPages <= 1) return null;
 
 	return (
-		<div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 px-6 py-4">
-			<span className="text-sm text-zinc-400" aria-live="polite">
+		<div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e5d6b8] px-6 py-4">
+			<span className="text-sm text-[#6f6044]" aria-live="polite">
 				{total} activities
 			</span>
 			<div className="flex items-center gap-2">
@@ -388,7 +388,7 @@ function Pagination({
 					icon={<ChevronLeft className="h-4 w-4" aria-hidden="true" />}
 					aria-label="Previous page"
 				/>
-				<span className="text-sm text-zinc-400">
+				<span className="text-sm text-[#6f6044]">
 					Page {page} of {totalPages}
 				</span>
 				<Button
@@ -434,7 +434,7 @@ export function ActivityPage() {
 
 	return (
 		<div className="flex h-full flex-col">
-			<div className="border-b border-zinc-800 px-6 py-6">
+			<div className="border-b border-[#e5d6b8] px-6 py-6">
 				<PageHeader
 					title="Activity"
 					subtitle="Review issue updates, agent runs, and goal changes across the workspace."
@@ -490,11 +490,11 @@ export function ActivityPage() {
 						{Array.from(dayGroups.entries()).map(([dayLabel, dayItems]) => (
 							<section key={dayLabel} className="space-y-3">
 								<div className="flex items-center gap-3">
-									<div className="h-px flex-1 bg-zinc-800" />
-									<span className="text-sm font-medium text-zinc-400">
+									<div className="h-px flex-1 bg-white" />
+									<span className="text-sm font-medium text-[#6f6044]">
 										{dayLabel}
 									</span>
-									<div className="h-px flex-1 bg-zinc-800" />
+									<div className="h-px flex-1 bg-white" />
 								</div>
 								<div className="space-y-3">
 									{dayItems.map((entry) => (

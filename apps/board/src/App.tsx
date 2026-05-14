@@ -52,7 +52,7 @@ function RequireAuth() {
 
 	if (isLoading) {
 		return (
-			<div className="flex min-h-screen items-center justify-center bg-ground-900 text-sm text-muted-foreground">
+			<div className="flex min-h-screen items-center justify-center bg-[#fdfaf3] text-sm text-muted-foreground">
 				Checking session…
 			</div>
 		);
@@ -139,13 +139,13 @@ export default function App() {
 					<Route
 						path="*"
 						element={
-							<div className="flex h-full items-center justify-center text-zinc-400">
+							<div className="flex h-full items-center justify-center text-[#6f6044]">
 								<div className="text-center">
 									<h1 className="mb-2 text-4xl font-bold">404</h1>
 									<p>Page not found</p>
 									<a
 										href="/"
-										className="mt-4 inline-block text-blue-400 hover:underline"
+										className="mt-4 inline-block text-[#7a5421] hover:underline"
 									>
 										Go home
 									</a>

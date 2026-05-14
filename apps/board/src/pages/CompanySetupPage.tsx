@@ -11,8 +11,10 @@
  * (which now carries the active companyId), then routes to /overview.
  */
 
+import { ArrowLeft, Building2, KeyRound, PlusCircle, Wifi } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CompanyReels } from "../components/CompanyReels";
 import { Button, Input } from "../components/ui";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../lib/api";
@@ -40,7 +42,7 @@ function getErrorMessage(error: unknown) {
 export default function CompanySetupPage() {
 	const navigate = useNavigate();
 	const { user, refreshSession, logout } = useAuth();
-	const [tab, setTab] = useState<Tab>("create");
+	const [tab, setTab] = useState<Tab | null>(null);
 
 	useEffect(() => {
 		if (user && user.companyId) navigate("/overview", { replace: true });
@@ -52,16 +54,16 @@ export default function CompanySetupPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-[#fbf6ec] via-[#f7efe0] to-[#f1e6d0]">
-			<div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-12">
+		<div className="min-h-screen bg-gradient-to-br from-[#fdfaf3] via-[#faf3e3] to-[#f4ead3]">
+			<div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-12">
 				<header className="flex items-start justify-between gap-4">
 					<div>
 						<h1 className="text-2xl font-semibold text-[#2b2418]">
 							Welcome to Setra
 						</h1>
 						<p className="mt-1 max-w-xl text-sm text-[#5b4f3a]">
-							Connect to a workspace before you start. Create your own, or
-							join one your team already runs.
+							Pick how you want to get started. You can always join more
+							workspaces later from Settings.
 						</p>
 					</div>
 					<button
@@ -73,57 +75,93 @@ export default function CompanySetupPage() {
 					</button>
 				</header>
 
-				<div className="rounded-2xl border border-[#e5d6b8] bg-white/90 p-2 shadow-[0_24px_48px_-24px_rgba(74,55,28,0.18)]">
-					<nav className="grid grid-cols-4 gap-1 p-1">
-						<TabButton active={tab === "create"} onClick={() => setTab("create")}>
-							Create
-						</TabButton>
-						<TabButton active={tab === "lan"} onClick={() => setTab("lan")}>
-							On my network
-						</TabButton>
-						<TabButton
-							active={tab === "cloud"}
+				{tab === null ? (
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+						<OptionCard
+							icon={<PlusCircle className="h-6 w-6" />}
+							title="Create a new company"
+							description="Start fresh. You become the owner and can invite your team."
+							onClick={() => setTab("create")}
+						/>
+						<OptionCard
+							icon={<Wifi className="h-6 w-6" />}
+							title="Join on my network"
+							description="Auto-discover companies running on the same Wi-Fi or LAN."
+							onClick={() => setTab("lan")}
+						/>
+						<OptionCard
+							icon={<Building2 className="h-6 w-6" />}
+							title="Find on the internet"
+							description="Search the public Setra directory by company name."
 							onClick={() => setTab("cloud")}
-						>
-							Internet
-						</TabButton>
-						<TabButton active={tab === "code"} onClick={() => setTab("code")}>
-							Invite code
-						</TabButton>
-					</nav>
-
-					<div className="p-6">
-						{tab === "create" && <CreateTab onJoined={applyJoin} />}
-						{tab === "lan" && <LanTab onJoined={applyJoin} />}
-						{tab === "cloud" && <CloudTab onJoined={applyJoin} />}
-						{tab === "code" && <CodeTab onJoined={applyJoin} />}
+						/>
+						<OptionCard
+							icon={<KeyRound className="h-6 w-6" />}
+							title="Use an invite code"
+							description="Paste the code an admin shared with you to join their workspace."
+							onClick={() => setTab("code")}
+						/>
 					</div>
-				</div>
+				) : (
+					<div className="rounded-2xl border border-[#e5d6b8] bg-white/95 shadow-[0_24px_48px_-24px_rgba(74,55,28,0.18)]">
+						<div className="flex items-center justify-between gap-3 border-b border-[#ead7b0] px-6 py-4">
+							<button
+								type="button"
+								onClick={() => setTab(null)}
+								className="inline-flex items-center gap-1.5 text-sm font-medium text-[#7a5421] hover:text-[#5b3d18]"
+							>
+								<ArrowLeft className="h-4 w-4" />
+								Back
+							</button>
+							<span className="text-xs text-[#6f6044]">
+								{tab === "create"
+									? "Create a company"
+									: tab === "lan"
+										? "Companies on your network"
+										: tab === "cloud"
+											? "Public directory"
+											: "Enter invite code"}
+							</span>
+						</div>
+						<div className="p-6">
+							{tab === "create" && <CreateTab onJoined={applyJoin} />}
+							{tab === "lan" && <LanTab onJoined={applyJoin} />}
+							{tab === "cloud" && <CloudTab onJoined={applyJoin} />}
+							{tab === "code" && <CodeTab onJoined={applyJoin} />}
+						</div>
+					</div>
+				)}
 			</div>
 		</div>
 	);
 }
 
-function TabButton({
-	active,
+function OptionCard({
+	icon,
+	title,
+	description,
 	onClick,
-	children,
 }: {
-	active: boolean;
+	icon: React.ReactNode;
+	title: string;
+	description: string;
 	onClick: () => void;
-	children: React.ReactNode;
 }) {
 	return (
 		<button
 			type="button"
 			onClick={onClick}
-			className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-				active
-					? "bg-[#2b2418] text-[#fbf6ec]"
-					: "text-[#5b4f3a] hover:bg-[#f3e7cf]"
-			}`}
+			className="group flex flex-col items-start gap-3 rounded-2xl border border-[#e5d6b8] bg-white/95 p-6 text-left shadow-[0_18px_36px_-24px_rgba(74,55,28,0.18)] transition-all hover:-translate-y-0.5 hover:border-[#c9a26a] hover:shadow-[0_24px_44px_-24px_rgba(74,55,28,0.28)]"
 		>
-			{children}
+			<div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#f7eed8] text-[#7a5421] transition-colors group-hover:bg-[#2b2418] group-hover:text-[#fbf6ec]">
+				{icon}
+			</div>
+			<div>
+				<h3 className="text-base font-semibold text-[#2b2418]">{title}</h3>
+				<p className="mt-1 text-sm leading-relaxed text-[#5b4f3a]">
+					{description}
+				</p>
+			</div>
 		</button>
 	);
 }
@@ -253,36 +291,27 @@ function LanTab({ onJoined }: { onJoined: (token: string) => void }) {
 			</Field>
 			{loading ? (
 				<p className="text-sm text-[#6f6044]">Searching the local network...</p>
-			) : peers.length === 0 ? (
-				<div className="rounded-md border border-dashed border-[#d9c6a3] bg-[#fbf6ec] px-4 py-6 text-center text-sm text-[#5b4f3a]">
-					No nearby Setra instances yet. Make sure both devices are on the
-					same network and discoverable.
-				</div>
 			) : (
-				<ul className="divide-y divide-[#ead7b0] rounded-md border border-[#e5d6b8]">
-					{peers.map((peer) => (
-						<li
-							key={peer.instanceId}
-							className="flex items-center justify-between gap-3 px-4 py-3"
-						>
-							<div className="min-w-0">
-								<div className="truncate text-sm font-medium text-[#2b2418]">
-									{peer.companyName}
-								</div>
-								<div className="truncate text-xs text-[#6f6044]">
-									{peer.host} · {peer.url}
-								</div>
-							</div>
-							<Button
-								type="button"
-								onClick={() => join(peer)}
-								disabled={busy === peer.instanceId}
-							>
-								{busy === peer.instanceId ? "Joining..." : "Join"}
-							</Button>
-						</li>
-					))}
-				</ul>
+				<CompanyReels
+					kind="lan"
+					busyId={busy}
+					items={peers.map((p) => ({
+						id: p.instanceId,
+						name: p.companyName,
+						subtitle: `${p.host} · ${p.url}`,
+						_peer: p,
+					}))}
+					onJoin={(it) => join((it as { _peer: LanPeer })._peer)}
+					emptyState={
+						<div>
+							<p className="font-medium text-[#2b2418]">No nearby instances yet</p>
+							<p className="mt-1 text-xs text-[#6f6044]">
+								Make sure both devices are on the same network and have
+								"Discoverable" enabled.
+							</p>
+						</div>
+					}
+				/>
 			)}
 			{error && <FormError>{error}</FormError>}
 		</div>
@@ -371,30 +400,20 @@ function CloudTab({ onJoined }: { onJoined: (token: string) => void }) {
 				<Button type="submit">Search</Button>
 			</form>
 			{results.length > 0 && (
-				<ul className="divide-y divide-[#ead7b0] rounded-md border border-[#e5d6b8]">
-					{results.map((co) => (
-						<li
-							key={co.id}
-							className="flex items-center justify-between gap-3 px-4 py-3"
-						>
-							<div className="min-w-0">
-								<div className="truncate text-sm font-medium text-[#2b2418]">
-									{co.name}
-								</div>
-								<div className="truncate text-xs text-[#6f6044]">
-									{co.region ?? "Unspecified region"}
-								</div>
-							</div>
-							<Button
-								type="button"
-								onClick={() => join(co)}
-								disabled={busy === co.id}
-							>
-								{busy === co.id ? "Joining..." : "Join"}
-							</Button>
-						</li>
-					))}
-				</ul>
+				<CompanyReels
+					kind="cloud"
+					busyId={busy}
+					items={results.map((co) => ({
+						id: co.id,
+						name: co.name,
+						subtitle: co.region ?? "Unspecified region",
+						_co: co,
+					}))}
+					onJoin={(it) => join((it as { _co: CloudCompany })._co)}
+					emptyState={
+						<p>Type a name above and press Search to discover companies.</p>
+					}
+				/>
 			)}
 			{error && <FormError>{error}</FormError>}
 		</div>

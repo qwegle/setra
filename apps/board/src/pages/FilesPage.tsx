@@ -59,7 +59,7 @@ function FilesPageEmptyState({
 	return (
 		<div className="flex h-full flex-col items-center justify-center gap-4 text-center">
 			<div>
-				<p className="text-xl font-semibold text-white">Your IDE is ready</p>
+				<p className="text-xl font-semibold text-[#2b2418]">Your IDE is ready</p>
 				<p className="mt-2 text-sm text-[#9DA2A6]">
 					Open a file from the explorer or launch a tool tab from the left rail.
 				</p>
@@ -68,7 +68,7 @@ function FilesPageEmptyState({
 				<button
 					type="button"
 					onClick={onToggleExplorer}
-					className="rounded-md border px-3 py-2 text-sm text-white"
+					className="rounded-md border px-3 py-2 text-sm text-[#2b2418]"
 					style={{ borderColor: REPLIT.border, backgroundColor: REPLIT.panel }}
 				>
 					Open files
@@ -76,7 +76,7 @@ function FilesPageEmptyState({
 				<button
 					type="button"
 					onClick={onOpenSearch}
-					className="rounded-md px-3 py-2 text-sm text-white"
+					className="rounded-md px-3 py-2 text-sm text-[#2b2418]"
 					style={{ backgroundColor: REPLIT.accent }}
 				>
 					Search project
@@ -129,7 +129,7 @@ function FileEditorPane({
 						<span
 							className={
 								index === filePath.split("/").length - 1
-									? "text-white"
+									? "text-[#2b2418]"
 									: undefined
 							}
 						>
@@ -147,7 +147,7 @@ function FileEditorPane({
 				<button
 					type="button"
 					onClick={onOpenPreview}
-					className="rounded-md border px-2 py-1 text-[#9DA2A6] hover:text-white"
+					className="rounded-md border px-2 py-1 text-[#9DA2A6] hover:text-[#2b2418]"
 					style={{
 						borderColor: REPLIT.border,
 						backgroundColor: REPLIT.background,
@@ -158,7 +158,7 @@ function FileEditorPane({
 				<button
 					type="button"
 					onClick={onOpenConsole}
-					className="rounded-md border px-2 py-1 text-[#9DA2A6] hover:text-white"
+					className="rounded-md border px-2 py-1 text-[#9DA2A6] hover:text-[#2b2418]"
 					style={{
 						borderColor: REPLIT.border,
 						backgroundColor: REPLIT.background,
@@ -170,7 +170,7 @@ function FileEditorPane({
 					type="button"
 					onClick={onSave}
 					disabled={!isDirty || !hasWorkspace || !canEdit}
-					className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-white disabled:opacity-50"
+					className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[#2b2418] disabled:opacity-50"
 					style={{
 						borderColor: REPLIT.border,
 						backgroundColor: REPLIT.background,
@@ -771,7 +771,7 @@ export function FilesPage() {
 							>
 								<div className="flex items-center justify-between gap-3">
 									<div>
-										<p className="font-mono text-sm text-white">
+										<p className="font-mono text-sm text-[#2b2418]">
 											npm run {name}
 										</p>
 										<p className="mt-1 font-mono text-[11px] text-[#5F6B7A]">
@@ -781,7 +781,7 @@ export function FilesPage() {
 									<button
 										type="button"
 										onClick={() => runCommand(`npm run ${name}`)}
-										className="rounded-md px-3 py-2 text-xs font-semibold text-white"
+										className="rounded-md px-3 py-2 text-xs font-semibold text-[#2b2418]"
 										style={{ backgroundColor: REPLIT.accent }}
 									>
 										Run
@@ -792,7 +792,7 @@ export function FilesPage() {
 						<button
 							type="button"
 							onClick={() => openToolTab("preview")}
-							className="w-full rounded-md border px-3 py-2 text-sm text-white"
+							className="w-full rounded-md border px-3 py-2 text-sm text-[#2b2418]"
 							style={{
 								borderColor: REPLIT.border,
 								backgroundColor: REPLIT.panelAlt,
@@ -829,7 +829,7 @@ export function FilesPage() {
 							<p className="text-xs uppercase tracking-[0.18em] text-[#5F6B7A]">
 								Preview URL
 							</p>
-							<p className="mt-2 font-mono text-sm text-white">{previewUrl}</p>
+							<p className="mt-2 font-mono text-sm text-[#2b2418]">{previewUrl}</p>
 						</div>
 					</div>
 				</section>

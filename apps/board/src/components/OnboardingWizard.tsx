@@ -346,7 +346,7 @@ function Step1({
 					type="button"
 					onClick={onNext}
 					disabled={!companyName.trim()}
-					className="flex items-center gap-2 px-4 py-2 rounded-md bg-setra-600 hover:bg-setra-500 text-white text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+					className="flex items-center gap-2 px-4 py-2 rounded-md bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
 				>
 					Continue
 					<ChevronRight className="w-4 h-4" />
@@ -490,7 +490,7 @@ function Step2({
 											: "border-muted-foreground/40"
 									}`}
 								>
-									{checked && <Check className="w-3 h-3 text-white" />}
+									{checked && <Check className="w-3 h-3 text-[#2b2418]" />}
 								</span>
 								<div className="min-w-0">
 									<p className="text-xs font-medium text-foreground truncate">
@@ -518,7 +518,7 @@ function Step2({
 				<button
 					type="button"
 					onClick={onNext}
-					className="flex items-center gap-2 px-4 py-2 rounded-md bg-setra-600 hover:bg-setra-500 text-white text-sm font-medium transition-colors"
+					className="flex items-center gap-2 px-4 py-2 rounded-md bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-sm font-medium transition-colors"
 				>
 					Continue
 					<ChevronRight className="w-4 h-4" />
@@ -1419,7 +1419,7 @@ function Step3({
 					type="button"
 					onClick={onNext}
 					disabled={!canContinue}
-					className="flex items-center gap-2 px-4 py-2 rounded-md bg-setra-600 hover:bg-setra-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					className="flex items-center gap-2 px-4 py-2 rounded-md bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					Continue
 					<ChevronRight className="w-4 h-4" />
@@ -1526,7 +1526,7 @@ function Step4({
 					type="button"
 					onClick={onLaunch}
 					disabled={!taskTitle.trim() || loading}
-					className="flex items-center gap-2 px-4 py-2 rounded-md bg-setra-600 hover:bg-setra-500 text-white text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+					className="flex items-center gap-2 px-4 py-2 rounded-md bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
 				>
 					{loading ? (
 						<>
@@ -1564,7 +1564,7 @@ function Step5({
 			<button
 				type="button"
 				onClick={onDone}
-				className={`flex items-center gap-2 px-5 py-2.5 rounded-md bg-setra-600 hover:bg-setra-500 text-white text-sm font-medium transition-all duration-500 ${
+				className={`flex items-center gap-2 px-5 py-2.5 rounded-md bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-sm font-medium transition-all duration-500 ${
 					animDone
 						? "opacity-100 translate-y-0"
 						: "opacity-0 translate-y-4 pointer-events-none"
@@ -1735,7 +1735,7 @@ function ProjectOnboardingWizard({
 							<p className="text-xs uppercase tracking-[0.24em] text-muted-foreground/60">
 								Get started
 							</p>
-							<h2 className="mt-2 text-2xl font-semibold text-white">
+							<h2 className="mt-2 text-2xl font-semibold text-[#2b2418]">
 								Welcome to Setra
 							</h2>
 						</div>
@@ -1743,7 +1743,7 @@ function ProjectOnboardingWizard({
 							<button
 								type="button"
 								onClick={onClose}
-								className="rounded-md p-2 text-muted-foreground transition hover:bg-white/5 hover:text-white"
+								className="rounded-md p-2 text-muted-foreground transition hover:bg-white/5 hover:text-[#2b2418]"
 							>
 								<X className="h-4 w-4" />
 							</button>
@@ -1769,7 +1769,7 @@ function ProjectOnboardingWizard({
 					{step === 1 ? (
 						<div className="space-y-5">
 							<div>
-								<p className="text-lg font-medium text-white">
+								<p className="text-lg font-medium text-[#2b2418]">
 									Choose your workspace type
 								</p>
 								<p className="mt-1 text-sm text-muted-foreground">
@@ -1797,7 +1797,7 @@ function ProjectOnboardingWizard({
 													<Icon className="h-4 w-4" />
 												</div>
 												<div>
-													<p className="font-medium text-white">{item.label}</p>
+													<p className="font-medium text-[#2b2418]">{item.label}</p>
 													<p className="mt-1 text-sm text-muted-foreground">
 														{item.description}
 													</p>
@@ -1813,7 +1813,7 @@ function ProjectOnboardingWizard({
 					{step === 2 ? (
 						<div className="space-y-5">
 							<div>
-								<p className="text-lg font-medium text-white">
+								<p className="text-lg font-medium text-[#2b2418]">
 									Create your first project
 								</p>
 								<p className="mt-1 text-sm text-muted-foreground">
@@ -1830,7 +1830,7 @@ function ProjectOnboardingWizard({
 										value={projectName}
 										onChange={(event) => setProjectName(event.target.value)}
 										placeholder={`${selectedWorkspace.label} Project`}
-										className="w-full rounded-lg border border-border/40 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-setra-500"
+										className="w-full rounded-lg border border-border/40 bg-white/[0.04] px-3 py-2 text-sm text-[#2b2418] outline-none focus:border-setra-500"
 									/>
 								</div>
 								<div>
@@ -1843,7 +1843,7 @@ function ProjectOnboardingWizard({
 											setProjectDescription(event.target.value)
 										}
 										placeholder="What do you want to build or coordinate first?"
-										className="min-h-28 w-full rounded-lg border border-border/40 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-setra-500"
+										className="min-h-28 w-full rounded-lg border border-border/40 bg-white/[0.04] px-3 py-2 text-sm text-[#2b2418] outline-none focus:border-setra-500"
 									/>
 								</div>
 							</div>
@@ -1853,7 +1853,7 @@ function ProjectOnboardingWizard({
 					{step === 3 ? (
 						<div className="space-y-5">
 							<div>
-								<p className="text-lg font-medium text-white">
+								<p className="text-lg font-medium text-[#2b2418]">
 									Connect your default agent model
 								</p>
 								<p className="mt-1 text-sm text-muted-foreground">
@@ -1887,7 +1887,7 @@ function ProjectOnboardingWizard({
 													<Icon className="h-4 w-4" />
 												</div>
 												<div>
-													<p className="font-medium text-white">{item.label}</p>
+													<p className="font-medium text-[#2b2418]">{item.label}</p>
 													<p className="mt-1 text-sm text-muted-foreground">
 														{item.description}
 													</p>
@@ -1919,7 +1919,7 @@ function ProjectOnboardingWizard({
 								onClick={() =>
 									setStep((current) => (current - 1) as ProjectOnboardingStep)
 								}
-								className="inline-flex items-center gap-2 rounded-lg border border-border/40 px-4 py-2 text-sm text-white transition hover:bg-white/5"
+								className="inline-flex items-center gap-2 rounded-lg border border-border/40 px-4 py-2 text-sm text-[#2b2418] transition hover:bg-white/5"
 							>
 								<ChevronLeft className="h-4 w-4" /> Back
 							</button>
@@ -1934,7 +1934,7 @@ function ProjectOnboardingWizard({
 								void finish();
 							}}
 							disabled={loading}
-							className="inline-flex items-center gap-2 rounded-lg bg-setra-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-setra-400 disabled:cursor-not-allowed disabled:opacity-60"
+							className="inline-flex items-center gap-2 rounded-lg bg-setra-500 px-4 py-2 text-sm font-medium text-[#2b2418] transition hover:bg-setra-400 disabled:cursor-not-allowed disabled:opacity-60"
 						>
 							{step === 3 ? "Finish setup" : "Continue"}
 							<ArrowRight className="h-4 w-4" />

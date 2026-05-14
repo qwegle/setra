@@ -149,7 +149,7 @@ export function VaultPanel({ projectId, onToast }: VaultPanelProps) {
 						>
 							<div className="flex items-center gap-2">
 								<KeyRound className="h-4 w-4 text-[#9DA2A6]" />
-								<p className="truncate font-mono text-sm text-white">
+								<p className="truncate font-mono text-sm text-[#2b2418]">
 									{secret.key}
 								</p>
 								<button
@@ -207,7 +207,7 @@ export function VaultPanel({ projectId, onToast }: VaultPanelProps) {
 						>
 							<div className="flex items-center gap-2">
 								<KeyRound className="h-4 w-4 text-[#9DA2A6]" />
-								<p className="truncate font-mono text-sm text-white">
+								<p className="truncate font-mono text-sm text-[#2b2418]">
 									{secret.name}
 								</p>
 								<button
@@ -266,7 +266,7 @@ export function VaultPanel({ projectId, onToast }: VaultPanelProps) {
 							}))
 						}
 						placeholder="API_KEY"
-						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-white outline-none"
+						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-[#2b2418] outline-none"
 						style={{ borderColor: REPLIT.border }}
 					/>
 					<input
@@ -279,7 +279,7 @@ export function VaultPanel({ projectId, onToast }: VaultPanelProps) {
 							}))
 						}
 						placeholder="Secret value"
-						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-white outline-none"
+						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-[#2b2418] outline-none"
 						style={{ borderColor: REPLIT.border }}
 					/>
 				</div>
@@ -321,7 +321,7 @@ export function VaultPanel({ projectId, onToast }: VaultPanelProps) {
 							}))
 						}
 						placeholder="OPENAI_API_KEY"
-						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-white outline-none"
+						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-[#2b2418] outline-none"
 						style={{ borderColor: REPLIT.border }}
 					/>
 					<input
@@ -333,7 +333,7 @@ export function VaultPanel({ projectId, onToast }: VaultPanelProps) {
 							}))
 						}
 						placeholder="Describe what this secret is for"
-						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 text-sm text-white outline-none"
+						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 text-sm text-[#2b2418] outline-none"
 						style={{ borderColor: REPLIT.border }}
 					/>
 					<input
@@ -346,7 +346,7 @@ export function VaultPanel({ projectId, onToast }: VaultPanelProps) {
 							}))
 						}
 						placeholder="Secret value"
-						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-white outline-none"
+						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-[#2b2418] outline-none"
 						style={{ borderColor: REPLIT.border }}
 					/>
 				</div>
@@ -381,7 +381,7 @@ export function VaultPanel({ projectId, onToast }: VaultPanelProps) {
 			>
 				<p className="text-sm text-[#9DA2A6]">
 					Delete{" "}
-					<span className="font-semibold text-white">
+					<span className="font-semibold text-[#2b2418]">
 						{projectSecretDeleteKey}
 					</span>{" "}
 					from this project?

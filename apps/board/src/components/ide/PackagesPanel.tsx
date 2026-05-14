@@ -92,11 +92,11 @@ export function PackagesPanel({
 							}}
 						>
 							<div className="flex items-center justify-between gap-3">
-								<span className="font-mono text-sm text-white">{name}</span>
+								<span className="font-mono text-sm text-[#2b2418]">{name}</span>
 								<button
 									type="button"
 									onClick={() => onRunScript(name)}
-									className="rounded-md px-2 py-1 text-xs text-white"
+									className="rounded-md px-2 py-1 text-xs text-[#2b2418]"
 									style={{ backgroundColor: REPLIT.accent }}
 								>
 									Run
@@ -134,7 +134,7 @@ export function PackagesPanel({
 							{summary?.dependencies.map(([name, value]) => (
 								<div
 									key={name}
-									className="flex items-center justify-between rounded-md border px-3 py-2 font-mono text-xs text-white"
+									className="flex items-center justify-between rounded-md border px-3 py-2 font-mono text-xs text-[#2b2418]"
 									style={{
 										borderColor: REPLIT.border,
 										backgroundColor: REPLIT.background,
@@ -157,7 +157,7 @@ export function PackagesPanel({
 							{summary?.devDependencies.map(([name, value]) => (
 								<div
 									key={name}
-									className="flex items-center justify-between rounded-md border px-3 py-2 font-mono text-xs text-white"
+									className="flex items-center justify-between rounded-md border px-3 py-2 font-mono text-xs text-[#2b2418]"
 									style={{
 										borderColor: REPLIT.border,
 										backgroundColor: REPLIT.background,

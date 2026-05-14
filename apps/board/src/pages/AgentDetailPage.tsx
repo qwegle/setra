@@ -1771,7 +1771,7 @@ function ChatTab({ agent, agentId }: { agent: AgentDetail; agentId: string }) {
 						className={cn(
 							"flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
 							input.trim() && !sending
-								? "bg-setra-600 text-white hover:bg-setra-500"
+								? "bg-setra-600 text-[#2b2418] hover:bg-setra-500"
 								: "bg-muted/30 text-muted-foreground/40 cursor-not-allowed",
 						)}
 					>

@@ -160,7 +160,7 @@ function JoinDialog({
 	}, [peer.url, submitted]);
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/60 p-4">
 			<Card className="w-full max-w-md p-5 space-y-4">
 				<div>
 					<h3 className="text-lg font-semibold">
@@ -295,7 +295,7 @@ function PublicUrlEditor({
 						a public hostname or VPN.
 					</p>
 					{!editing ? (
-						<code className="block mt-2 px-2 py-1 bg-black/30 rounded text-xs font-mono break-all">
+						<code className="block mt-2 px-2 py-1 bg-[#fdfaf3]/30 rounded text-xs font-mono break-all">
 							{status.publicUrl ?? status.instanceUrl}{" "}
 							{!status.publicUrl ? (
 								<span className="text-muted-foreground">(auto)</span>
@@ -435,7 +435,7 @@ export default function ConnectPage() {
 						{status.data.addresses.map((addr) => (
 							<code
 								key={addr}
-								className="px-2 py-1 bg-black/30 rounded text-xs font-mono"
+								className="px-2 py-1 bg-[#fdfaf3]/30 rounded text-xs font-mono"
 							>
 								http://{addr}:{status.data.port}
 							</code>

@@ -77,7 +77,7 @@ export function EditorTabs({
 	};
 
 	return (
-		<div className="border-b border-zinc-800 bg-zinc-950/90">
+		<div className="border-b border-[#e5d6b8] bg-[#fdfaf3]/90">
 			<div className="flex items-center overflow-x-auto no-scrollbar">
 				{tabs.map((tab) => {
 					const name = displayName(tab);
@@ -102,14 +102,14 @@ export function EditorTabs({
 							className={cn(
 								"group flex h-10 shrink-0 items-center gap-2 border-b-2 px-3 font-mono text-xs transition-colors select-none",
 								isActive
-									? "border-blue-500 bg-zinc-800 text-zinc-100"
-									: "border-transparent bg-zinc-900 text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200",
+									? "border-[#c9a25f] bg-white text-[#2b2418]"
+									: "border-transparent bg-[#faf3e3] text-[#6f6044] hover:bg-white/80 hover:text-[#3b3224]",
 							)}
 						>
 							{isCodeFile ? (
-								<FileCode className="h-3.5 w-3.5 shrink-0 text-blue-400/80" />
+								<FileCode className="h-3.5 w-3.5 shrink-0 text-[#7a5421]/80" />
 							) : (
-								<File className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+								<File className="h-3.5 w-3.5 shrink-0 text-[#8a7a5c]" />
 							)}
 							<span className="max-w-[160px] truncate">{name}</span>
 							{tab.isDirty && (
@@ -126,7 +126,7 @@ export function EditorTabs({
 									onClose(tab.path);
 								}}
 								className={cn(
-									"rounded p-0.5 transition-all hover:bg-black/10 hover:text-foreground",
+									"rounded p-0.5 transition-all hover:bg-[#fdfaf3]/10 hover:text-foreground",
 									tab.isDirty
 										? "opacity-100"
 										: "opacity-0 group-hover:opacity-100",

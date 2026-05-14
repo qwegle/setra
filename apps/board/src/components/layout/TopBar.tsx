@@ -63,7 +63,7 @@ export function TopBar({
 
 	return (
 		<>
-			<header className="h-12 flex items-center px-4 border-b border-border/30 bg-ground-900/60 backdrop-blur-sm shrink-0 gap-3 md:gap-4">
+			<header className="h-12 flex items-center px-4 border-b border-border/30 bg-[#fdfaf3]/60 backdrop-blur-sm shrink-0 gap-3 md:gap-4">
 				<button
 					type="button"
 					onClick={onToggleSidebar}

@@ -7,11 +7,11 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variants = {
-	default: "border-zinc-700 bg-zinc-800 text-zinc-300",
+	default: "border-[#d9c6a3] bg-white text-[#4b3f2d]",
 	success: "border-green-500/30 bg-green-500/15 text-green-300",
 	warning: "border-yellow-500/30 bg-yellow-500/15 text-yellow-300",
 	danger: "border-red-500/30 bg-red-500/15 text-red-300",
-	info: "border-blue-500/30 bg-blue-500/15 text-blue-300",
+	info: "border-[#c9a25f]/30 bg-[#7a5421]/15 text-[#7a5421]",
 };
 
 export function Badge({
