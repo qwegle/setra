@@ -75,6 +75,7 @@ import { assistantToolsRoute } from "./routes/assistant.js";
 import { authRoute } from "./routes/auth.js";
 import { budgetRoute } from "./routes/budget.js";
 import { cloneRoute } from "./routes/clone.js";
+import { cliStatusRoute } from "./routes/cli-status.js";
 import { collaborationRoute } from "./routes/collaboration.js";
 import { companiesRoute } from "./routes/companies.js";
 import { companyRoute } from "./routes/company.js";
@@ -174,6 +175,7 @@ export async function createApp(
 	app.route("/api/parse-goal", parseGoalRoute);
 	app.route("/api/search", searchRoute);
 	app.route("/api/health", healthRoute);
+	app.route("/api/cli-status", cliStatusRoute);
 	app.route("/api/webhooks", webhooksRoute);
 
 	// ── Authenticated/scoped routes ─────────────────────────────────────────

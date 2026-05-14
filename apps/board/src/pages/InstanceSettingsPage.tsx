@@ -254,21 +254,24 @@ const CLI_SETUP_INSTRUCTIONS: Record<
 		verify: "codex --version",
 	},
 	gemini: {
-		install:
-			"npm install -g @anthropic-ai/claude-code  # then: npx @anthropic-ai/claude-code gemini",
-		auth: "export GEMINI_API_KEY=… (or: gcloud auth login)",
+		install: "npm install -g @google/gemini-cli",
+		auth: "gemini  (follow the browser auth flow — or set GEMINI_API_KEY)",
 		verify: "gemini --version",
 	},
 	amp: {
-		install:
-			"npm install -g @anthropic-ai/claude-code  # then: npx @anthropic-ai/claude-code amp",
+		install: "npm install -g @sourcegraph/amp",
 		auth: "amp login (follow the browser auth flow)",
 		verify: "amp --version",
 	},
 	opencode: {
-		install: "go install github.com/nicholasgasior/opencode@latest",
-		auth: "export OPENAI_API_KEY=sk-…",
+		install: "curl -fsSL https://opencode.ai/install | bash",
+		auth: "opencode auth login (follow the browser flow)",
 		verify: "opencode --version",
+	},
+	cursor: {
+		install: "curl https://cursor.com/install -fsS | bash",
+		auth: "cursor-agent login (follow the browser auth flow)",
+		verify: "cursor-agent --version",
 	},
 };
 
