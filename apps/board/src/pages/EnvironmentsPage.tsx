@@ -343,15 +343,15 @@ function EnvironmentModal({
 							/>
 						) : null}
 						<Select
-							label="Secret reference"
+							label="Linked password"
 							value={form.secretRef}
 							onChange={(event) => updateField("secretRef", event.target.value)}
-							helperText="Uses a company secret by name for password or PEM content."
+							helperText="Link a saved password from Password Manager for authentication."
 						>
-							<option value="">None</option>
+							<option value="">— None —</option>
 							{secrets.map((secret) => (
 								<option key={secret.id} value={secret.name}>
-									{secret.name}
+									🔑 {secret.name}
 								</option>
 							))}
 						</Select>

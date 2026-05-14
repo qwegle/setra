@@ -33,6 +33,7 @@ import { getRawDb } from "@setra/db";
 import { Hono } from "hono";
 import { recheckAvailability } from "../lib/agent-lifecycle.js";
 import { logActivity } from "../lib/audit.js";
+import { getCompanyId } from "../lib/company-scope.js";
 import {
 	applyKeysToEnv,
 	getCompanySettings,
@@ -499,6 +500,57 @@ assistantToolsRoute.post(
 				return c.json({ ok: true, limitUsd, periodDays, alertPercent });
 			}
 
+			case "list_projects": {
+				const db = getRawDb();
+				const rows = db
+					.prepare(
+						"SELECT id, name, description, repo_url, default_branch, workspace_path FROM projects WHERE company_id = ?",
+					)
+					.all(cid) as Array<Record<string, unknown>>;
+				return c.json({ ok: true, projects: rows });
+			}
+
+			case "update_project": {
+				const projectId = String(body["projectId"] ?? "");
+				if (!projectId)
+					return c.json({ ok: false, error: "projectId required" }, 400);
+				const db = getRawDb();
+				const updates: string[] = [];
+				const values: unknown[] = [];
+				for (const field of [
+					"name",
+					"description",
+					"repoUrl",
+					"defaultBranch",
+				] as const) {
+					if (body[field] !== undefined) {
+						const col =
+							field === "repoUrl"
+								? "repo_url"
+								: field === "defaultBranch"
+									? "default_branch"
+									: field;
+						updates.push(`${col} = ?`);
+						values.push(body[field]);
+					}
+				}
+				if (updates.length === 0)
+					return c.json({ ok: false, error: "No fields to update" }, 400);
+				values.push(cid, projectId);
+				db.prepare(
+					`UPDATE projects SET ${updates.join(", ")} WHERE company_id = ? AND id = ?`,
+				).run(...values);
+				emit("project:updated", { id: projectId, companyId: cid });
+				await logActivity(
+					c,
+					"assistant.tool.update_project",
+					"project",
+					projectId,
+					body,
+				);
+				return c.json({ ok: true });
+			}
+
 			default:
 				return c.json(
 					{
@@ -515,6 +567,8 @@ assistantToolsRoute.post(
 							"run_agents_parallel",
 							"create_skill",
 							"list_companies",
+							"list_projects",
+							"update_project",
 							"get_budget_summary",
 							"set_budget",
 						],
@@ -579,6 +633,22 @@ assistantToolsRoute.get("/tools", (c) =>
 				name: "set_budget",
 				description: "Update global budget.",
 				params: ["limitUsd", "periodDays?", "alertPercent?"],
+			},
+			{
+				name: "list_projects",
+				description: "List all projects for this company.",
+			},
+			{
+				name: "update_project",
+				description:
+					"Update project settings (name, description, repo URL, default branch).",
+				params: [
+					"projectId",
+					"name?",
+					"description?",
+					"repoUrl?",
+					"defaultBranch?",
+				],
 			},
 		],
 	}),

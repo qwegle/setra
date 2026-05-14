@@ -517,17 +517,25 @@ function IntegrationsTab() {
 					<Zap className="w-5 h-5" />
 				</div>
 				<div>
-					<p className="text-sm font-semibold mb-1">Daemon mode</p>
+					<p className="text-sm font-semibold mb-1">Background mode</p>
 					<p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
-						setra runs as a background daemon — no API key needed, uses your
-						existing Claude subscription. When a Slack message or webhook fires,
-						agents wake up, handle the task, and post results back. Zero idle
-						cost: agents only run when triggered.
+						Setra runs as a background process. When a Slack message or webhook
+						fires, agents wake up, handle the task, and post results back.
+						Agents only consume tokens when triggered.
 					</p>
 					<div className="flex items-center gap-2 mt-3">
-						<span className="status-dot bg-accent-green" />
+						<span
+							className={cn(
+								"status-dot",
+								integrationsError ? "bg-amber-500" : "bg-accent-green",
+							)}
+						/>
 						<span className="text-xs text-muted-foreground">
-							daemon running · listening for events
+							{integrationsError
+								? "Server unreachable — retrying"
+								: integrationsLoading
+									? "Connecting"
+									: "Server reachable · listening for events"}
 						</span>
 					</div>
 				</div>
@@ -1047,12 +1055,12 @@ export function SecretsTab() {
 	return (
 		<div className="space-y-6">
 			<div className="glass rounded-xl p-5">
-				<div className="flex items-center justify-between mb-4 gap-4">
+				<div className="mb-4 flex items-center justify-between gap-4">
 					<div>
-						<h2 className="text-sm font-semibold">Vault</h2>
-						<p className="text-xs text-muted-foreground mt-1">
-							Securely store API keys, tokens, and credentials for your
-							workspace.
+						<h2 className="text-sm font-semibold">Password Manager</h2>
+						<p className="mt-1 text-xs text-muted-foreground">
+							Securely store passwords, API keys, tokens, and credentials for
+							your workspace.
 						</p>
 						{savedMessage && (
 							<div className="mt-2 inline-flex items-center gap-1.5 text-xs text-accent-green">
@@ -1064,9 +1072,9 @@ export function SecretsTab() {
 					<button
 						type="button"
 						onClick={openCreateModal}
-						className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-setra-600 hover:bg-setra-500 text-white transition-colors"
+						className="flex items-center gap-1.5 rounded-md bg-setra-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-setra-500"
 					>
-						<Plus className="w-3.5 h-3.5" /> Add secret
+						<Plus className="h-3.5 w-3.5" /> Add Password
 					</button>
 				</div>
 
@@ -1075,13 +1083,13 @@ export function SecretsTab() {
 						Loading…
 					</p>
 				) : secretsError ? (
-					<p className="text-xs text-accent-red py-4 text-center">
-						Failed to load secrets.
+					<p className="py-4 text-center text-xs text-accent-red">
+						Failed to load saved passwords.
 					</p>
 				) : secrets.length === 0 ? (
-					<p className="text-xs text-muted-foreground py-4 text-center">
-						No secrets stored yet. Add API keys and tokens to reference them
-						safely in agent tasks.
+					<p className="py-4 text-center text-xs text-muted-foreground">
+						No saved passwords yet. Add passwords, API keys, and tokens to
+						reference them safely in agent tasks.
 					</p>
 				) : (
 					<div className="space-y-2">
@@ -1129,9 +1137,9 @@ export function SecretsTab() {
 
 			{showModal && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-					<div className="glass rounded-xl p-6 w-full max-w-md animate-slide-in-up">
-						<h3 className="text-sm font-semibold mb-4">
-							{isEditing ? "Update Vault secret" : "Add Vault secret"}
+					<div className="glass w-full max-w-md animate-slide-in-up rounded-xl p-6">
+						<h3 className="mb-4 text-sm font-semibold">
+							{isEditing ? "Update saved password" : "Add Password"}
 						</h3>
 						<div className="space-y-3 mb-5">
 							{isEditing ? (
@@ -1146,7 +1154,7 @@ export function SecretsTab() {
 							) : (
 								<>
 									<InputField
-										label="Name (used to reference in agent tasks)"
+										label="Name"
 										placeholder="GITHUB_TOKEN"
 										value={name}
 										onChange={setName}
@@ -1160,16 +1168,16 @@ export function SecretsTab() {
 								</>
 							)}
 							<div>
-								<label className="block text-xs text-muted-foreground mb-1">
-									{isEditing ? "New value" : "Value"}
+								<label className="mb-1 block text-xs text-muted-foreground">
+									Password / Token
 								</label>
 								<div className="relative">
 									<input
 										type={showValue ? "text" : "password"}
 										placeholder={
 											isEditing
-												? "Paste updated secret value…"
-												: "Paste secret value…"
+												? "Paste updated password or token…"
+												: "Paste password or token…"
 										}
 										value={value}
 										onChange={(e) => setValue(e.target.value)}
@@ -1217,8 +1225,8 @@ export function SecretsTab() {
 								{isSaving
 									? "Saving…"
 									: isEditing
-										? "Save value"
-										: "Save secret"}
+										? "Save password"
+										: "Save password"}
 							</button>
 						</div>
 					</div>
@@ -1228,10 +1236,10 @@ export function SecretsTab() {
 			{/* Delete confirmation */}
 			{confirmDelete && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-					<div className="glass rounded-xl p-6 w-full max-w-sm animate-slide-in-up">
-						<h3 className="text-sm font-semibold mb-2">Delete secret?</h3>
-						<p className="text-xs text-muted-foreground mb-5">
-							This will permanently delete the secret. Any agent tasks
+					<div className="glass w-full max-w-sm animate-slide-in-up rounded-xl p-6">
+						<h3 className="mb-2 text-sm font-semibold">Delete password?</h3>
+						<p className="mb-5 text-xs text-muted-foreground">
+							This will permanently delete the saved password. Any agent tasks
 							referencing it will fail.
 						</p>
 						<div className="flex gap-2 justify-end">

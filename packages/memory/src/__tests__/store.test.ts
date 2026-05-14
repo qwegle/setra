@@ -147,4 +147,27 @@ describe("MemoryStore", () => {
 		});
 		expect(alphaResults.every((r) => r.entry.plotId === "alpha")).toBe(true);
 	});
+
+	it("prunes per agent when maxEntriesPerAgent exceeded", async () => {
+		const perAgentStore = new MemoryStore({
+			dbPath: path.join(tmpDir, "per-agent.db"),
+			maxEntries: 1000,
+			maxEntriesPerAgent: 3,
+		});
+		await perAgentStore.init();
+		for (let i = 0; i < 5; i++) {
+			await perAgentStore.add(`alpha entry ${i}`, {}, { agentId: "alpha" });
+		}
+		for (let i = 0; i < 2; i++) {
+			await perAgentStore.add(`beta entry ${i}`, {}, { agentId: "beta" });
+		}
+		const alphaCount = await perAgentStore.search("alpha entry", {
+			minScore: 0,
+			limit: 100,
+		});
+		const alphaForAgent = alphaCount.filter((r) => r.entry.agentId === "alpha");
+		expect(alphaForAgent.length).toBeLessThanOrEqual(3);
+		const betaForAgent = alphaCount.filter((r) => r.entry.agentId === "beta");
+		expect(betaForAgent.length).toBe(2);
+	});
 });

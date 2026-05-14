@@ -34,6 +34,25 @@ program
 	});
 
 // ─────────────────────────────────────────────────────────────────────────────
+// setra onboard — interactive first-run setup (Connect-a-CLI flow)
+// ─────────────────────────────────────────────────────────────────────────────
+
+program
+	.command("onboard")
+	.description("Interactive first-run setup: detect a coding CLI and configure Setra")
+	.option("-y, --yes", "auto-pick the first detected CLI without prompting")
+	.option("-o, --open", "open the board in a browser after setup")
+	.option("-p, --port <port>", "port the board will run on", "3141")
+	.action(async (opts: { yes?: boolean; open?: boolean; port: string }) => {
+		const { onboardCommand } = await import("./commands/onboard.js");
+		await onboardCommand({
+			yes: opts.yes,
+			open: opts.open,
+			port: Number.parseInt(opts.port, 10),
+		});
+	});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // setra status — show running plots and active runs
 // ─────────────────────────────────────────────────────────────────────────────
 

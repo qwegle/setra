@@ -35,8 +35,12 @@ import { dispatchPlan } from "./dispatcher.js";
 import { addAutomationIssueComment } from "./issue-comments.js";
 import { createLogger } from "./logger.js";
 import { createPlan, listPlans } from "./plan-engine.js";
+import { checkPostTurnDurability } from "./post-turn-durability.js";
+import { distillProfileFromRun, updateProfile } from "./profile.js";
 import { getProjectSettings } from "./project-settings.js";
 import { isCeoAgent, isCtoAgent, isDevAgent } from "./prompt-builder.js";
+import { renderRunBundleMarkdown } from "./run-bundle-markdown.js";
+import { assembleRunBundle } from "./run-bundle.js";
 import { spawnServerRun } from "./server-runner.js";
 
 const execFile = promisify(_execFile);
@@ -435,6 +439,17 @@ export async function startIssueTestRun(
 	if (!issue.testCommand) {
 		return { started: false, reason: "missing_test_command" };
 	}
+	// Hard cap: a test command is a single shell line, not a script. Anything
+	// longer is either a paste mistake or a smuggle attempt; reject before exec.
+	if (issue.testCommand.length > 1000) {
+		return { started: false, reason: "missing_test_command" };
+	}
+	// Newlines turn one shell line into many — same risk as a multi-statement
+	// SQL injection. Treat as missing rather than truncating, so the operator
+	// has to fix the field before it runs.
+	if (/[\r\n\u2028\u2029]/.test(issue.testCommand)) {
+		return { started: false, reason: "missing_test_command" };
+	}
 	if (issue.testStatus === "running") {
 		return { started: false, reason: "already_running" };
 	}
@@ -602,13 +617,28 @@ async function finalizeSuccess(
 			const prTitle = detail.issue_title
 				? `[Setra] ${detail.issue_title}`
 				: `Setra: ${branch}`;
-			const prBody = [
+			const fallbackBody = [
 				`Automated changes by Setra agent \`${detail.agent_slug}\`.`,
 				"",
 				detail.issue_id ? `Closes issue \`${detail.issue_id}\`.` : "",
 			]
 				.filter(Boolean)
 				.join("\n");
+			let prBody = fallbackBody;
+			try {
+				const bundle = assembleRunBundle(detail.run_id);
+				if (bundle) {
+					prBody = renderRunBundleMarkdown(bundle);
+					if (detail.issue_id) {
+						prBody += `\n\nCloses issue \`${detail.issue_id}\`.`;
+					}
+				}
+			} catch (err) {
+				log.warn("evidence bundle assembly failed; using fallback PR body", {
+					runId: detail.run_id,
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}
 			prUrl = await createPullRequest(
 				detail.worktree_path!,
 				branch,
@@ -928,7 +958,41 @@ export async function onRunCompleted(
 	const isSuccess = exitCode === 0;
 
 	if (isSuccess) {
+		const durability = checkPostTurnDurability(runId);
+		if (!durability.durable) {
+			log.warn("run completed without durable evidence", {
+				runId,
+				agentSlug: detail.agent_slug,
+				reason: durability.reason,
+			});
+			emit("run:non_durable", {
+				runId,
+				agentSlug: detail.agent_slug,
+				companyId,
+				chunkCount: durability.chunkCount,
+				toolCallCount: durability.toolCallCount,
+				filesTouched: durability.filesTouched,
+			});
+		}
 		await handleSuccess(detail, companyId);
+		try {
+			const update = distillProfileFromRun({
+				summary: detail.issue_title,
+				userMessages: [detail.issue_description ?? ""],
+			});
+			if (
+				update.preferences?.length ||
+				update.style?.length ||
+				update.context?.length
+			) {
+				updateProfile(update);
+			}
+		} catch (error) {
+			log.warn("profile distillation failed", {
+				runId,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
 		if (detail.issue_id) {
 			await startIssueTestRun(detail.issue_id, {
 				workspacePath: detail.worktree_path,

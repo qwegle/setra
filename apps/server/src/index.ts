@@ -54,6 +54,7 @@ import { startDispatcher } from "./lib/dispatcher.js";
 import { startHeartbeatSweeper } from "./lib/heartbeat-sweeper.js";
 import { createLogger } from "./lib/logger.js";
 import { jobQueue } from "./lib/queue.js";
+import { primeResumePackets } from "./lib/resume-packet-store.js";
 import { registerRunQueueProcessor } from "./lib/run-orchestrator.js";
 import { seedLocalSkillsCatalog } from "./lib/skills-catalog.js";
 import { inputSanitizer } from "./middleware/input-sanitizer.js";
@@ -63,6 +64,8 @@ import { requireAuth } from "./middleware/require-auth.js";
 import { requireCompany } from "./middleware/require-company.js";
 import { securityHeaders } from "./middleware/security-headers.js";
 import { activityRoute } from "./routes/activity.js";
+import { agentBreakRoute } from "./routes/agent-break.js";
+import { agentContextRoute } from "./routes/agent-context.js";
 import { agentEventsRoute } from "./routes/agent-events.js";
 import { agentsRoute } from "./routes/agents.js";
 import { aiCeoRoute } from "./routes/ai-ceo.js";
@@ -72,6 +75,8 @@ import { assistantToolsRoute } from "./routes/assistant.js";
 import { authRoute } from "./routes/auth.js";
 import { budgetRoute } from "./routes/budget.js";
 import { cloneRoute } from "./routes/clone.js";
+import { cliStatusRoute } from "./routes/cli-status.js";
+import { analyticsRoute } from "./routes/analytics.js";
 import { collaborationRoute } from "./routes/collaboration.js";
 import { companiesRoute } from "./routes/companies.js";
 import { companyRoute } from "./routes/company.js";
@@ -84,11 +89,15 @@ import { inboxRoute } from "./routes/inbox.js";
 import { instanceRoute } from "./routes/instance.js";
 import { integrationsRoute } from "./routes/integrations.js";
 import { issuesRoute } from "./routes/issues.js";
+import { lanRoute } from "./routes/lan.js";
 import { llmRoute } from "./routes/llm.js";
+import { marketingRoute, publicMarketingRoute } from "./routes/marketing.js";
 import { mcpRoute } from "./routes/mcp.js";
 import orgRoute from "./routes/org.js";
 import parseGoalRoute from "./routes/parse-goal.js";
 import { plansRoute } from "./routes/plans.js";
+import { profileRoute } from "./routes/profile.js";
+import projectAgentsRoute from "./routes/project-agents.js";
 import { projectContextRoute } from "./routes/project-context.js";
 import { projectGitRoute } from "./routes/project-git.js";
 import { projectSecretsRoute } from "./routes/project-secrets.js";
@@ -121,11 +130,16 @@ export async function createApp(
 	mkdirSync(dataDir, { recursive: true });
 	const dbPath = join(dataDir, "setra.db");
 	getDb({ dbPath, verbose: false });
+
+	// Order matters. ensureTables() creates the server-local tables that the
+	// drizzle migrations do not own (approvals, routines, agent_roster, ...).
+	// Some migrations rebuild those tables to attach foreign keys, so the
+	// tables must exist before the migrations run; otherwise a fresh install
+	// would silently skip the rebuild and end up without the FK constraints.
+	ensureTables();
 	await runMigrations();
 	seedBuiltins();
 
-	// Ensure all server-local tables exist before handling requests
-	ensureTables();
 	seedLocalSkillsCatalog();
 	const app = new Hono();
 
@@ -158,10 +172,12 @@ export async function createApp(
 	app.route("/api/llm", llmRoute);
 	app.route("/api/runtime", runtimeRoute);
 	app.route("/api/instance", instanceRoute);
+	app.route("/api/lan", lanRoute);
 	app.route("/api/clone", cloneRoute);
 	app.route("/api/parse-goal", parseGoalRoute);
 	app.route("/api/search", searchRoute);
 	app.route("/api/health", healthRoute);
+	app.route("/api/cli-status", cliStatusRoute);
 	app.route("/api/webhooks", webhooksRoute);
 
 	// ── Authenticated/scoped routes ─────────────────────────────────────────
@@ -195,6 +211,9 @@ export async function createApp(
 		"/api/files/*",
 		"/api/agent-events/*",
 		"/api/mcp/*",
+		"/api/project-agents/*",
+		"/api/marketing",
+		"/api/marketing/*",
 	];
 	for (const mount of scopedMounts) {
 		app.use(mount, authGuard, requireCompany);
@@ -224,11 +243,31 @@ export async function createApp(
 		return authGuard(c, next);
 	});
 
+	// LAN routes:
+	//  - POST /api/lan/join-request and GET /api/lan/join-request/:id are public
+	//    so peer Setra instances on the same Wi-Fi can hand off join requests
+	//    without sharing credentials. Everything else requires auth + company.
+	app.use("/api/lan/*", async (c, next) => {
+		const path = c.req.path;
+		const method = c.req.method;
+		const isPublicHandshake =
+			(method === "POST" && path === "/api/lan/join-request") ||
+			(method === "GET" && path.startsWith("/api/lan/join-request/"));
+		if (isPublicHandshake) return next();
+		return authGuard(c, async () => {
+			await requireCompany(c, next);
+		});
+	});
+
 	app.route("/api/projects", projectsRoute);
 	app.route("/api/projects", projectSecretsRoute);
 	app.route("/api/projects", projectGitRoute);
 	app.route("/api/projects", projectWorkspaceRoute);
+	app.route("/api/projects", projectAgentsRoute);
+	app.route("/api/project-agents", projectAgentsRoute);
 	app.route("/api", projectContextRoute);
+	app.route("/api", agentContextRoute);
+	app.route("/api", agentBreakRoute);
 	app.route("/api/issues", issuesRoute);
 	app.route("/api/agents", agentsRoute);
 	app.route("/api/budget", budgetRoute);
@@ -246,6 +285,8 @@ export async function createApp(
 	app.route("/api/routines", routinesRoute);
 	app.route("/api/inbox", inboxRoute);
 	app.route("/api/activity", activityRoute);
+	app.route("/api/analytics", analyticsRoute);
+	app.route("/api/profile", profileRoute);
 	app.route("/api/costs", costsRoute);
 	app.route("/api/company", companyRoute);
 	app.route("/api/workspaces", workspacesRoute);
@@ -256,6 +297,8 @@ export async function createApp(
 	app.route("/api/agent-events", agentEventsRoute);
 	app.route("/api/mcp", mcpRoute);
 	app.route("/api/runs", runsRoute);
+	app.route("/api/marketing", marketingRoute);
+	app.route("/api/public/marketing", publicMarketingRoute);
 
 	// ─── Board UI static serving ──────────────────────────────────────────────────
 	// When the built board assets exist, serve them as static files so that
@@ -286,10 +329,18 @@ const isMain =
 
 if (isMain) {
 	const PORT = Number(process.env.SETRA_PORT ?? 3141);
+	// Bind to 0.0.0.0 so other devices on the local Wi-Fi can reach this
+	// instance for multi-developer collaboration. SETRA_BIND_HOST overrides
+	// when an operator wants to lock it down to loopback only.
+	const HOST = process.env.SETRA_BIND_HOST ?? "0.0.0.0";
 	const app = await createApp();
 
-	log.info("server listening", { port: PORT, url: `http://localhost:${PORT}` });
-	serve({ fetch: app.fetch, port: PORT });
+	log.info("server listening", {
+		host: HOST,
+		port: PORT,
+		url: `http://localhost:${PORT}`,
+	});
+	serve({ fetch: app.fetch, port: PORT, hostname: HOST });
 
 	if (process.env.NODE_ENV !== "test") {
 		registerRunQueueProcessor();
@@ -300,6 +351,43 @@ if (isMain) {
 		});
 		startHeartbeatSweeper();
 		startDispatcher();
+		try {
+			primeResumePackets();
+		} catch (err) {
+			log.warn("primeResumePackets failed", { err: String(err) });
+		}
+
+		// Start LAN browser unconditionally (passive listening — does not
+		// announce). The broadcaster only starts for companies that have
+		// opted into discoverability.
+		try {
+			const { startBrowser, startBroadcast } = await import(
+				"./lib/lan-discovery.js"
+			);
+			startBrowser();
+			const discoverable = getRawDb()
+				.prepare(
+					`SELECT id, name FROM companies WHERE lan_discoverable = 1`,
+				)
+				.all() as Array<{ id: string; name: string }>;
+			for (const co of discoverable) {
+				const owner = getRawDb()
+					.prepare(
+						`SELECT email FROM users WHERE company_id = ? AND role = 'owner'
+						 ORDER BY created_at ASC LIMIT 1`,
+					)
+					.get(co.id) as { email: string } | undefined;
+				startBroadcast({
+					companyId: co.id,
+					companyName: co.name,
+					ownerEmail: owner?.email ?? "",
+					port: PORT,
+				});
+				break; // bonjour-service supports one broadcast per process for now
+			}
+		} catch (err) {
+			log.warn("lan-discovery start failed", { err: String(err) });
+		}
 
 		// Apply API keys from settings.json to process.env for all companies
 		// so that /llm/status and server-runner can find them without requiring

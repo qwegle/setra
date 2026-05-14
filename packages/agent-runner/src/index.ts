@@ -80,8 +80,18 @@ export {
 } from "./adapters/claude.js";
 export { GeminiAdapter, geminiAdapter } from "./adapters/gemini.js";
 export { CodexAdapter, codexAdapter } from "./adapters/codex.js";
+export { CopilotAdapter, copilotAdapter } from "./adapters/copilot.js";
 export { OpenCodeAdapter, opencodeAdapter } from "./adapters/opencode.js";
 export { AmpAdapter, ampAdapter } from "./adapters/amp.js";
+export { CursorAdapter, cursorAdapter } from "./adapters/cursor.js";
+
+// CLI probe (Connect-a-CLI onboarding + top bar status)
+export {
+	FIRST_CLASS_CLIS,
+	probeCLIs,
+	_resetCliProbeCacheForTests,
+} from "./cli-probe.js";
+export type { CliDescriptor, CliStatus, ProbeOptions } from "./cli-probe.js";
 
 // ─── API adapters ─────────────────────────────────────────────────────────────
 export {
@@ -265,7 +275,17 @@ export {
 	snakeGameProPipelineConfig,
 	snakeGameProTemplate,
 	triageIssuesPipelineConfig,
+	LoopDetector,
+	type LoopDetectorOptions,
+	type LoopSignal,
 } from "./pipeline/index.js";
+export {
+	wrapWithSandbox,
+	defaultReadOnlyPaths,
+	type SandboxMode,
+	type SandboxOptions,
+	type SandboxWrapResult,
+} from "./sandbox-spawn.js";
 
 // ─── Auto-registration ────────────────────────────────────────────────────────
 //
@@ -280,6 +300,8 @@ import { awsBedrockAdapter } from "./adapters/aws-bedrock.js";
 import { azureOpenAIAdapter } from "./adapters/azure-openai.js";
 import { claudeAdapter } from "./adapters/claude.js";
 import { codexAdapter } from "./adapters/codex.js";
+import { copilotAdapter } from "./adapters/copilot.js";
+import { cursorAdapter } from "./adapters/cursor.js";
 import { customOpenAiAdapter } from "./adapters/custom-openai.js";
 import { gcpVertexAdapter } from "./adapters/gcp-vertex.js";
 import { geminiAdapter } from "./adapters/gemini.js";
@@ -288,11 +310,14 @@ import { openAiApiAdapter } from "./adapters/openai-api.js";
 import { opencodeAdapter } from "./adapters/opencode.js";
 import { setraNativeAdapter } from "./setra-native/index.js";
 
-// CLI adapters
+// CLI adapters (first-class: shown in onboarding + top bar)
 registerAdapter(claudeAdapter);
-registerAdapter(geminiAdapter);
 registerAdapter(codexAdapter);
+registerAdapter(geminiAdapter);
 registerAdapter(opencodeAdapter);
+registerAdapter(cursorAdapter);
+// CLI adapters (secondary; available but not promoted in onboarding)
+registerAdapter(copilotAdapter);
 registerAdapter(ampAdapter);
 
 // API adapters

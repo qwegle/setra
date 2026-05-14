@@ -45,7 +45,14 @@ export function listMessages(
 	companyId: string | undefined | null,
 	channel: string,
 	limit: number,
+	hideLifecycle = true,
 ): ChannelMessageRow[] {
+	// Filter out run lifecycle noise: "🚀 X started run" / "✅ X finished run" / "❌ X failed"
+	// Also filter internal delegation routing messages ("Delegation for @X:") — these are
+	// internal agent-to-agent messages and should not appear in the user-facing channel view.
+	const lifecycleFilter = hideLifecycle
+		? ` AND content NOT LIKE '🚀 %' AND content NOT LIKE '✅ %' AND content NOT LIKE '❌ %' AND content NOT LIKE 'Delegation for @%'`
+		: "";
 	const rows = (
 		companyId
 			? getRawDb()
@@ -54,7 +61,7 @@ export function listMessages(
                   plot_id AS threadId, created_at AS createdAt,
                   message_kind AS messageKind, COALESCE(pinned, 0) AS pinned
              FROM team_messages
-            WHERE channel = ? AND (company_id = ?)
+            WHERE channel = ? AND (company_id = ?)${lifecycleFilter}
             ORDER BY created_at DESC
             LIMIT ?`,
 					)
@@ -65,7 +72,7 @@ export function listMessages(
                   plot_id AS threadId, created_at AS createdAt,
                   message_kind AS messageKind, COALESCE(pinned, 0) AS pinned
              FROM team_messages
-            WHERE channel = ?
+            WHERE channel = ?${lifecycleFilter}
             ORDER BY created_at DESC
             LIMIT ?`,
 					)

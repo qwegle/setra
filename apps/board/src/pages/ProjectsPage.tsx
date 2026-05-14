@@ -46,11 +46,17 @@ function ProjectFormFields({
 	name,
 	description,
 	workspacePath,
+	repoUrl,
 	requirements,
+	dbType,
+	dbConnectionString,
 	onNameChange,
 	onDescriptionChange,
 	onWorkspacePathChange,
+	onRepoUrlChange,
 	onRequirementsChange,
+	onDbTypeChange,
+	onDbConnectionStringChange,
 	onBrowse,
 	folderInputRef,
 	onFolderPicked,
@@ -59,11 +65,17 @@ function ProjectFormFields({
 	name: string;
 	description: string;
 	workspacePath: string;
+	repoUrl: string;
 	requirements: string;
+	dbType: string;
+	dbConnectionString: string;
 	onNameChange: (value: string) => void;
 	onDescriptionChange: (value: string) => void;
 	onWorkspacePathChange: (value: string) => void;
+	onRepoUrlChange: (value: string) => void;
 	onRequirementsChange: (value: string) => void;
+	onDbTypeChange: (value: string) => void;
+	onDbConnectionStringChange: (value: string) => void;
 	onBrowse?: () => void;
 	folderInputRef?: RefObject<HTMLInputElement>;
 	onFolderPicked?: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -156,6 +168,50 @@ function ProjectFormFields({
 					When set, agents working on this project stay scoped to this folder.
 				</p>
 			</div>
+			<Input
+				label="Repository URL"
+				value={repoUrl}
+				onChange={(e) => onRepoUrlChange(e.target.value)}
+				placeholder="https://github.com/org/repo"
+				className="font-mono"
+			/>
+			<p className="-mt-3 text-xs text-zinc-400">
+				Optional. Auto-detected from workspace git remote if not set.
+			</p>
+			{/* Database */}
+			<div className="space-y-1.5">
+				<label className="text-sm font-medium text-zinc-100">
+					Database <span className="text-zinc-500">(optional)</span>
+				</label>
+				<select
+					value={dbType}
+					onChange={(e) => onDbTypeChange(e.target.value)}
+					className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none"
+				>
+					<option value="">No database yet</option>
+					<option value="postgres">PostgreSQL / NeonDB</option>
+					<option value="mysql">MySQL / PlanetScale</option>
+					<option value="mongodb">MongoDB / Atlas</option>
+					<option value="sqlite">SQLite (local)</option>
+					<option value="mssql">Microsoft SQL Server</option>
+				</select>
+				{dbType && (
+					<textarea
+						value={dbConnectionString}
+						onChange={(e) => onDbConnectionStringChange(e.target.value)}
+						rows={2}
+						placeholder={
+							dbType === "mongodb"
+								? "mongodb+srv://user:pass@cluster.mongodb.net/db"
+								: "postgres://user:pass@host:5432/dbname"
+						}
+						className="w-full rounded-md border border-zinc-700 bg-zinc-900/70 px-3 py-2 font-mono text-sm text-white outline-none placeholder:text-zinc-500"
+					/>
+				)}
+				<p className="text-xs text-zinc-400">
+					You can also connect a database later from the project's Database tab.
+				</p>
+			</div>
 		</div>
 	);
 }
@@ -183,11 +239,15 @@ export function ProjectsPage() {
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [workspacePath, setWorkspacePath] = useState("");
+	const [repoUrl, setRepoUrl] = useState("");
 	const [requirements, setRequirements] = useState("");
+	const [dbType, setDbType] = useState("");
+	const [dbConnectionString, setDbConnectionString] = useState("");
 	const [editingProject, setEditingProject] = useState<Project | null>(null);
 	const [editName, setEditName] = useState("");
 	const [editDescription, setEditDescription] = useState("");
 	const [editWorkspacePath, setEditWorkspacePath] = useState("");
+	const [editRepoUrl, setEditRepoUrl] = useState("");
 	const [editRequirements, setEditRequirements] = useState("");
 	const [selectedRuleName, setSelectedRuleName] = useState<string | null>(null);
 	const [ruleName, setRuleName] = useState("global.md");
@@ -310,22 +370,43 @@ export function ProjectsPage() {
 	}, [editingProject, rules, selectedRuleName]);
 
 	const createMut = useMutation({
-		mutationFn: () =>
-			api.projects.create({
+		mutationFn: async () => {
+			const project = await api.projects.create({
 				name: name.trim(),
 				...(description.trim() ? { description: description.trim() } : {}),
 				...(workspacePath.trim()
 					? { workspacePath: workspacePath.trim() }
 					: {}),
+				...(repoUrl.trim() ? { repoUrl: repoUrl.trim() } : {}),
 				...(requirements.trim() ? { requirements: requirements.trim() } : {}),
-			}),
+			});
+			if (dbConnectionString.trim() && dbType) {
+				await api.projectDb
+					.connect(project.id, {
+						connectionString: dbConnectionString.trim(),
+						type: dbType as
+							| "postgres"
+							| "mysql"
+							| "mongodb"
+							| "sqlite"
+							| "mssql",
+					})
+					.catch(() => {
+						/* non-fatal */
+					});
+			}
+			return project;
+		},
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: ["projects"] });
 			setShowCreate(false);
 			setName("");
 			setDescription("");
 			setWorkspacePath("");
+			setRepoUrl("");
 			setRequirements("");
+			setDbType("");
+			setDbConnectionString("");
 		},
 	});
 
@@ -338,6 +419,7 @@ export function ProjectsPage() {
 				workspacePath: editWorkspacePath.trim()
 					? editWorkspacePath.trim()
 					: null,
+				repoUrl: editRepoUrl.trim() ? editRepoUrl.trim() : null,
 				requirements: editRequirements.trim() ? editRequirements.trim() : "",
 			});
 		},
@@ -381,6 +463,7 @@ export function ProjectsPage() {
 		setEditName(project.name);
 		setEditDescription(project.description ?? "");
 		setEditWorkspacePath(project.workspacePath ?? "");
+		setEditRepoUrl(project.repoUrl ?? "");
 		setEditRequirements(project.requirements ?? "");
 		resetRuleEditor();
 	}
@@ -395,6 +478,7 @@ export function ProjectsPage() {
 		setEditName("");
 		setEditDescription("");
 		setEditWorkspacePath("");
+		setEditRepoUrl("");
 		setEditRequirements("");
 		resetRuleEditor();
 	}
@@ -610,11 +694,17 @@ export function ProjectsPage() {
 					name={name}
 					description={description}
 					workspacePath={workspacePath}
+					repoUrl={repoUrl}
 					requirements={requirements}
+					dbType={dbType}
+					dbConnectionString={dbConnectionString}
 					onNameChange={setName}
 					onDescriptionChange={setDescription}
 					onWorkspacePathChange={setWorkspacePath}
+					onRepoUrlChange={setRepoUrl}
 					onRequirementsChange={setRequirements}
+					onDbTypeChange={setDbType}
+					onDbConnectionStringChange={setDbConnectionString}
 					onBrowse={handleBrowse}
 					folderInputRef={folderInputRef}
 					onFolderPicked={handleFolderPicked}
@@ -652,11 +742,17 @@ export function ProjectsPage() {
 					name={editName}
 					description={editDescription}
 					workspacePath={editWorkspacePath}
+					repoUrl={editRepoUrl}
 					requirements={editRequirements}
+					dbType=""
+					dbConnectionString=""
 					onNameChange={setEditName}
 					onDescriptionChange={setEditDescription}
 					onWorkspacePathChange={setEditWorkspacePath}
+					onRepoUrlChange={setEditRepoUrl}
 					onRequirementsChange={setEditRequirements}
+					onDbTypeChange={() => {}}
+					onDbConnectionStringChange={() => {}}
 					onBrowse={handleBrowse}
 					folderInputRef={folderInputRef}
 					onFolderPicked={handleFolderPicked}

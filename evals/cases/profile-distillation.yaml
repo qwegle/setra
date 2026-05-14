@@ -1,0 +1,7 @@
+name: profile-distillation
+description: GET /api/profile returns the user profile.
+expect:
+  - within: 5s
+    method: GET
+    path: /api/profile
+    status: 200

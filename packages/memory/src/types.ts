@@ -19,4 +19,5 @@ export interface MemoryStoreOptions {
 	dbPath: string;
 	modelId?: string;
 	maxEntries?: number;
+	maxEntriesPerAgent?: number;
 }

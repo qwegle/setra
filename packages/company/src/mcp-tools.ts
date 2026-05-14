@@ -578,7 +578,21 @@ export function selectToolsForMember(params: {
 	worktreeIsolation: boolean;
 	customAllowList?: string[];
 }): readonly (typeof ALL_COMPANY_TOOLS)[number][] {
-	const { isLead, worktreeIsolation } = params;
+	const { isLead, worktreeIsolation, customAllowList } = params;
+
+	// Custom allow lists take precedence over role-based defaults. This is the
+	// hook that lets blueprints (or per-run overrides) shrink the tool surface
+	// for a single agent — mirrors WUPHF's per-agent MCP scoping which keeps
+	// the prompt tool schema small enough to stay cache-aligned and prevents
+	// privilege escalation by role boundary. Unknown tool names are filtered
+	// out so a typo cannot smuggle in undeclared tools.
+	if (customAllowList && customAllowList.length > 0) {
+		const allow = new Set(customAllowList);
+		const filtered = ALL_COMPANY_TOOLS.filter((t) => allow.has(t.name));
+		if (filtered.length > 0) return filtered;
+		// Empty intersection: fall through to role-based default rather than
+		// hand the agent a zero-tool MCP surface (which would lock it up).
+	}
 
 	if (isLead) {
 		// Lead gets all tools. LEAD_ONLY_TOOLS already included in ALL_COMPANY_TOOLS

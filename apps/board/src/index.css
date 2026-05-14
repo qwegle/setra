@@ -20,12 +20,43 @@
 		--radius: 0.5rem;
 	}
 
+	.light {
+		/* Cream / parchment palette — Beacons-style warm light theme.
+		   Background base: #faf6ef (warm off-white).
+		   Surfaces: pure white cards on cream ground for contrast.
+		   Text: deep slate-brown for readability without true black harshness. */
+		--background: 36 38% 96%;            /* #faf6ef cream */
+		--foreground: 30 18% 14%;            /* deep slate-brown */
+		--card: 36 50% 99%;                  /* near-white with warm tint */
+		--card-foreground: 30 18% 14%;
+		--popover: 36 50% 99%;
+		--popover-foreground: 30 18% 14%;
+		--muted: 36 28% 92%;                 /* sand */
+		--muted-foreground: 30 10% 42%;
+		--primary: 213 76% 47%;
+		--primary-foreground: 0 0% 100%;
+		--secondary: 36 30% 90%;
+		--secondary-foreground: 30 18% 14%;
+		--accent: 36 30% 90%;
+		--accent-foreground: 30 18% 14%;
+		--destructive: 0 76% 52%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 36 22% 86%;                /* warm sand border */
+		--input: 36 22% 86%;
+		--ring: 213 76% 47%;
+		color-scheme: light;
+	}
+
 	* {
 		border-color: hsl(var(--border));
 	}
 
 	html {
 		color-scheme: dark;
+	}
+
+	html.light {
+		color-scheme: light;
 	}
 
 	body {
@@ -41,6 +72,21 @@
 				transparent 60%
 			);
 		min-height: 100vh;
+	}
+
+	/* Cream body gradient — replaces the dark blue/purple radials with
+	   subtle warm peach + soft cream highlights for a Beacons-style feel. */
+	html.light body {
+		background-image: radial-gradient(
+				ellipse at 20% 0%,
+				rgba(247, 215, 175, 0.55) 0%,
+				transparent 55%
+			),
+			radial-gradient(
+				ellipse at 80% 100%,
+				rgba(232, 217, 246, 0.4) 0%,
+				transparent 55%
+			);
 	}
 
 	/* Scrollbar */
@@ -73,6 +119,12 @@
 		@apply bg-card/60 backdrop-blur-xl border border-border/50;
 	}
 
+	/* Light mode: invert hardcoded dark palette colours so pages are readable */
+	.light .glass {
+		@apply bg-card/80 border-border/40;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	}
+
 	/* Status dot */
 	.status-dot {
 		@apply inline-block w-2 h-2 rounded-full shrink-0;
@@ -85,4 +137,150 @@
 		-ms-overflow-style: none;
 		scrollbar-width: none;
 	}
+}
+
+/* ─── Light/cream mode: remap hardcoded zinc/gray/slate colours ─────────────── */
+/* These catch the hundreds of text-zinc-*, bg-zinc-*, border-zinc-*
+   classes scattered across pages. In light mode we flip them so text
+   is dark and backgrounds are cream/sand. */
+.light .text-zinc-100,
+.light .text-zinc-200,
+.light .text-zinc-300 {
+	color: hsl(30 18% 14%) !important;
+}
+.light .text-zinc-400 {
+	color: hsl(30 10% 42%) !important;
+}
+.light .text-zinc-500 {
+	color: hsl(30 10% 38%) !important;
+}
+.light .text-zinc-600,
+.light .text-zinc-700 {
+	color: hsl(30 12% 30%) !important;
+}
+
+.light .text-gray-100,
+.light .text-gray-200,
+.light .text-gray-300 {
+	color: hsl(30 18% 14%) !important;
+}
+.light .text-gray-400 {
+	color: hsl(30 10% 42%) !important;
+}
+.light .text-gray-500 {
+	color: hsl(30 10% 38%) !important;
+}
+
+.light .text-slate-100,
+.light .text-slate-200,
+.light .text-slate-300 {
+	color: hsl(30 18% 14%) !important;
+}
+.light .text-slate-400 {
+	color: hsl(30 10% 42%) !important;
+}
+
+/* text-white only flips on neutral surfaces; coloured buttons keep white text (handled below) */
+.light .text-white {
+	color: hsl(30 18% 14%) !important;
+}
+
+/* Background flips — neutral surfaces become cream / off-white */
+.light .bg-zinc-800,
+.light .bg-zinc-900,
+.light .bg-zinc-950 {
+	background-color: hsl(36 50% 99%) !important;
+}
+.light .bg-zinc-800\/40,
+.light .bg-zinc-800\/50,
+.light .bg-zinc-800\/70,
+.light .bg-zinc-900\/40,
+.light .bg-zinc-900\/50,
+.light .bg-zinc-900\/60,
+.light .bg-zinc-900\/70,
+.light .bg-zinc-900\/80 {
+	background-color: hsl(36 38% 96% / 0.85) !important;
+}
+.light .bg-zinc-700 {
+	background-color: hsl(36 30% 90%) !important;
+}
+
+.light .bg-gray-800,
+.light .bg-gray-900 {
+	background-color: hsl(36 50% 99%) !important;
+}
+
+.light .bg-slate-800,
+.light .bg-slate-900 {
+	background-color: hsl(36 50% 99%) !important;
+}
+
+/* ground-* tokens used by AppShell / TopBar / Sidebar — these are core surfaces */
+.light .bg-ground-950,
+.light .bg-ground-900,
+.light .bg-ground-850,
+.light .bg-ground-800 {
+	background-color: hsl(36 38% 96%) !important;
+}
+.light .bg-ground-900\/30,
+.light .bg-ground-900\/40,
+.light .bg-ground-900\/50,
+.light .bg-ground-900\/60,
+.light .bg-ground-900\/80,
+.light .bg-ground-900\/95 {
+	background-color: hsl(36 45% 98% / 0.92) !important;
+}
+.light .bg-ground-800\/40,
+.light .bg-ground-800\/60 {
+	background-color: hsl(36 35% 94% / 0.85) !important;
+}
+.light .bg-ground-750,
+.light .bg-ground-700 {
+	background-color: hsl(36 30% 90%) !important;
+}
+
+/* Border flips — warm sand instead of cool slate */
+.light .border-zinc-600,
+.light .border-zinc-700,
+.light .border-zinc-800 {
+	border-color: hsl(36 22% 86%) !important;
+}
+
+.light .border-gray-700,
+.light .border-gray-800 {
+	border-color: hsl(36 22% 86%) !important;
+}
+
+/* Keep text-white on primary/colored surfaces */
+.light .bg-setra-600 .text-white,
+.light .bg-setra-500 .text-white,
+.light .bg-primary .text-white,
+.light .bg-accent-green .text-white,
+.light .bg-accent-red .text-white,
+.light [class*="bg-setra-"] > .text-white,
+.light button.bg-setra-600,
+.light button.bg-setra-500,
+.light button[class*="bg-setra-"],
+.light .bg-accent-blue .text-white,
+.light .bg-emerald-500 .text-white,
+.light .bg-amber-500 .text-white {
+	color: white !important;
+}
+
+/* Scrollbar cream-mode */
+.light ::-webkit-scrollbar-track {
+	background: hsl(36 38% 96%);
+}
+.light ::-webkit-scrollbar-thumb {
+	background: hsl(36 22% 82%);
+}
+.light ::-webkit-scrollbar-thumb:hover {
+	background: hsl(36 18% 70%);
+}
+
+/* Soft drop shadow on cards for elevation since cream surfaces have less natural contrast */
+.light .glass,
+.light .card,
+.light [class*="rounded-xl"][class*="border"] {
+	box-shadow: 0 1px 2px rgba(50, 35, 15, 0.04), 0 2px 8px rgba(50, 35, 15, 0.03);
 }

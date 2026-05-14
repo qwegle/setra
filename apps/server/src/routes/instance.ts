@@ -1,4 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
+import { PROVIDER_MAP } from "@setra/agent-runner";
 import { Hono } from "hono";
 import { getCompanyId } from "../lib/company-scope.js";
 import { getCompanySettings } from "../lib/company-settings.js";
@@ -286,18 +287,30 @@ instanceRoute.get("/adapters", async (c) => {
 	return c.json(
 		rows.map((row) => {
 			const config = parseAdapterConfig(row.config);
+			const provider = PROVIDER_MAP.get(row.id);
+			const registryModels = provider?.models.map((m) => m.id) ?? [];
+			const currentDefault =
+				typeof config.defaultModel === "string" &&
+				config.defaultModel.trim().length > 0
+					? config.defaultModel.trim()
+					: (provider?.defaultModel ?? null);
 			return {
 				id: row.id,
-				name: row.name,
+				name: provider?.displayName ?? row.name,
+				enabled: Boolean(row.enabled),
+				kind: provider?.kind ?? "api",
 				isConfigured: Boolean(row.isConfigured),
-				status: row.isConfigured ? "ok" : "unconfigured",
-				models:
-					typeof config.defaultModel === "string" &&
-					config.defaultModel.trim().length > 0
-						? [config.defaultModel.trim()]
-						: [],
+				status: row.isConfigured
+					? row.enabled
+						? "ok"
+						: "disabled"
+					: "unconfigured",
+				models: registryModels,
+				defaultModel: currentDefault,
 				apiKeyHint: maskSecret(resolveAdapterApiKey(row.id, config, settings)),
 				baseUrl: resolveAdapterBaseUrl(row.id, config),
+				signupUrl: provider?.signupUrl ?? null,
+				apiKeyEnvVar: provider?.apiKeyEnvVar ?? null,
 			};
 		}),
 	);

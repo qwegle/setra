@@ -61,21 +61,47 @@ authRoute.post("/register", async (c) => {
 		count: number;
 	};
 	const isFirstUser = Number(userCount.count ?? 0) === 0;
-	if (isFirstUser && !companyName) {
+
+	// Check for pending invite for this email — invites trump everything else
+	// because they encode an explicit "join this company" decision by an existing
+	// admin.
+	const invite = db
+		.prepare(
+			`SELECT id, company_id, role FROM company_invites
+			 WHERE email = ? AND status = 'pending' AND expires_at > datetime('now')
+			 ORDER BY sent_at DESC LIMIT 1`,
+		)
+		.get(email) as { id: string; company_id: string; role: string } | undefined;
+
+	// Without an invite every new account must create its own workspace,
+	// otherwise we silently dump them into the first company in the DB and
+	// leak its projects / agents / settings (CVE-class tenant break).
+	if (!invite && !companyName) {
 		return c.json(
-			{ error: "companyName is required for the first account" },
+			{
+				error:
+					"companyName is required to create a new workspace. Ask an existing admin for an invite to join an existing company.",
+			},
 			400,
 		);
 	}
 
-	const company = isFirstUser
-		? await companiesRepo.createCompany({ name: companyName })
-		: (await companiesRepo.listCompanies())[0];
-	if (!company) {
-		return c.json({ error: "Failed to resolve company" }, 500);
+	let targetCompany: { id: string };
+	if (invite) {
+		targetCompany = { id: invite.company_id };
+	} else {
+		const created = await companiesRepo.createCompany({ name: companyName });
+		if (!created) {
+			return c.json({ error: "Failed to create company" }, 500);
+		}
+		targetCompany = { id: created.id };
 	}
+	const role = isFirstUser
+		? "owner"
+		: invite
+			? ((invite.role as "admin" | "member") ?? "member")
+			: "owner"; // a brand-new self-served workspace makes the registrant its owner
 
-	const role = isFirstUser ? "owner" : "member";
 	const passwordHash = await hashPassword(password);
 	const user = db
 		.prepare(
@@ -83,20 +109,43 @@ authRoute.post("/register", async (c) => {
 			 VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 			 RETURNING id, email, name, company_id, role`,
 		)
-		.get(crypto.randomUUID(), email, passwordHash, name, company.id, role) as {
+		.get(
+			crypto.randomUUID(),
+			email,
+			passwordHash,
+			name,
+			targetCompany.id,
+			role,
+		) as {
 		id: string;
 		email: string;
 		name: string | null;
 		company_id: string;
 		role: "owner" | "admin" | "member";
 	};
+
+	// Create company_members row so user appears in the team
+	db.prepare(
+		`INSERT OR IGNORE INTO company_members (id, company_id, name, email, role, joined_at)
+		 VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
+	).run(user.id, targetCompany.id, name ?? email, email, role);
+
+	// Mark invite as accepted
+	if (invite) {
+		db.prepare(
+			`UPDATE company_invites SET status = 'accepted' WHERE id = ?`,
+		).run(invite.id);
+	}
 	const token = generateToken({
 		userId: user.id,
 		email: user.email,
 		companyId: user.company_id,
 		role: user.role,
 	});
-	return c.json({ token, user: sanitizeUser(user), company }, 201);
+	return c.json(
+		{ token, user: sanitizeUser(user), company: targetCompany },
+		201,
+	);
 });
 
 authRoute.post("/login", async (c) => {

@@ -3,24 +3,32 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
 	Activity,
 	Bot,
+	ChevronDown,
 	Coins,
+	Copy,
 	ExternalLink,
 	FolderKanban,
 	FolderTree,
 	Heart,
+	Inbox,
 	LayoutDashboard,
 	LayoutGrid,
 	type LucideIcon,
 	MessageSquare,
+	Network,
 	Plug,
+	RefreshCw,
+	Search,
 	Settings,
 	ShieldCheck,
+	Sparkles,
+	SplitSquareHorizontal,
 	Target,
-	User,
+	Wifi,
 	X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCompany } from "../../context/CompanyContext";
@@ -47,6 +55,7 @@ const toolsNav = [
 	{ to: "/integrations", label: "Integrations", icon: ExternalLink },
 	{ to: "/environments", label: "Environments", icon: LayoutGrid },
 	{ to: "/files", label: "Files", icon: FolderTree },
+	{ to: "/connect", label: "Connect", icon: Wifi },
 ];
 
 const settingsNav = [
@@ -55,17 +64,15 @@ const settingsNav = [
 	{ to: "/health", label: "Health", icon: Heart },
 ];
 
-const sseStatusDot: Record<SSEStatus, string> = {
-	connected: "bg-accent-green",
-	connecting: "bg-accent-yellow animate-pulse",
-	disconnected: "bg-accent-red",
-};
-
-const sseStatusLabel: Record<SSEStatus, string> = {
-	connected: "live",
-	connecting: "connecting…",
-	disconnected: "reconnecting…",
-};
+const moreNav = [
+	{ to: "/org", label: "Organization", icon: Network },
+	{ to: "/skills", label: "Skills", icon: Sparkles },
+	{ to: "/inbox", label: "Inbox", icon: Inbox },
+	{ to: "/routines", label: "Routines", icon: RefreshCw },
+	{ to: "/search", label: "Search", icon: Search },
+	{ to: "/multi-view", label: "Multi-View", icon: SplitSquareHorizontal },
+	{ to: "/clone", label: "Clone", icon: Copy },
+];
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
 	return cn(
@@ -106,24 +113,28 @@ function NavSection({
 }
 
 function SidebarContent({
-	sseStatus,
 	onItemClick,
 	showCloseButton = false,
 	onClose,
 }: {
-	sseStatus: SSEStatus;
 	onItemClick?: () => void;
 	showCloseButton?: boolean;
 	onClose?: () => void;
 }) {
 	const { selectedCompany } = useCompany();
 	const { isAdmin } = useAuth();
+	const location = useLocation();
 	const { data: pendingApprovals = [] } = useQuery({
 		queryKey: ["sidebar-pending-approvals", selectedCompany?.id ?? null],
 		queryFn: () => api.approvals.list("pending"),
 		enabled: Boolean(selectedCompany?.id),
 		refetchInterval: 10_000,
 	});
+
+	const isMoreRouteActive = moreNav.some((item) =>
+		location.pathname.startsWith(item.to),
+	);
+	const [moreOpen, setMoreOpen] = useState(isMoreRouteActive);
 
 	// Members see a trimmed Team section (no Agents)
 	const memberTeamNav = teamNav.filter((item) => item.to !== "/agents");
@@ -189,38 +200,24 @@ function SidebarContent({
 					items={isAdmin ? settingsNav : memberSettingsNav}
 					onItemClick={onItemClick}
 				/>
-			</nav>
 
-			<div className="space-y-3 border-t border-border/30 px-4 py-3">
-				<NavLink
-					to="/profile"
-					onClick={onItemClick}
-					className={({ isActive }) =>
-						cn(
-							"flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors",
-							isActive
-								? "bg-accent-blue/10 text-accent-blue"
-								: "text-muted-foreground/70 hover:text-foreground",
-						)
-					}
+				<button
+					type="button"
+					onClick={() => setMoreOpen((v) => !v)}
+					className="flex w-full items-center gap-1 px-3 pb-1 pt-3 text-left"
 				>
-					<User className="h-3.5 w-3.5" />
-					<span>Profile</span>
-				</NavLink>
-				<a
-					href="https://github.com/qwegle/setra#readme"
-					target="_blank"
-					rel="noreferrer"
-					className="flex items-center gap-2 text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
-				>
-					<ExternalLink className="h-3.5 w-3.5" />
-					<span>Help &amp; Docs</span>
-				</a>
-				<div className="flex items-center gap-2 text-xs text-muted-foreground/60">
-					<span className={cn("status-dot", sseStatusDot[sseStatus])} />
-					<span>{sseStatusLabel[sseStatus]}</span>
-				</div>
-			</div>
+					<span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+						More
+					</span>
+					<ChevronDown
+						className={cn(
+							"h-3 w-3 text-zinc-500 transition-transform",
+							moreOpen && "rotate-180",
+						)}
+					/>
+				</button>
+				{moreOpen && <NavSection items={moreNav} onItemClick={onItemClick} />}
+			</nav>
 		</>
 	);
 }
@@ -243,7 +240,7 @@ export function Sidebar({
 	return (
 		<>
 			<aside className="fixed inset-y-0 left-[72px] z-30 hidden w-56 flex-col border-r border-border/50 bg-ground-900/80 backdrop-blur-xl md:flex">
-				<SidebarContent sseStatus={sseStatus} />
+				<SidebarContent />
 			</aside>
 			<AnimatePresence>
 				{mobileOpen ? (
@@ -265,7 +262,6 @@ export function Sidebar({
 							transition={{ type: "tween", duration: 0.2 }}
 						>
 							<SidebarContent
-								sseStatus={sseStatus}
 								onItemClick={() => onMobileOpenChange?.(false)}
 								showCloseButton
 								onClose={() => onMobileOpenChange?.(false)}

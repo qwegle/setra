@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>SERPENTINE — Enterprise Snake</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background particles -->
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <div class="app-shell">
+    <!-- ── SCREEN: MAIN MENU ── -->
+    <div id="screen-menu" class="screen active" role="main" aria-label="Main menu">
+      <div class="logo-block">
+        <canvas id="logo-canvas" width="320" height="120" aria-hidden="true"></canvas>
+        <p class="logo-sub">ENTERPRISE EDITION</p>
+      </div>
+
+      <div class="hud-row">
+        <div class="hud-card">
+          <span class="hud-label">Best Score</span>
+          <strong id="menu-best" class="hud-value">0</strong>
+        </div>
+        <div class="hud-card">
+          <span class="hud-label">Games Played</span>
+          <strong id="menu-games" class="hud-value">0</strong>
+        </div>
+      </div>
+
+      <div class="difficulty-row" role="group" aria-label="Choose difficulty">
+        <button class="diff-btn" data-diff="easy" aria-pressed="false">Easy</button>
+        <button class="diff-btn active" data-diff="normal" aria-pressed="true">Normal</button>
+        <button class="diff-btn" data-diff="hard" aria-pressed="false">Hard</button>
+        <button class="diff-btn" data-diff="insane" aria-pressed="false">Insane</button>
+      </div>
+
+      <div class="theme-row" role="group" aria-label="Choose skin">
+        <button class="theme-btn active" data-theme="neon" title="Neon">🟢</button>
+        <button class="theme-btn" data-theme="fire" title="Fire">🔥</button>
+        <button class="theme-btn" data-theme="ice" title="Ice">❄️</button>
+        <button class="theme-btn" data-theme="gold" title="Gold">✨</button>
+      </div>
+
+      <button id="btn-play" class="cta-btn" aria-label="Start game">PLAY</button>
+      <button id="btn-leaderboard" class="ghost-btn">LEADERBOARD</button>
+    </div>
+
+    <!-- ── SCREEN: COUNTDOWN ── -->
+    <div id="screen-countdown" class="screen" aria-live="assertive" aria-label="Countdown">
+      <div id="countdown-number" class="countdown-num">3</div>
+    </div>
+
+    <!-- ── SCREEN: GAME ── -->
+    <div id="screen-game" class="screen" aria-label="Game area">
+      <header class="game-hud" aria-label="Game stats" aria-live="polite">
+        <div class="hud-item">
+          <span class="hud-label">SCORE</span>
+          <strong id="hud-score" class="hud-value">0</strong>
+        </div>
+        <div class="hud-item center">
+          <span class="hud-label">LEVEL</span>
+          <strong id="hud-level" class="hud-value">1</strong>
+        </div>
+        <div class="hud-item right">
+          <span class="hud-label">HIGH</span>
+          <strong id="hud-best" class="hud-value">0</strong>
+        </div>
+      </header>
+
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="game-canvas" width="480" height="480" tabindex="0" aria-label="Snake game board"></canvas>
+        <div id="pause-overlay" class="pause-overlay hidden" role="dialog" aria-modal="true">
+          <p>PAUSED</p>
+          <button id="btn-resume">RESUME</button>
+        </div>
+      </div>
+
+      <!-- combo badge -->
+      <div id="combo-badge" class="combo-badge hidden" aria-live="polite"></div>
+
+      <footer class="game-footer">
+        <div class="d-pad" aria-label="Directional controls" role="group">
+          <button class="dpad-btn" id="dpad-up"   aria-label="Up">▲</button>
+          <button class="dpad-btn" id="dpad-left"  aria-label="Left">◀</button>
+          <button class="dpad-btn" id="dpad-right" aria-label="Right">▶</button>
+          <button class="dpad-btn" id="dpad-down"  aria-label="Down">▼</button>
+        </div>
+        <button id="btn-pause" class="icon-btn" aria-label="Pause">⏸</button>
+      </footer>
+    </div>
+
+    <!-- ── SCREEN: GAME OVER ── -->
+    <div id="screen-gameover" class="screen" aria-label="Game over" aria-live="polite">
+      <div class="go-title">GAME OVER</div>
+      <div class="go-stats">
+        <div class="go-stat"><span>Score</span><strong id="go-score">0</strong></div>
+        <div class="go-stat"><span>Best</span><strong id="go-best">0</strong></div>
+        <div class="go-stat"><span>Level</span><strong id="go-level">0</strong></div>
+        <div class="go-stat"><span>Length</span><strong id="go-length">0</strong></div>
+      </div>
+      <div id="new-record-badge" class="new-record hidden">🏆 NEW RECORD!</div>
+      <button id="btn-retry" class="cta-btn">PLAY AGAIN</button>
+      <button id="btn-menu"  class="ghost-btn">MAIN MENU</button>
+    </div>
+
+    <!-- ── SCREEN: LEADERBOARD ── -->
+    <div id="screen-leaderboard" class="screen" aria-label="Leaderboard">
+      <h2 class="lb-title">LEADERBOARD</h2>
+      <ol id="lb-list" class="lb-list" aria-label="Top scores"></ol>
+      <button id="btn-lb-back" class="ghost-btn">BACK</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

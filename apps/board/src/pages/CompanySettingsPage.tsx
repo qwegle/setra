@@ -321,16 +321,34 @@ function MembersTab({ toast }: { toast: (msg: string) => void }) {
 
 	const inviteM = useMutation({
 		mutationFn: () => companySettings.invites.create(inviteEmail, inviteRole),
-		onSuccess: () => {
+		onSuccess: async (created) => {
 			setShowInviteModal(false);
 			setInviteEmail("");
-			toast("Invite sent.");
+			void qc.invalidateQueries({ queryKey: ["company-invites"] });
+			if (created?.joinUrl) {
+				try {
+					await navigator.clipboard.writeText(created.joinUrl);
+					toast("Invite link copied to clipboard.");
+				} catch {
+					toast("Invite sent.");
+				}
+			} else {
+				toast("Invite sent.");
+			}
 		},
 		onError: () => toast("Failed to send invite."),
 	});
 
 	return (
 		<div className="space-y-4">
+			<div className="rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3">
+				<p className="text-xs text-zinc-400">
+					<strong className="text-zinc-300">Prerequisites:</strong> To send
+					email invites, add a Resend API key in Settings → AI Providers.
+					Without it, invites are created but emails won't be sent — members can
+					still register with the invited email to auto-join.
+				</p>
+			</div>
 			<div className="flex justify-end">
 				<button
 					className="flex items-center gap-1.5 px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-white text-sm font-medium transition-colors"
@@ -558,6 +576,21 @@ function InvitesTab({ toast }: { toast: (msg: string) => void }) {
 							</td>
 							<td className="px-4 py-3">
 								<div className="flex items-center gap-1.5 justify-end">
+									{inv.joinUrl ? (
+										<button
+											className="text-xs px-2 py-1 rounded bg-setra-600/15 text-setra-300 hover:bg-setra-600/25 border border-setra-600/30 transition-colors flex items-center gap-1"
+											onClick={async () => {
+												try {
+													await navigator.clipboard.writeText(inv.joinUrl!);
+													toast("Invite link copied.");
+												} catch {
+													toast("Could not copy link.");
+												}
+											}}
+										>
+											Copy link
+										</button>
+									) : null}
 									<button
 										className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/70 border border-border/30 transition-colors flex items-center gap-1"
 										onClick={() => resendMutation.mutate(inv.id)}

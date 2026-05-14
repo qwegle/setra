@@ -7,7 +7,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
 	Badge,
 	Button,
@@ -23,16 +23,11 @@ import {
 	type Agent,
 	type AgentRunMode,
 	type AgentStatus,
+	type RosterEntry,
 	api,
+	request,
 } from "../lib/api";
 import { cn, formatCost, formatTokens, timeAgo } from "../lib/utils";
-
-interface AvailableModel {
-	id: string;
-	label?: string;
-	provider: string;
-	available: boolean;
-}
 
 const STATUS_CONFIG: Partial<
 	Record<
@@ -325,7 +320,7 @@ function AgentCard({
 							</div>
 							<div className="min-w-0">
 								<p className="truncate text-sm font-semibold text-white">
-									{agent.role}
+									{agent.displayName || agent.role || agent.slug}
 								</p>
 								<p className="truncate font-mono text-xs text-zinc-400">
 									{agent.slug}
@@ -341,14 +336,17 @@ function AgentCard({
 						</Badge>
 					</div>
 
-					<div className="space-y-2">
-						<p className="text-xs uppercase tracking-wide text-zinc-500">
-							Model
-						</p>
-						<ModelPicker
-							agentId={agent.id}
-							currentModel={agent.model ?? null}
-						/>
+					<div className="flex items-center gap-2 text-xs text-zinc-400">
+						<span className="text-zinc-500">Model:</span>
+						<span className="font-mono">
+							{agent.model && agent.model !== "auto"
+								? agent.model
+								: agent.adapterType === "codex"
+									? "gpt-5.5 (auto)"
+									: agent.adapterType === "claude"
+										? "claude (auto)"
+										: "auto"}
+						</span>
 					</div>
 
 					<div className="space-y-2">
@@ -508,80 +506,37 @@ function RunModePicker({
 	);
 }
 
-function ModelPicker({
-	agentId,
-	currentModel,
-}: { agentId: string; currentModel: string | null }) {
-	const queryClient = useQueryClient();
-	const { data: models = [] } = useQuery({
-		queryKey: ["runtime", "available-models"],
-		queryFn: () => api.runtime.availableModels(),
-		staleTime: 60_000,
-	});
-
-	const mutation = useMutation({
-		mutationFn: (model: string) => api.agents.update(agentId, { model }),
-		onSuccess: () =>
-			void queryClient.invalidateQueries({ queryKey: ["agents"] }),
-	});
-
-	const availableOnly = models.filter((model) => model.available);
-	const grouped = availableOnly.reduce<Record<string, AvailableModel[]>>(
-		(accumulator, model) => {
-			(accumulator[model.provider] ||= []).push(model);
-			return accumulator;
-		},
-		{},
-	);
-	const hasCurrent =
-		!currentModel || availableOnly.some((model) => model.id === currentModel);
-	const swallow = (event: SyntheticEvent) => {
-		event.preventDefault();
-		event.stopPropagation();
-	};
-
-	return (
-		<Select
-			value={currentModel ?? ""}
-			onClick={swallow}
-			onMouseDown={(event) => event.stopPropagation()}
-			onChange={(event) => {
-				event.preventDefault();
-				event.stopPropagation();
-				const next = event.target.value;
-				if (next && next !== currentModel) mutation.mutate(next);
-			}}
-			disabled={mutation.isPending}
-			className="font-mono text-xs"
-		>
-			{!currentModel && <option value="">—</option>}
-			{currentModel && !hasCurrent && (
-				<option value={currentModel}>{currentModel} (unavailable)</option>
-			)}
-			{Object.entries(grouped)
-				.sort(([a], [b]) => a.localeCompare(b))
-				.map(([provider, list]) => (
-					<optgroup key={provider} label={provider}>
-						{list.map((model) => (
-							<option key={model.id} value={model.id}>
-								{model.label ?? model.id}
-							</option>
-						))}
-					</optgroup>
-				))}
-		</Select>
-	);
-}
-
 function HireAgentModal({
 	open,
 	onClose,
 }: { open: boolean; onClose: () => void }) {
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 	const [displayName, setDisplayName] = useState("");
 	const [templateId, setTemplateId] = useState("");
 	const [modelId, setModelId] = useState<string>("auto");
 	const [adapterType, setAdapterType] = useState<string>("auto");
+	const [feedback, setFeedback] = useState<
+		| { kind: "ok"; agentId: string; name: string }
+		| { kind: "gated"; approvalId: string; message: string }
+		| null
+	>(null);
+
+	// Pre-populate from global preferred adapter setting
+	const { data: globalSettings } = useQuery({
+		queryKey: ["settings-preferred-adapter"],
+		queryFn: () =>
+			request<{ preferredAdapter?: string; preferredModel?: string }>("/settings"),
+		enabled: open,
+		staleTime: 30_000,
+	});
+	useEffect(() => {
+		if (!open) return;
+		if (globalSettings?.preferredAdapter) {
+			setAdapterType(globalSettings.preferredAdapter);
+			if (globalSettings.preferredModel) setModelId(globalSettings.preferredModel);
+		}
+	}, [open, globalSettings?.preferredAdapter, globalSettings?.preferredModel]);
 	const [templates, setTemplates] = useState<
 		{
 			id: string;
@@ -599,6 +554,7 @@ function HireAgentModal({
 
 	useEffect(() => {
 		if (!open) return;
+		setFeedback(null);
 		let cancelled = false;
 		setLoadingTemplates(true);
 		setTemplatesError(null);
@@ -669,9 +625,27 @@ function HireAgentModal({
 				modelId: modelId === "auto" ? null : modelId,
 				adapterType: adapterType === "auto" ? undefined : adapterType,
 			}),
-		onSuccess: () => {
+		onSuccess: (data) => {
 			void queryClient.invalidateQueries({ queryKey: ["agents"] });
-			onClose();
+			if (data && "gated" in data && data.gated === true) {
+				// Server returned 202: hire is parked in the governance review queue.
+				// Surface the pending-approval state inline so the user knows what happened
+				// and can navigate to /approvals to confirm or dispute.
+				setFeedback({
+					kind: "gated",
+					approvalId: data.approvalId,
+					message: data.message,
+				});
+				return;
+			}
+			// Created successfully — surface a one-shot success notice with a link
+			// to the new agent detail page, then close on the user's next action.
+			const created = data as RosterEntry;
+			setFeedback({
+				kind: "ok",
+				agentId: created.agent_id ?? created.id,
+				name: created.display_name,
+			});
 		},
 	});
 
@@ -686,14 +660,14 @@ function HireAgentModal({
 			title="Add an Agent"
 			actions={
 				<>
-					<Button type="button" variant="secondary" onClick={onClose}>
-						Cancel
+					<Button type="button" variant="secondary" onClick={() => { setFeedback(null); onClose(); }}>
+						{feedback ? "Close" : "Cancel"}
 					</Button>
 					<Button
 						type="button"
 						onClick={() => hireMutation.mutate()}
 						loading={hireMutation.isPending}
-						disabled={!templateId}
+						disabled={!templateId || feedback !== null}
 					>
 						{hireMutation.isPending ? "Adding…" : "Add Agent"}
 					</Button>
@@ -701,6 +675,31 @@ function HireAgentModal({
 			}
 		>
 			<div className="space-y-4">
+				{feedback?.kind === "ok" && (
+					<div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-200">
+						<p className="font-medium">Agent added: {feedback.name}</p>
+						<button
+							type="button"
+							onClick={() => { setFeedback(null); onClose(); navigate(`/agents/${feedback.agentId}`); }}
+							className="mt-1 text-emerald-100 underline hover:no-underline"
+						>
+							Open agent details
+						</button>
+					</div>
+				)}
+				{feedback?.kind === "gated" && (
+					<div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-sm text-amber-200">
+						<p className="font-medium">Awaiting board approval</p>
+						<p className="mt-1 text-amber-100/80">{feedback.message}</p>
+						<button
+							type="button"
+							onClick={() => { setFeedback(null); onClose(); navigate(`/approvals?focus=${feedback.approvalId}`); }}
+							className="mt-2 text-amber-100 underline hover:no-underline"
+						>
+							Review in Approvals
+						</button>
+					</div>
+				)}
 				<p className="flex items-center gap-2 text-sm text-zinc-400">
 					<Sparkles className="h-4 w-4 text-blue-300" aria-hidden="true" />
 					Choose a role template and model for your next agent.
@@ -762,24 +761,35 @@ function HireAgentModal({
 					helperText="Optional display name shown in the roster."
 				/>
 
-				<Select
-					label="Model"
-					value={modelId}
-					onChange={(event) => setModelId(event.target.value)}
-					helperText="Use Auto to let Setra pick the best configured provider."
-				>
-					{models.map((model) => (
-						<option
-							key={model.id}
-							value={model.id}
-							disabled={!model.configured && model.id !== "auto"}
-						>
-							{model.label}
-							{!model.configured && model.id !== "auto" ? " — no API key" : ""}
-						</option>
-					))}
-					{models.length === 0 && <option value="auto">Auto</option>}
-				</Select>
+				{/* For CLI adapters, model is managed by the CLI itself — no selection needed */}
+				{["claude", "codex", "gemini", "amp", "opencode"].includes(adapterType) ? (
+					<div className="rounded-md border border-zinc-700/50 bg-zinc-800/40 px-3 py-2.5 text-sm text-zinc-400">
+						<span className="font-medium text-zinc-300">Model:</span> managed by{" "}
+						<span className="font-mono text-zinc-200">{adapterType}</span> CLI
+						{adapterType === "codex" && modelId && modelId !== "auto" && (
+							<span className="ml-1 text-zinc-300">({modelId})</span>
+						)}
+					</div>
+				) : (
+					<Select
+						label="Model"
+						value={modelId}
+						onChange={(event) => setModelId(event.target.value)}
+						helperText="Use Auto to let Setra pick the best configured provider."
+					>
+						{models.map((model) => (
+							<option
+								key={model.id}
+								value={model.id}
+								disabled={!model.configured && model.id !== "auto"}
+							>
+								{model.label}
+								{!model.configured && model.id !== "auto" ? " — no API key" : ""}
+							</option>
+						))}
+						{models.length === 0 && <option value="auto">Auto</option>}
+					</Select>
+				)}
 
 				<Select
 					label="Runner"

@@ -15,6 +15,7 @@ import { ApprovalsPage } from "./pages/ApprovalsPage";
 import { ClonePage } from "./pages/ClonePage";
 import { CollaborationPage } from "./pages/CollaborationPage";
 import { CompanySettingsPage } from "./pages/CompanySettingsPage";
+import ConnectPage from "./pages/ConnectPage";
 import { CostsPage } from "./pages/CostsPage";
 import { EnvironmentsPage } from "./pages/EnvironmentsPage";
 import { FilesPage } from "./pages/FilesPage";
@@ -30,8 +31,8 @@ import { McpPage } from "./pages/McpPage";
 import { MultiViewPage } from "./pages/MultiViewPage";
 import { OrgPage } from "./pages/OrgUnifiedPage";
 import { OverviewPage } from "./pages/OverviewPage";
-import { PluginManagerPage } from "./pages/PluginManagerPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { RoutinesPage } from "./pages/RoutinesPage";
 import { SearchPage } from "./pages/SearchPage";
@@ -71,7 +72,7 @@ export default function App() {
 					<Route index element={<Navigate to="/overview" replace />} />
 					<Route path="/overview" element={<OverviewPage />} />
 					<Route path="/projects" element={<ProjectsPage />} />
-					<Route path="/projects/:id" element={<IssuesPage />} />
+					<Route path="/projects/:id" element={<ProjectDetailPage />} />
 					<Route path="/issues/:issueId" element={<IssueDetailPage />} />
 					<Route path="/agents" element={<AgentsPage />} />
 					<Route path="/agents/:agentId" element={<AgentRedirect />} />
@@ -80,6 +81,7 @@ export default function App() {
 					<Route path="/mcp" element={<McpPage />} />
 					<Route path="/skills" element={<SkillsPage />} />
 					<Route path="/settings" element={<SettingsPage />} />
+					<Route path="/connect" element={<ConnectPage />} />
 					<Route path="/inbox" element={<InboxPage />} />
 					<Route path="/approvals" element={<ApprovalsPage />} />
 					<Route path="/goals" element={<GoalsPage />} />
@@ -104,7 +106,6 @@ export default function App() {
 						element={<Navigate to="/org?tab=agents" replace />}
 					/>
 					<Route path="/org" element={<OrgPage />} />
-					<Route path="/plugins" element={<PluginManagerPage />} />
 					<Route path="/search" element={<SearchPage />} />
 					<Route path="/files" element={<FilesPage />} />
 

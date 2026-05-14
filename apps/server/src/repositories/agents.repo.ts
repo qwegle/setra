@@ -4,9 +4,17 @@
 
 import { getRawDb } from "@setra/db";
 import { boardBudgetLimits as budgetLimits, runs } from "@setra/db";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { db, rawSqlite } from "../db/client.js";
 import { agentRoster } from "../db/schema.js";
+
+/** Match company_id = :companyId OR company_id IS NULL (pre-migration agents). */
+function companyScope(companyId: string) {
+	return or(
+		eq(agentRoster.companyId, companyId),
+		isNull(agentRoster.companyId),
+	);
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,7 +61,7 @@ export const STALE_STATUS_EXPR = sql<string>`
 export function listRosterByCompany(companyId: string): AgentRosterRow[] {
 	return getRawDb()
 		.prepare(
-			`SELECT * FROM agent_roster WHERE company_id = ? ORDER BY created_at ASC`,
+			`SELECT * FROM agent_roster WHERE company_id = ? OR company_id IS NULL ORDER BY created_at ASC`,
 		)
 		.all(companyId) as AgentRosterRow[];
 }
@@ -222,7 +230,7 @@ export function listCompanyRoster(companyId: string): unknown[] {
       ar.last_run_ended_at                   as last_run_ended_at
     FROM agent_roster ar
     LEFT JOIN agent_templates t ON t.id = ar.template_id
-    WHERE ar.company_id = ?
+    WHERE ar.company_id = ? OR ar.company_id IS NULL
     ORDER BY ar.created_at ASC
   `)
 		.all(companyId);
@@ -338,7 +346,9 @@ export function insertCompanyRoster(_params: {
 export function getCompanyRosterById(id: string, companyId: string) {
 	// agent_roster is canonical. Look up by agent_roster.id with company_id check.
 	return getRawDb()
-		.prepare(`SELECT id FROM agent_roster WHERE id = ? AND company_id = ?`)
+		.prepare(
+			`SELECT id FROM agent_roster WHERE id = ? AND (company_id = ? OR company_id IS NULL)`,
+		)
 		.get(id, companyId);
 }
 
@@ -378,7 +388,7 @@ export function updateCompanyRoster(
 	params.push(id, companyId);
 	getRawDb()
 		.prepare(
-			`UPDATE agent_roster SET ${sets.join(", ")} WHERE id = ? AND company_id = ?`,
+			`UPDATE agent_roster SET ${sets.join(", ")} WHERE id = ? AND (company_id = ? OR company_id IS NULL)`,
 		)
 		.run(...params);
 }
@@ -409,7 +419,7 @@ export function getCompanyRosterWithTemplate(
       ar.last_run_ended_at               as last_run_ended_at
     FROM agent_roster ar
     LEFT JOIN agent_templates t ON t.id = ar.template_id
-    WHERE ar.id = ? AND ar.company_id = ?
+    WHERE ar.id = ? AND (ar.company_id = ? OR ar.company_id IS NULL)
   `)
 		.get(id, companyId);
 }
@@ -417,7 +427,9 @@ export function getCompanyRosterWithTemplate(
 export function deleteCompanyRoster(id: string, companyId: string): void {
 	// Roster delete now removes the agent_roster row (canonical) with company_id check.
 	getRawDb()
-		.prepare(`DELETE FROM agent_roster WHERE id = ? AND company_id = ?`)
+		.prepare(
+			`DELETE FROM agent_roster WHERE id = ? AND (company_id = ? OR company_id IS NULL)`,
+		)
 		.run(id, companyId);
 }
 
@@ -497,7 +509,7 @@ export async function getAgentRosterById(id: string, companyId: string) {
 			companyId: agentRoster.companyId,
 		})
 		.from(agentRoster)
-		.where(and(eq(agentRoster.id, id), eq(agentRoster.companyId, companyId)));
+		.where(and(eq(agentRoster.id, id), companyScope(companyId)));
 	return row;
 }
 
@@ -514,9 +526,7 @@ export async function getAgentRosterBySlug(slug: string, companyId: string) {
 			companyId: agentRoster.companyId,
 		})
 		.from(agentRoster)
-		.where(
-			and(eq(agentRoster.slug, slug), eq(agentRoster.companyId, companyId)),
-		);
+		.where(and(eq(agentRoster.slug, slug), companyScope(companyId)));
 	return row;
 }
 
@@ -524,7 +534,7 @@ export async function getFullAgentRosterById(id: string, companyId: string) {
 	const [row] = await db
 		.select()
 		.from(agentRoster)
-		.where(and(eq(agentRoster.id, id), eq(agentRoster.companyId, companyId)));
+		.where(and(eq(agentRoster.id, id), companyScope(companyId)));
 	return row;
 }
 
@@ -535,9 +545,7 @@ export async function getFullAgentRosterBySlug(
 	const [row] = await db
 		.select()
 		.from(agentRoster)
-		.where(
-			and(eq(agentRoster.slug, slug), eq(agentRoster.companyId, companyId)),
-		);
+		.where(and(eq(agentRoster.slug, slug), companyScope(companyId)));
 	return row;
 }
 
@@ -549,10 +557,7 @@ export async function getAgentRosterByDisplayNameAndCompany(
 		.select()
 		.from(agentRoster)
 		.where(
-			and(
-				eq(agentRoster.displayName, displayName),
-				eq(agentRoster.companyId, companyId),
-			),
+			and(eq(agentRoster.displayName, displayName), companyScope(companyId)),
 		);
 	return row;
 }
@@ -572,9 +577,7 @@ export async function getAgentSlugByIdScoped(
 	const [row] = await db
 		.select({ slug: agentRoster.slug })
 		.from(agentRoster)
-		.where(
-			and(eq(agentRoster.id, agentId), eq(agentRoster.companyId, companyId)),
-		);
+		.where(and(eq(agentRoster.id, agentId), companyScope(companyId)));
 	return row;
 }
 
@@ -585,9 +588,7 @@ export async function agentSlugExistsInCompany(
 	const [row] = await db
 		.select({ slug: agentRoster.slug })
 		.from(agentRoster)
-		.where(
-			and(eq(agentRoster.slug, slug), eq(agentRoster.companyId, companyId)),
-		);
+		.where(and(eq(agentRoster.slug, slug), companyScope(companyId)));
 	return row;
 }
 
@@ -686,12 +687,8 @@ export function createTaskChunk(
 	task: string,
 	now: string,
 ): void {
-	getRawDb()
-		.prepare(`
-    INSERT INTO chunks (run_id, sequence, content, chunk_type, recorded_at)
-    VALUES (?, 0, ?, 'input', ?)
-  `)
-		.run(runId, task, now);
+	const runChunks = require("../lib/run-chunks.js") as typeof import("../lib/run-chunks.js");
+	runChunks.recordRunChunk({ runId, type: "input", content: task, now });
 }
 
 export function getRunFull(runId: string): unknown {
@@ -749,7 +746,7 @@ export async function agentRosterExists(
 	const [row] = await db
 		.select({ id: agentRoster.id })
 		.from(agentRoster)
-		.where(and(eq(agentRoster.id, id), eq(agentRoster.companyId, companyId)));
+		.where(and(eq(agentRoster.id, id), companyScope(companyId)));
 	return !!row;
 }
 
@@ -761,7 +758,7 @@ export async function updateAgentRoster(
 	const [updated] = await db
 		.update(agentRoster)
 		.set(updates)
-		.where(and(eq(agentRoster.id, id), eq(agentRoster.companyId, companyId)))
+		.where(and(eq(agentRoster.id, id), companyScope(companyId)))
 		.returning();
 	return updated;
 }
@@ -798,7 +795,7 @@ export function listAgentRuns(
     JOIN agent_roster ar ON ar.slug = r.agent
     LEFT JOIN board_issues i ON i.linked_plot_id = r.plot_id
     WHERE r.agent = ?
-      AND ar.company_id = ?
+      AND (ar.company_id = ? OR ar.company_id IS NULL)
     ORDER BY r.started_at DESC
     LIMIT ?
   `)
@@ -824,7 +821,7 @@ export function listRunChunksScoped(
          JOIN agent_roster ar ON ar.slug = r.agent
         WHERE c.run_id = ?
           AND r.agent = ?
-          AND ar.company_id = ?
+          AND (ar.company_id = ? OR ar.company_id IS NULL)
         ORDER BY c.sequence
         LIMIT 500`,
 		)
@@ -859,7 +856,7 @@ export async function getBudgetLimitByAgentSlugScoped(
 			agentRoster,
 			and(
 				eq(agentRoster.slug, budgetLimits.agentSlug),
-				eq(agentRoster.companyId, companyId),
+				companyScope(companyId),
 			),
 		)
 		.where(eq(budgetLimits.agentSlug, slug))
@@ -887,7 +884,7 @@ export function getSpentInPeriodScoped(
          FROM runs r
          JOIN agent_roster ar ON ar.slug = r.agent
         WHERE r.agent = ?
-          AND ar.company_id = ?
+          AND (ar.company_id = ? OR ar.company_id IS NULL)
           AND r.started_at >= ?`,
 		)
 		.get(slug, companyId, periodStart) as { total: number } | null;

@@ -1,0 +1,7 @@
+name: hire-agent-gate
+description: With approval policy enabled, hire_agent yields a pending request.
+expect:
+  - within: 5s
+    method: GET
+    path: /api/agents/hire-requests
+    status: 200

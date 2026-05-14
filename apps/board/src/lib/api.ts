@@ -156,7 +156,8 @@ export type AgentStatus =
 	| "completed"
 	| "pending"
 	| "inactive"
-	| "awaiting_key";
+	| "awaiting_key"
+	| "on_break";
 export type AgentRunMode = "on_demand" | "continuous" | "scheduled";
 
 // SDLC delivery loop — every issue moves through this 9-stage pipeline.
@@ -349,7 +350,9 @@ export interface SdlcStats {
 export interface Agent {
 	id: string;
 	slug: string;
+	displayName: string;
 	role: string;
+	adapterType?: string;
 	model: string | null;
 	status: AgentStatus;
 	currentIssueId: string | null;
@@ -367,6 +370,89 @@ export interface Agent {
 	successRate?: number | null;
 	experienceLevel?: string;
 	topSkills?: string[];
+}
+
+export interface ProjectAgent {
+	id: string;
+	projectId: string;
+	agentRosterId: string;
+	role: string;
+	assignedBy: string | null;
+	assignedAt: string;
+	agentId: string;
+	slug: string;
+	displayName: string;
+	agentRole: string;
+	status: AgentStatus;
+	adapterType: string | null;
+	modelId: string | null;
+	isActive: number;
+	lastRefreshedAt: string | null;
+}
+
+export interface ContextRefreshResult {
+	pruned: number;
+	remaining: number;
+	summary: string;
+	projects?: Array<{
+		projectId: string;
+		pruned: number;
+		remaining: number;
+		summary: string;
+	}>;
+	agents?: Array<{
+		agentRosterId: string;
+		slug: string;
+		pruned: number;
+		remaining: number;
+		summary: string;
+	}>;
+}
+
+export interface ProjectBreakResponse {
+	breakId: string;
+	endsAt: string;
+	agents: Array<{ id: string; slug: string; displayName: string }>;
+}
+
+export interface DatabaseConnection {
+	id: string;
+	name: string;
+	type: string;
+	connectionString?: string;
+	host?: string;
+	port?: number;
+	database?: string;
+	status: "connected" | "error";
+	createdAt: string;
+}
+
+export interface RunStatus {
+	running: boolean;
+	lines: string[];
+	url: string | null;
+	startedAt?: string;
+}
+
+export interface ChecklistItem {
+	id: string;
+	category: string;
+	title: string;
+	description: string;
+	status: "pending" | "pass" | "fail";
+}
+
+export interface CollabMessage {
+	id: string;
+	channel: string;
+	fromAgent: string;
+	content: string;
+	createdAt: string;
+}
+
+export interface ProjectChannel {
+	slug: string;
+	name: string;
 }
 
 export interface AgentHeartbeat {
@@ -641,6 +727,18 @@ export interface AgentTemplate {
 	updated_at: string;
 }
 
+/**
+ * Server returns this 202 payload when an agent_hire request is parked in the
+ * governance review queue. Discriminated by the `gated:true` flag.
+ */
+export interface HireGatedResponse {
+	ok: false;
+	gated: true;
+	approvalId: string;
+	approvalStatus: string;
+	message: string;
+}
+
 export interface RosterEntry {
 	id: string;
 	display_name: string;
@@ -656,7 +754,13 @@ export interface RosterEntry {
 	estimated_cost_tier: CostTier;
 	is_builtin: number;
 	/** Live runtime status from agent_roster (joined). Null if no matching row. */
-	runtime_status: "idle" | "awaiting_key" | "running" | "paused" | null;
+	runtime_status:
+		| "idle"
+		| "awaiting_key"
+		| "running"
+		| "paused"
+		| "on_break"
+		| null;
 	paused_reason: string | null;
 	adapter_type: string | null;
 	model_id: string | null;
@@ -697,6 +801,31 @@ const listActivity = ((page?: number, pageSize = 50, filter?: string) => {
 		filter?: string,
 	): Promise<PaginatedActivityEntries>;
 };
+
+export interface CliStatus {
+	id: string;
+	label: string;
+	bin: string;
+	installed: boolean;
+	version: string | null;
+	installCommand: string;
+	docUrl: string;
+	checkedAt: number;
+}
+
+export interface AnalyticsDashboard {
+	days: number;
+	runActivity: Array<{
+		date: string;
+		count: number;
+		success: number;
+		fail: number;
+	}>;
+	successRate: Array<{ date: string; pct: number }>;
+	issuesByStatus: Array<{ bucket: string; n: number }>;
+	issuesByPriority: Array<{ bucket: string; n: number }>;
+	totals: { runs: number; successes: number; fails: number; issues: number };
+}
 
 export const api = {
 	auth: {
@@ -753,6 +882,7 @@ export const api = {
 			name: string;
 			description?: string;
 			workspacePath?: string;
+			repoUrl?: string;
 			color?: string;
 			requirements?: string;
 			planStatus?: ProjectPlanStatus;
@@ -768,6 +898,7 @@ export const api = {
 				description?: string | null;
 				color?: string;
 				workspacePath?: string | null;
+				repoUrl?: string | null;
 				defaultBranch?: string | null;
 				requirements?: string | null;
 				planStatus?: ProjectPlanStatus;
@@ -928,7 +1059,7 @@ export const api = {
 				continuousIntervalMs?: number;
 				idlePrompt?: string | null;
 			}) =>
-				request<RosterEntry>("/agents/roster", {
+				request<RosterEntry | HireGatedResponse>("/agents/roster", {
 					method: "POST",
 					body: JSON.stringify(body),
 				}),
@@ -1098,6 +1229,15 @@ export const api = {
 			}),
 		status: (projectId: string) =>
 			fetch<GitStatusResponse>(`/projects/${projectId}/git/status`),
+		revert: (projectId: string, sha: string, hard = false) =>
+			post<{ ok: boolean; head: string }>(`/projects/${projectId}/git/revert`, {
+				sha,
+				hard,
+			}),
+		remote: (projectId: string) =>
+			fetch<{ remoteUrl: string | null; branch: string }>(
+				`/projects/${projectId}/git/remote`,
+			),
 	},
 	projectWorkspace: {
 		exec: (
@@ -1118,6 +1258,108 @@ export const api = {
 			fetch<ProjectContextDocument>(`/projects/${projectId}/context`),
 		update: (projectId: string, content: string) =>
 			put(`/projects/${projectId}/context`, { content }),
+	},
+	getProjectAgents: (projectId: string) =>
+		request<ProjectAgent[]>(`/projects/${projectId}/agents`),
+	assignAgent: (projectId: string, agentRosterId: string, role = "member") =>
+		post<{ ok: true }>(`/projects/${projectId}/agents`, {
+			agentRosterId,
+			role,
+		}),
+	unassignAgent: (projectId: string, agentRosterId: string) =>
+		del<{ ok: true }>(`/projects/${projectId}/agents/${agentRosterId}`),
+	reassignAgent: (
+		projectId: string,
+		agentRosterId: string,
+		fromProjectId?: string | null,
+	) =>
+		post<{ ok: true }>(`/projects/${projectId}/agents/reassign`, {
+			agentRosterId,
+			fromProjectId: fromProjectId ?? null,
+		}),
+	autoAssignLeadership: (projectId: string) =>
+		post<{ ok: true; assigned: number }>(
+			`/projects/${projectId}/agents/auto-assign-leadership`,
+		),
+	refreshAgentContext: (agentRosterId: string) =>
+		post<ContextRefreshResult>(
+			`/agents/roster/${agentRosterId}/refresh-context`,
+		),
+	refreshProjectContext: (projectId: string) =>
+		post<ContextRefreshResult>(`/projects/${projectId}/refresh-context`),
+	startBreak: (projectId: string) =>
+		post<ProjectBreakResponse>(`/projects/${projectId}/break`),
+
+	projectDb: {
+		list: (projectId: string) =>
+			request<DatabaseConnection[]>(`/projects/${projectId}/database`),
+		connect: (
+			projectId: string,
+			data: {
+				connectionString?: string;
+				name?: string;
+				type?: string;
+				host?: string;
+				port?: number;
+				database?: string;
+				username?: string;
+				password?: string;
+			},
+		) =>
+			post<DatabaseConnection>(`/projects/${projectId}/database/connect`, data),
+		remove: (projectId: string, connId: string) =>
+			request<{ ok: boolean }>(`/projects/${projectId}/database/${connId}`, {
+				method: "DELETE",
+			}),
+		query: (projectId: string, query: string) =>
+			post<{ columns: string[]; rows: Record<string, unknown>[] }>(
+				`/projects/${projectId}/database/query`,
+				{ query },
+			),
+	},
+
+	projectRun: {
+		status: (projectId: string) =>
+			request<RunStatus>(`/projects/${projectId}/run`),
+		start: (projectId: string) =>
+			post<{ ok: boolean; command: string; startedAt: string }>(
+				`/projects/${projectId}/run`,
+			),
+		stop: (projectId: string) =>
+			request<{ ok: boolean }>(`/projects/${projectId}/run`, {
+				method: "DELETE",
+			}),
+	},
+
+	projectProduction: {
+		get: (projectId: string) =>
+			request<ChecklistItem[]>(`/projects/${projectId}/production-checklist`),
+		generate: (projectId: string) =>
+			post<ChecklistItem[]>(`/projects/${projectId}/production-checklist`),
+		updateItem: (
+			projectId: string,
+			itemId: string,
+			status: "pending" | "pass" | "fail",
+		) =>
+			request<ChecklistItem>(
+				`/projects/${projectId}/production-checklist/${itemId}`,
+				{ method: "PATCH", body: JSON.stringify({ status }) },
+			),
+	},
+
+	projectDiscussion: {
+		channel: (projectId: string) =>
+			request<ProjectChannel | null>(`/projects/${projectId}/channel`),
+		messages: (channel: string) =>
+			request<CollabMessage[]>(
+				`/collaboration/messages?channel=${encodeURIComponent(channel)}&limit=100&hideSystem=true`,
+			),
+		send: (channel: string, content: string) =>
+			post<{ id: string; createdAt: string }>("/collaboration/messages", {
+				channel,
+				body: content,
+				agentSlug: "human",
+			}),
 	},
 	budget: {
 		summary: () => request<BudgetSummary>("/budget/summary"),
@@ -1163,13 +1405,18 @@ export const api = {
 					loggedIn: boolean;
 					version: string | null;
 				};
+				copilot: {
+					installed: boolean;
+					loggedIn: boolean;
+					version: string | null;
+				};
 			}>("/runtime/cli-status"),
-		installCli: (tool: "codex" | "claude") =>
+		installCli: (tool: "codex" | "claude" | "copilot") =>
 			request<{ ok: boolean; error?: string }>("/runtime/install-cli", {
 				method: "POST",
 				body: JSON.stringify({ tool }),
 			}),
-		loginCli: (tool: "codex" | "claude") =>
+		loginCli: (tool: "codex" | "claude" | "copilot") =>
 			request<{ ok: boolean; output?: string; error?: string }>(
 				"/runtime/cli-login",
 				{
@@ -1543,6 +1790,19 @@ export const api = {
 		delete: (id: string) =>
 			request<{ ok: true }>(`/companies/${id}`, { method: "DELETE" }),
 	},
+	cliStatus: {
+		list: (opts?: { force?: boolean; only?: readonly string[] }) => {
+			const qs = new URLSearchParams();
+			if (opts?.force) qs.set("force", "1");
+			if (opts?.only?.length) qs.set("only", opts.only.join(","));
+			const suffix = qs.toString() ? `?${qs.toString()}` : "";
+			return request<{ adapters: CliStatus[] }>(`/cli-status${suffix}`);
+		},
+	},
+	analytics: {
+		dashboard: (days = 14) =>
+			request<AnalyticsDashboard>(`/analytics/dashboard?days=${days}`),
+	},
 	issueDetail: {
 		get: (id: string) =>
 			request<Issue & { comments: IssueComment[]; activity: ActivityEntry[] }>(
@@ -1685,7 +1945,7 @@ export const api = {
 					pinned?: number | boolean | null;
 				}>
 			>(
-				`/collaboration/messages?channel=${encodeURIComponent(channel)}&limit=${limit}`,
+				`/collaboration/messages?channel=${encodeURIComponent(channel)}&limit=${limit}&hideSystem=true`,
 			),
 		post: (data: { channel: string; body: string; agentSlug?: string }) =>
 			request<{ id: string }>("/collaboration/messages", {
@@ -1869,6 +2129,106 @@ export const api = {
 				}[]
 			>("/costs/providers"),
 	},
+	lan: {
+		status: () =>
+			request<{
+				instanceId: string;
+				discoverable: boolean;
+				broadcasting: boolean;
+				addresses: string[];
+				port: number;
+				companyName: string;
+				companyId: string;
+				publicUrl: string | null;
+				instanceUrl: string;
+			}>("/lan/status"),
+		setDiscoverable: (enabled: boolean) =>
+			request<{ discoverable: boolean; broadcasting: boolean }>(
+				"/lan/discoverable",
+				{
+					method: "POST",
+					body: JSON.stringify({ enabled }),
+				},
+			),
+		setPublicUrl: (publicUrl: string | null) =>
+			request<{ publicUrl: string | null }>("/lan/public-url", {
+				method: "POST",
+				body: JSON.stringify({ publicUrl }),
+			}),
+		peers: () =>
+			request<{
+				peers: Array<{
+					instanceId: string;
+					companyId: string;
+					companyName: string;
+					ownerEmail: string;
+					host: string;
+					address: string;
+					port: number;
+					proto: "http" | "https";
+					url: string;
+					lastSeen: number;
+				}>;
+			}>("/lan/peers"),
+		joinRequests: () =>
+			request<{
+				requests: Array<{
+					id: string;
+					email: string;
+					name: string | null;
+					message: string | null;
+					status: string;
+					sentAt: string;
+				}>;
+			}>("/lan/join-requests"),
+		approve: (id: string) =>
+			request<{ requestId: string; status: string }>(
+				`/lan/join-request/${id}/approve`,
+				{ method: "POST" },
+			),
+		reject: (id: string) =>
+			request<{ requestId: string; status: string }>(
+				`/lan/join-request/${id}/reject`,
+				{ method: "POST" },
+			),
+		requestJoin: async (
+			peerUrl: string,
+			body: {
+				companyId: string;
+				email: string;
+				name?: string;
+				message?: string;
+			},
+		) => {
+			const res = await globalThis.fetch(
+				`${peerUrl.replace(/\/$/, "")}/api/lan/join-request`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(body),
+				},
+			);
+			if (!res.ok) {
+				const text = await res.text().catch(() => res.statusText);
+				throw new Error(text || `Request failed (${res.status})`);
+			}
+			return res.json() as Promise<{ requestId: string; status: string }>;
+		},
+		pollJoinRequest: async (peerUrl: string, requestId: string) => {
+			const res = await globalThis.fetch(
+				`${peerUrl.replace(/\/$/, "")}/api/lan/join-request/${requestId}`,
+			);
+			if (!res.ok) throw new Error(`Poll failed (${res.status})`);
+			return res.json() as Promise<{ requestId: string; status: string }>;
+		},
+		probeRemote: async (peerUrl: string) => {
+			const res = await globalThis.fetch(
+				`${peerUrl.replace(/\/$/, "")}/api/health`,
+			);
+			if (!res.ok) throw new Error(`Probe failed (${res.status})`);
+			return res.json() as Promise<{ ok: boolean }>;
+		},
+	},
 };
 
 export interface AgentRun {
@@ -1887,10 +2247,19 @@ export interface AgentRun {
 }
 
 export interface AgentRunLogChunk {
-	type: "assistant" | "tool_use" | "tool_result" | "system";
+	type:
+		| "assistant"
+		| "tool_use"
+		| "tool_result"
+		| "system"
+		| "input"
+		| "stdout"
+		| "stderr"
+		| "output";
 	timestamp: string;
 	content: string;
 	toolName?: string;
+	sequence?: number;
 }
 
 export interface AgentBudgetPolicy {
@@ -2177,6 +2546,8 @@ export const companySettings = {
 			issuePrefix: string;
 			timezone: string;
 			envVars?: Record<string, string>;
+			preferredCli?: string | null;
+			legacyApiKeysEnabled?: boolean;
 		}>("/company/settings"),
 	update: (data: Record<string, unknown>) =>
 		request<void>("/company/settings", {
@@ -2218,10 +2589,18 @@ export const companySettings = {
 					role: string;
 					sentAt: string;
 					expiresAt: string;
+					joinUrl?: string;
 				}[]
 			>("/company/invites"),
 		create: (email: string, role: string) =>
-			request<void>("/company/invites", {
+			request<{
+				id: string;
+				email: string;
+				role: string;
+				sentAt: string;
+				expiresAt: string;
+				joinUrl?: string;
+			}>("/company/invites", {
 				method: "POST",
 				body: JSON.stringify({ email, role }),
 			}),
@@ -2235,11 +2614,16 @@ export const companySettings = {
 export interface AdapterConfig {
 	id: string;
 	name: string;
+	enabled: boolean;
+	kind: "cli" | "api" | "local";
 	isConfigured: boolean;
-	status: "ok" | "error" | "unconfigured";
+	status: "ok" | "disabled" | "unconfigured";
 	models: string[];
+	defaultModel?: string | null | undefined;
 	apiKeyHint?: string | null | undefined;
 	baseUrl?: string | null | undefined;
+	signupUrl?: string | null | undefined;
+	apiKeyEnvVar?: string | null | undefined;
 }
 
 export const instanceSettings = {

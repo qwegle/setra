@@ -10,6 +10,7 @@ import {
 	Package,
 	Plug,
 	Settings2,
+	Terminal,
 	Trash2,
 	TriangleAlert,
 	XCircle,
@@ -22,9 +23,12 @@ import { cn } from "../lib/utils";
 
 const DEFAULT_ADAPTERS = [
 	"claude",
+	"codex",
 	"openai",
 	"gemini",
+	"amp",
 	"ollama",
+	"opencode",
 	"lmstudio",
 	"mistral",
 ];
@@ -176,11 +180,11 @@ function StatusBadge({ status }: { status: AdapterConfig["status"] }) {
 	const map: Record<AdapterConfig["status"], { cls: string; label: string }> = {
 		ok: {
 			cls: "border-accent-green/60 text-accent-green bg-accent-green/10",
-			label: "OK",
+			label: "Active",
 		},
-		error: {
-			cls: "border-accent-red/60 text-accent-red bg-accent-red/10",
-			label: "Error",
+		disabled: {
+			cls: "border-yellow-500/60 text-yellow-400 bg-yellow-500/10",
+			label: "Disabled",
 		},
 		unconfigured: {
 			cls: "border-border text-muted-foreground bg-muted",
@@ -200,12 +204,85 @@ function StatusBadge({ status }: { status: AdapterConfig["status"] }) {
 	);
 }
 
+function KindBadge({ kind }: { kind: AdapterConfig["kind"] }) {
+	const map: Record<
+		AdapterConfig["kind"],
+		{ cls: string; label: string; desc: string }
+	> = {
+		cli: {
+			cls: "border-blue-500/60 text-blue-400 bg-blue-500/10",
+			label: "CLI",
+			desc: "Runs via installed CLI binary",
+		},
+		api: {
+			cls: "border-purple-500/60 text-purple-400 bg-purple-500/10",
+			label: "API",
+			desc: "Direct API calls, no CLI needed",
+		},
+		local: {
+			cls: "border-emerald-500/60 text-emerald-400 bg-emerald-500/10",
+			label: "Local",
+			desc: "Runs on your machine, free",
+		},
+	};
+	const cfg = map[kind];
+	return (
+		<span
+			className={cn(
+				"text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border",
+				cfg.cls,
+			)}
+			title={cfg.desc}
+		>
+			{cfg.label}
+		</span>
+	);
+}
+
+const CLI_SETUP_INSTRUCTIONS: Record<
+	string,
+	{ install: string; auth: string; verify: string }
+> = {
+	claude: {
+		install: "npm install -g @anthropic-ai/claude-code",
+		auth: "claude  (follow the browser auth flow — uses your Claude subscription, no API key needed)",
+		verify: "claude --version",
+	},
+	codex: {
+		install: "npm install -g @openai/codex",
+		auth: "export OPENAI_API_KEY=sk-… (or login via: codex --login)",
+		verify: "codex --version",
+	},
+	gemini: {
+		install: "npm install -g @google/gemini-cli",
+		auth: "gemini  (follow the browser auth flow — or set GEMINI_API_KEY)",
+		verify: "gemini --version",
+	},
+	amp: {
+		install: "npm install -g @sourcegraph/amp",
+		auth: "amp login (follow the browser auth flow)",
+		verify: "amp --version",
+	},
+	opencode: {
+		install: "curl -fsSL https://opencode.ai/install | bash",
+		auth: "opencode auth login (follow the browser flow)",
+		verify: "opencode --version",
+	},
+	cursor: {
+		install: "curl https://cursor.com/install -fsS | bash",
+		auth: "cursor-agent login (follow the browser auth flow)",
+		verify: "cursor-agent --version",
+	},
+};
+
 function AdapterCard({ adapter }: { adapter: AdapterConfig }) {
 	const qc = useQueryClient();
 	const [expanded, setExpanded] = useState(false);
 	const [apiKey, setApiKey] = useState("");
 	const [baseUrl, setBaseUrl] = useState(adapter.baseUrl ?? "");
-	const [defaultModel, setDefaultModel] = useState(adapter.models[0] ?? "");
+	const [defaultModel, setDefaultModel] = useState(
+		adapter.defaultModel ?? adapter.models[0] ?? "",
+	);
 	const [testResult, setTestResult] = useState<{
 		ok: boolean;
 		latencyMs?: number | undefined;
@@ -214,13 +291,23 @@ function AdapterCard({ adapter }: { adapter: AdapterConfig }) {
 
 	const showBaseUrl =
 		["ollama", "lmstudio"].includes(adapter.id) || adapter.baseUrl != null;
+	const cliSetup = CLI_SETUP_INSTRUCTIONS[adapter.id];
+	const needsApiKey = adapter.kind !== "local" && !cliSetup;
+
+	const toggleMut = useMutation({
+		mutationFn: (enabled: boolean) =>
+			instanceSettings.adapters.update(adapter.id, { enabled }),
+		onSuccess: () =>
+			void qc.invalidateQueries({ queryKey: ["instance-adapters"] }),
+	});
 
 	const saveMut = useMutation({
 		mutationFn: () =>
 			instanceSettings.adapters.update(adapter.id, {
-				...(apiKey ? { apiKey } : {}),
-				...(baseUrl ? { baseUrl } : {}),
-				...(defaultModel ? { defaultModel } : {}),
+				...(apiKey !== "" ? { apiKey } : {}),
+				...(baseUrl !== "" ? { baseUrl } : {}),
+				...(defaultModel !== "" ? { defaultModel } : {}),
+				enabled: true,
 			}),
 		onSuccess: () =>
 			void qc.invalidateQueries({ queryKey: ["instance-adapters"] }),
@@ -237,42 +324,119 @@ function AdapterCard({ adapter }: { adapter: AdapterConfig }) {
 	});
 
 	return (
-		<div className="glass rounded-lg overflow-hidden">
-			<button
-				type="button"
-				onClick={() => setExpanded((v) => !v)}
-				className="w-full flex items-center gap-3 p-4 text-left hover:bg-white/5 transition-colors"
-			>
-				<div className="w-8 h-8 rounded-full bg-setra-600/20 text-setra-400 flex items-center justify-center text-sm font-bold flex-shrink-0 select-none">
-					{(adapter.id[0] ?? "?").toUpperCase()}
-				</div>
-				<div className="flex-1 min-w-0">
-					<p className="text-sm font-medium capitalize">{adapter.name}</p>
-					<p className="text-xs text-muted-foreground/60">
-						{adapter.models.length} model
-						{adapter.models.length !== 1 ? "s" : ""}
-					</p>
-				</div>
-				<StatusBadge status={adapter.status} />
-				{expanded ? (
-					<ChevronDown className="w-4 h-4 text-muted-foreground/40 ml-1 flex-shrink-0" />
-				) : (
-					<ChevronRight className="w-4 h-4 text-muted-foreground/40 ml-1 flex-shrink-0" />
-				)}
-			</button>
+		<div
+			className={cn(
+				"glass rounded-lg overflow-hidden transition-opacity",
+				!adapter.enabled && adapter.isConfigured && "opacity-60",
+			)}
+		>
+			<div className="flex items-center gap-3 p-4">
+				<button
+					type="button"
+					onClick={() => setExpanded((v) => !v)}
+					className="flex items-center gap-3 flex-1 min-w-0 text-left hover:bg-white/5 -m-1 p-1 rounded transition-colors"
+				>
+					<div className="w-8 h-8 rounded-full bg-setra-600/20 text-setra-400 flex items-center justify-center text-sm font-bold flex-shrink-0 select-none">
+						{(adapter.id[0] ?? "?").toUpperCase()}
+					</div>
+					<div className="flex-1 min-w-0">
+						<p className="text-sm font-medium">{adapter.name}</p>
+						<p className="text-xs text-muted-foreground/60">
+							{adapter.models.length} model
+							{adapter.models.length !== 1 ? "s" : ""} available
+						</p>
+					</div>
+					<KindBadge kind={adapter.kind} />
+					<StatusBadge status={adapter.status} />
+					{expanded ? (
+						<ChevronDown className="w-4 h-4 text-muted-foreground/40 ml-1 flex-shrink-0" />
+					) : (
+						<ChevronRight className="w-4 h-4 text-muted-foreground/40 ml-1 flex-shrink-0" />
+					)}
+				</button>
+				<ToggleSwitch
+					value={adapter.enabled}
+					onChange={(v) => toggleMut.mutate(v)}
+				/>
+			</div>
 
 			{expanded && (
-				<div className="border-t border-border/30 p-4 space-y-3">
-					<div className="space-y-1">
-						<label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40">
-							API Key
-						</label>
-						<PasswordInput
-							value={apiKey}
-							onChange={setApiKey}
-							placeholder={adapter.apiKeyHint ?? "sk-…"}
-						/>
-					</div>
+				<div className="border-t border-border/30 p-4 space-y-4">
+					{/* CLI setup instructions */}
+					{cliSetup && (
+						<div className="bg-blue-500/5 border border-blue-500/20 rounded-md p-3 space-y-2">
+							<p className="text-xs font-semibold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+								<Terminal className="w-3.5 h-3.5" />
+								CLI Setup Required
+							</p>
+							<div className="space-y-1.5">
+								<div>
+									<span className="text-[10px] text-muted-foreground/50 uppercase">
+										1. Install:
+									</span>
+									<code className="block text-xs font-mono text-zinc-300 bg-zinc-800/50 px-2 py-1 rounded mt-0.5 select-all">
+										{cliSetup.install}
+									</code>
+								</div>
+								<div>
+									<span className="text-[10px] text-muted-foreground/50 uppercase">
+										2. Authenticate:
+									</span>
+									<code className="block text-xs font-mono text-zinc-300 bg-zinc-800/50 px-2 py-1 rounded mt-0.5 select-all">
+										{cliSetup.auth}
+									</code>
+								</div>
+								<div>
+									<span className="text-[10px] text-muted-foreground/50 uppercase">
+										3. Verify:
+									</span>
+									<code className="block text-xs font-mono text-zinc-300 bg-zinc-800/50 px-2 py-1 rounded mt-0.5 select-all">
+										{cliSetup.verify}
+									</code>
+								</div>
+							</div>
+							{adapter.id === "claude" && (
+								<p className="text-[11px] text-blue-300/70 mt-1">
+									💡 Claude Code uses your Claude subscription — no API key
+									needed if you have a Max/Team plan.
+								</p>
+							)}
+							{adapter.id === "codex" && (
+								<p className="text-[11px] text-blue-300/70 mt-1">
+									💡 Codex uses your OpenAI API key or Codex Plus subscription.
+								</p>
+							)}
+						</div>
+					)}
+
+					{/* API key field (not shown for local-only adapters without API keys) */}
+					{needsApiKey && (
+						<div className="space-y-1">
+							<label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40">
+								API Key
+								{adapter.apiKeyEnvVar && (
+									<span className="font-normal ml-1 normal-case">
+										(env: {adapter.apiKeyEnvVar})
+									</span>
+								)}
+							</label>
+							<PasswordInput
+								value={apiKey}
+								onChange={setApiKey}
+								placeholder={adapter.apiKeyHint ?? "sk-…"}
+							/>
+							{adapter.signupUrl && (
+								<a
+									href={adapter.signupUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-[11px] text-accent-blue hover:underline"
+								>
+									Get an API key →
+								</a>
+							)}
+						</div>
+					)}
 
 					{showBaseUrl && (
 						<div className="space-y-1">
@@ -302,6 +466,7 @@ function AdapterCard({ adapter }: { adapter: AdapterConfig }) {
 								{adapter.models.map((m) => (
 									<option key={m} value={m}>
 										{m}
+										{m === adapter.defaultModel ? " (current)" : ""}
 									</option>
 								))}
 							</select>
@@ -333,7 +498,7 @@ function AdapterCard({ adapter }: { adapter: AdapterConfig }) {
 							) : (
 								<CheckCircle className="w-3.5 h-3.5" />
 							)}
-							Save
+							Save & Enable
 						</button>
 					</div>
 
@@ -377,9 +542,14 @@ function AdaptersTab() {
 			: DEFAULT_ADAPTERS.map((id) => ({
 					id,
 					name: id.charAt(0).toUpperCase() + id.slice(1),
+					enabled: false,
+					kind: "api" as const,
 					isConfigured: false,
 					status: "unconfigured" as const,
 					models: [],
+					defaultModel: null,
+					signupUrl: null,
+					apiKeyEnvVar: null,
 				}));
 
 	if (isLoading) {

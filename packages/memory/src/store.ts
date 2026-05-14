@@ -67,6 +67,7 @@ export class MemoryStore {
 			dbPath: options.dbPath,
 			modelId: options.modelId ?? "Xenova/all-MiniLM-L6-v2",
 			maxEntries: options.maxEntries ?? 10000,
+			maxEntriesPerAgent: options.maxEntriesPerAgent ?? 0,
 		};
 	}
 
@@ -110,6 +111,7 @@ export class MemoryStore {
 		);
 
 		this.prune();
+		if (context.agentId) this.pruneAgent(context.agentId);
 		return id;
 	}
 
@@ -149,6 +151,7 @@ export class MemoryStore {
 
 		insertMany();
 		this.prune();
+		if (context.agentId) this.pruneAgent(context.agentId);
 		return ids;
 	}
 
@@ -235,6 +238,33 @@ export class MemoryStore {
          )`,
 			).run(excess);
 		}
+	}
+
+	/**
+	 * Per-agent eviction. When `maxEntriesPerAgent` is positive, oldest entries
+	 * for the given agent are removed once that agent exceeds the cap. Mirrors
+	 * the WUPHF per-agent memory ceiling so a chatty agent cannot starve other
+	 * agents of recall budget.
+	 */
+	pruneAgent(agentId: string): void {
+		const cap = this.options.maxEntriesPerAgent;
+		if (!cap || cap <= 0) return;
+		const db = this.getDb();
+		const current = (
+			db
+				.prepare("SELECT COUNT(*) as n FROM memories WHERE agent_id = ?")
+				.get(agentId) as { n: number }
+		).n;
+		if (current <= cap) return;
+		const excess = current - cap;
+		db.prepare(
+			`DELETE FROM memories WHERE id IN (
+         SELECT id FROM memories
+         WHERE agent_id = ?
+         ORDER BY created_at ASC
+         LIMIT ?
+       )`,
+		).run(agentId, excess);
 	}
 }
 

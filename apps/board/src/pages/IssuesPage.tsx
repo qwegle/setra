@@ -20,6 +20,7 @@ import { DeliveryWidget } from "../components/DeliveryWidget";
 import { FilterBar, type FilterState } from "../components/FilterBar";
 import { IssueDetailPanel } from "../components/IssueDetailPanel";
 import { KanbanBoard } from "../components/KanbanBoard";
+import { NewIssueDialog } from "../components/NewIssueDialog";
 import { Button, EmptyState } from "../components/ui";
 import {
 	type Issue,
@@ -47,6 +48,7 @@ const STATUS_PIPELINE: IssueStatus[] = [
 	"in_progress",
 	"in_review",
 	"done",
+	"cancelled",
 ];
 
 const STATUS_GROUP_ORDER: IssueStatus[] = [
@@ -55,6 +57,7 @@ const STATUS_GROUP_ORDER: IssueStatus[] = [
 	"backlog",
 	"in_review",
 	"done",
+	"cancelled",
 ];
 
 const PROJECT_SETTINGS_FALLBACKS = {
@@ -153,6 +156,8 @@ export function IssuesPage() {
 		Partial<Record<IssueStatus, boolean>>
 	>({});
 	const [showProjectSettings, setShowProjectSettings] = useState(false);
+	const [newIssueDialogStatus, setNewIssueDialogStatus] =
+		useState<IssueStatus | null>(null);
 	const [projectSettingsDraft, setProjectSettingsDraft] =
 		useState<ProjectSettings | null>(null);
 
@@ -405,8 +410,7 @@ export function IssuesPage() {
 	});
 
 	const openCreateIssue = (status: IssueStatus = filterStatus ?? "backlog") => {
-		setViewMode("list");
-		setCreating(status);
+		setNewIssueDialogStatus(status);
 	};
 
 	return (
@@ -537,7 +541,7 @@ export function IssuesPage() {
 					}
 					onIssueClick={(id) => navigate(`/issues/${id}`)}
 				/>
-			) : issues.length === 0 ? (
+			) : issues.length === 0 && !creating ? (
 				<div className="p-4 flex-1 overflow-y-auto">
 					<EmptyState
 						icon={<ClipboardList className="h-8 w-8" />}
@@ -563,7 +567,7 @@ export function IssuesPage() {
 				</div>
 			) : (
 				<div className="p-4 flex-1 overflow-y-auto">
-					{filteredIssues.length === 0 ? (
+					{filteredIssues.length === 0 && !creating ? (
 						<div className="glass rounded-xl border border-border/40 px-4 py-6 text-sm text-muted-foreground">
 							No tasks match the current filters.
 						</div>
@@ -573,7 +577,8 @@ export function IssuesPage() {
 								const statusIssues = filteredIssues.filter(
 									(issue) => issue.status === status,
 								);
-								if (statusIssues.length === 0) return null;
+								if (statusIssues.length === 0 && creating !== status)
+									return null;
 								const isCollapsed = collapsedStatuses[status] === true;
 								return (
 									<div key={status} className="space-y-3">
@@ -993,6 +998,18 @@ export function IssuesPage() {
 						)}
 					</div>
 				</div>
+			)}
+			{newIssueDialogStatus !== null && projectId && (
+				<NewIssueDialog
+					open={true}
+					onClose={() => setNewIssueDialogStatus(null)}
+					projectId={projectId}
+					roster={roster}
+					defaultStatus={newIssueDialogStatus}
+					onCreated={() => {
+						qc.invalidateQueries({ queryKey: ["issues", projectId] });
+					}}
+				/>
 			)}
 		</div>
 	);

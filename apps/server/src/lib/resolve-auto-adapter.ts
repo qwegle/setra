@@ -53,6 +53,8 @@ interface SettingsLike {
 	gemini_api_key?: unknown;
 	openrouter_api_key?: unknown;
 	groq_api_key?: unknown;
+	preferred_adapter?: unknown;
+	preferred_model?: unknown;
 }
 
 function readSettings(companyId: string | null | undefined): SettingsLike {
@@ -238,9 +240,12 @@ export function resolveAutoAdapter(
 				reason: "offline:cloud-adapter-blocked",
 			};
 		}
+		// Treat "auto" model string as unset — caller should use adapter default
+		const resolvedModel =
+			requestedModel && requestedModel !== "auto" ? requestedModel : null;
 		return {
 			adapter: canonicalAdapter(a),
-			model: requestedModel ?? null,
+			model: resolvedModel,
 			reason: "explicit-adapter",
 		};
 	}
@@ -252,6 +257,25 @@ export function resolveAutoAdapter(
 			adapter: "ollama",
 			model: requestedModel || "qwen2.5-coder:7b",
 			reason: "auto:offline-local-only",
+		};
+	}
+
+	// Global preferred adapter — set by the user in Settings → "Default Agent Adapter".
+	// Overrides the cost-priority auto-selection so every hired agent uses this adapter.
+	const preferredAdapter =
+		typeof s.preferred_adapter === "string" && s.preferred_adapter.trim()
+			? s.preferred_adapter.trim()
+			: null;
+	if (preferredAdapter) {
+		const preferredModel =
+			(requestedModel && requestedModel !== "auto" ? requestedModel : null) ||
+			(typeof s.preferred_model === "string" && s.preferred_model.trim()
+				? s.preferred_model.trim()
+				: null);
+		return {
+			adapter: canonicalAdapter(preferredAdapter),
+			model: preferredModel,
+			reason: "auto:global-preferred-adapter",
 		};
 	}
 

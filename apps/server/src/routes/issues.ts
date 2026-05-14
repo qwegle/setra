@@ -22,6 +22,7 @@ import { type LifecycleStage, transitionStage } from "../lib/lifecycle.js";
 import { startIssueTestRun } from "../lib/run-lifecycle.js";
 import { rebuildSprintBoard } from "../lib/sprint-board.js";
 import * as approvalsRepo from "../repositories/approvals.repo.js";
+import * as artifactsRepo from "../repositories/artifacts.repo.js";
 import * as integrationsRepo from "../repositories/integrations.repo.js";
 import * as issuesRepo from "../repositories/issues.repo.js";
 import { domainEventBus, publishDomainEvent } from "../sse/handler.js";
@@ -480,6 +481,31 @@ issuesRoute.post(
 					noChanges: result.noChanges,
 				}),
 			);
+			// Evidence record: every commit gets an artifact row so the
+			// SDLC bundle and PM review surfaces have a durable trail.
+			try {
+				await artifactsRepo.createArtifact({
+					companyId: cid,
+					name: `commit:${result.sha.slice(0, 12)}`,
+					issueId,
+					agentSlug: null,
+					mimeType: "application/vnd.setra.commit+json",
+					content: JSON.stringify(
+						{
+							sha: result.sha,
+							message: body.message,
+							noChanges: result.noChanges,
+							files: body.files ?? null,
+							branch: issue.branchName,
+							at: new Date().toISOString(),
+						},
+						null,
+						2,
+					),
+				});
+			} catch {
+				/* artifact write must not break the commit response */
+			}
 			publishDomainEvent({
 				type: "issue.updated",
 				issueId,
@@ -532,9 +558,9 @@ issuesRoute.post("/:id/pr", zValidator("json", OpenPrSchema), async (c) => {
 	if (!issue.branchName)
 		return c.json({ error: "branch missing — POST /branch first" }, 422);
 
-	// openPullRequest is currently a stub (see packages/git/src/github.ts).
-	// Real GitHub API call lands when the integration ships — until then this
-	// produces a deterministic URL we can show in the UI / channel messages.
+	// `openPullRequest` makes a real GitHub API call when a token is
+	// configured. The legacy `stub` field on the response is no longer
+	// returned to clients (it always resolves to false on the live path).
 	let pr: Awaited<ReturnType<typeof openPullRequest>>;
 	try {
 		pr = await openPullRequest({
@@ -561,8 +587,35 @@ issuesRoute.post("/:id/pr", zValidator("json", OpenPrSchema), async (c) => {
 		cid,
 		"agent",
 		"pr_opened",
-		JSON.stringify({ url: pr.url, stub: pr.stub }),
+		JSON.stringify({ url: pr.url, number: pr.number }),
 	);
+	// Evidence record: persist the PR as an artifact so the bundle
+	// exporter and PM review surfaces can show the live link.
+	try {
+		await artifactsRepo.createArtifact({
+			companyId: cid,
+			name: `pr:${pr.number ?? "draft"}`,
+			issueId,
+			agentSlug: null,
+			mimeType: "application/vnd.setra.pr+json",
+			content: JSON.stringify(
+				{
+					url: pr.url,
+					number: pr.number,
+					state: pr.state,
+					title: body.title,
+					body: body.body,
+					branch: issue.branchName,
+					base: issue.defaultBranch ?? "main",
+					at: new Date().toISOString(),
+				},
+				null,
+				2,
+			),
+		});
+	} catch {
+		/* artifact write must not break the PR response */
+	}
 
 	publishDomainEvent({
 		type: "issue.updated",
@@ -595,8 +648,8 @@ issuesRoute.post("/:id/pr", zValidator("json", OpenPrSchema), async (c) => {
 	return c.json({
 		ok: true,
 		prUrl: pr.url,
+		prNumber: pr.number,
 		prState: pr.state,
-		stub: pr.stub,
 		lifecycleStage: tr.toStage,
 	});
 });

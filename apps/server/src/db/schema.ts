@@ -51,6 +51,7 @@ export const agentRoster = sqliteTable("agent_roster", {
 	continuousIntervalMs: integer("continuous_interval_ms").default(60_000),
 	idlePrompt: text("idle_prompt"),
 	lastRunEndedAt: text("last_run_ended_at"),
+	lastRefreshedAt: text("last_refreshed_at"),
 	...ts,
 });
 
@@ -169,6 +170,15 @@ export const companySettings = sqliteTable("company_settings", {
 		.default(false),
 	brandColor: text("brand_color"),
 	logoUrl: text("logo_url"),
+	// Tier 0.5 (CLI-only pivot): when 1, legacy API-key panels remain visible.
+	// Existing installs migrate to 1 (no behavior change). Fresh installs that
+	// complete the new CLI-onboarding set this to 0.
+	legacyApiKeysEnabled: integer("legacy_api_keys_enabled", { mode: "boolean" })
+		.notNull()
+		.default(true),
+	// Operator-chosen first-class CLI adapter id (claude|codex|gemini|opencode|cursor).
+	// Surfaced in the top bar AdapterStatusPill; null = not yet picked.
+	preferredCli: text("preferred_cli"),
 	updatedAt: text("updated_at").notNull().default(nowText),
 });
 
@@ -456,6 +466,8 @@ export function ensureTables(): void {
       is_offline_only INTEGER NOT NULL DEFAULT 0,
       brand_color TEXT,
       logo_url TEXT,
+      legacy_api_keys_enabled INTEGER NOT NULL DEFAULT 1,
+      preferred_cli TEXT,
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
 
@@ -606,6 +618,7 @@ export function ensureTables(): void {
 		`ALTER TABLE agent_roster ADD COLUMN continuous_interval_ms INTEGER DEFAULT 60000`,
 		`ALTER TABLE agent_roster ADD COLUMN idle_prompt TEXT`,
 		`ALTER TABLE agent_roster ADD COLUMN last_run_ended_at TEXT`,
+		`ALTER TABLE agent_roster ADD COLUMN last_refreshed_at TEXT`,
 		// Roster merge: agent_roster is now the canonical org-tree row. parent_agent_id
 		// is a self-FK that replaces company_roster.reports_to. template_id replaces
 		// the JOIN to company_roster for template metadata. Backfill follows below.
@@ -628,6 +641,15 @@ export function ensureTables(): void {
 		`ALTER TABLE plugins ADD COLUMN company_id TEXT`,
 		`ALTER TABLE skills ADD COLUMN company_id TEXT`,
 		`ALTER TABLE artifacts ADD COLUMN company_id TEXT`,
+		// Migration 0004_enterprise_board adds these columns + indexes on a
+		// pre-existing ensureTables artifacts table. Without these ADD COLUMNs
+		// the migration's CREATE INDEX idx_artifacts_type ON artifacts(type)
+		// fails on cold start with "no such column: type".
+		`ALTER TABLE artifacts ADD COLUMN type TEXT NOT NULL DEFAULT 'data'`,
+		`ALTER TABLE artifacts ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE artifacts ADD COLUMN issue_slug TEXT`,
+		`ALTER TABLE artifacts ADD COLUMN description TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE artifacts ADD COLUMN storage_path TEXT`,
 		`ALTER TABLE wiki_entries ADD COLUMN company_id TEXT`,
 		`ALTER TABLE review_items ADD COLUMN company_id TEXT`,
 		`ALTER TABLE review_items ADD COLUMN entity_type TEXT`,
@@ -685,6 +707,16 @@ export function ensureTables(): void {
 		`ALTER TABLE activity_log ADD COLUMN prev_hash TEXT`,
 		`ALTER TABLE runs ADD COLUMN source_type TEXT`,
 		`ALTER TABLE runs ADD COLUMN source_id TEXT`,
+		`ALTER TABLE runs ADD COLUMN system_prompt TEXT`,
+		`ALTER TABLE runs ADD COLUMN first_chunk_at TEXT`,
+		`ALTER TABLE runs ADD COLUMN tool_calls_count INTEGER DEFAULT 0`,
+		`ALTER TABLE runs ADD COLUMN files_touched_count INTEGER DEFAULT 0`,
+		`ALTER TABLE chunks ADD COLUMN tool_name TEXT`,
+		// Tier 0.5 (CLI-only pivot): legacy API-key UI gating + preferred CLI.
+		// Default 1 on existing installs preserves today's behaviour; the new
+		// onboarding flow flips it to 0 once a fresh install picks a CLI.
+		`ALTER TABLE company_settings ADD COLUMN legacy_api_keys_enabled INTEGER NOT NULL DEFAULT 1`,
+		`ALTER TABLE company_settings ADD COLUMN preferred_cli TEXT`,
 	]) {
 		try {
 			rawSqlite.exec(stmt);
@@ -695,6 +727,20 @@ export function ensureTables(): void {
 
 	try {
 		rawSqlite.exec(`ALTER TABLE companies ADD COLUMN logo_url TEXT DEFAULT ''`);
+	} catch {}
+
+	try {
+		rawSqlite.exec(
+			`ALTER TABLE companies ADD COLUMN lan_discoverable INTEGER NOT NULL DEFAULT 0`,
+		);
+	} catch {}
+
+	try {
+		rawSqlite.exec(`ALTER TABLE company_invites ADD COLUMN note TEXT`);
+	} catch {}
+
+	try {
+		rawSqlite.exec(`ALTER TABLE companies ADD COLUMN public_url TEXT`);
 	} catch {}
 
 	try {
@@ -710,6 +756,27 @@ export function ensureTables(): void {
 		);
 	} catch {
 		/* routines table may not exist on minimal installs */
+	}
+
+	try {
+		rawSqlite.exec(`
+			CREATE TABLE IF NOT EXISTS project_agents (
+				id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+				project_id TEXT NOT NULL REFERENCES board_projects(id) ON DELETE CASCADE,
+				agent_roster_id TEXT NOT NULL,
+				role TEXT NOT NULL DEFAULT 'member',
+				assigned_by TEXT DEFAULT 'system',
+				assigned_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+			);
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_project_agents_unique
+				ON project_agents(project_id, agent_roster_id);
+			CREATE INDEX IF NOT EXISTS idx_project_agents_project
+				ON project_agents(project_id);
+			CREATE INDEX IF NOT EXISTS idx_project_agents_agent
+				ON project_agents(agent_roster_id);
+		`);
+	} catch {
+		/* project agent assignments are best-effort on legacy DBs */
 	}
 
 	// Agent credibility scores table (autonomous loop).
@@ -1000,4 +1067,84 @@ export function ensureTables(): void {
 	} catch {
 		/* ignore */
 	}
+
+	rawSqlite.exec(`
+    CREATE TABLE IF NOT EXISTS marketing_leads (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL,
+      email TEXT NOT NULL,
+      name TEXT,
+      source TEXT,
+      landing_page_slug TEXT,
+      utm_source TEXT,
+      utm_medium TEXT,
+      utm_campaign TEXT,
+      consent INTEGER NOT NULL DEFAULT 0,
+      metadata_json TEXT NOT NULL DEFAULT '{}',
+      status TEXT NOT NULL DEFAULT 'new',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_marketing_leads_company
+      ON marketing_leads(company_id, created_at DESC);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_marketing_leads_company_email
+      ON marketing_leads(company_id, email);
+    CREATE INDEX IF NOT EXISTS idx_marketing_leads_status
+      ON marketing_leads(company_id, status);
+
+    CREATE TABLE IF NOT EXISTS marketing_campaigns (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      body_html TEXT NOT NULL,
+      segment_status TEXT,
+      status TEXT NOT NULL DEFAULT 'draft',
+      scheduled_at TEXT,
+      started_at TEXT,
+      completed_at TEXT,
+      sent_count INTEGER NOT NULL DEFAULT 0,
+      failed_count INTEGER NOT NULL DEFAULT 0,
+      created_by TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_marketing_campaigns_company
+      ON marketing_campaigns(company_id, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS marketing_campaign_recipients (
+      id TEXT PRIMARY KEY,
+      campaign_id TEXT NOT NULL,
+      lead_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      resend_message_id TEXT,
+      error_message TEXT,
+      sent_at TEXT
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_marketing_recipients_campaign_lead
+      ON marketing_campaign_recipients(campaign_id, lead_id);
+    CREATE INDEX IF NOT EXISTS idx_marketing_recipients_status
+      ON marketing_campaign_recipients(campaign_id, status);
+
+    CREATE TABLE IF NOT EXISTS marketing_landing_pages (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL,
+      slug TEXT NOT NULL,
+      title TEXT NOT NULL,
+      headline TEXT NOT NULL,
+      subheadline TEXT,
+      body_markdown TEXT NOT NULL,
+      cta_label TEXT NOT NULL DEFAULT 'Get started',
+      cta_url TEXT,
+      capture_form INTEGER NOT NULL DEFAULT 1,
+      published INTEGER NOT NULL DEFAULT 0,
+      view_count INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_marketing_landing_company_slug
+      ON marketing_landing_pages(company_id, slug);
+    CREATE INDEX IF NOT EXISTS idx_marketing_landing_published
+      ON marketing_landing_pages(published);
+  `);
 }

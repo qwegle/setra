@@ -1,15 +1,33 @@
+import { spawn as spawnAsync, spawnSync } from "node:child_process";
+import {
+	defaultReadOnlyPaths,
+	wrapWithSandbox,
+} from "@setra/agent-runner";
 import { getRawDb } from "@setra/db";
+import { createMessage as createCollabMessage } from "../repositories/collaboration.repo.js";
 import { isOfflineForCompany } from "../repositories/runtime.repo.js";
 import { readProjectContext } from "../routes/project-context.js";
 import { emit } from "../sse/handler.js";
-import { isCloudAdapter, normalizeAdapterId } from "./adapter-policy.js";
+import {
+	isCloudAdapter,
+	isPtyOnlyAdapter,
+	isServerRunnableAdapter,
+	normalizeAdapterId,
+} from "./adapter-policy.js";
 import { callAdapterTextOnce } from "./adapters/adapter-dispatch.js";
 import { callAnthropicWithTools } from "./adapters/anthropic-runner.js";
+import {
+	CodexLoginRequiredError,
+	CodexNotInstalledError,
+	callCodexExecOnce,
+} from "./adapters/codex-runner.js";
+import { callCopilotExecOnce } from "./adapters/copilot-runner.js";
 import { callGeminiWithTools } from "./adapters/gemini-runner.js";
 import { callOpenAiWithTools } from "./adapters/openai-runner.js";
-import { postChannelMessage } from "./channel-hooks.js";
+import { postChannelMessage, postProjectMessage } from "./channel-hooks.js";
 import { publishAgentCompletionMessage } from "./company-broker.js";
 import { getCompanySettings } from "./company-settings.js";
+import { postProjectHelpRequest } from "./escalation.js";
 import { addAutomationIssueComment } from "./issue-comments.js";
 import { createLogger } from "./logger.js";
 import {
@@ -19,7 +37,10 @@ import {
 	storeRuntimeMemory,
 } from "./prompt-builder.js";
 import { jobQueue } from "./queue.js";
+import { resolveAutoAdapter } from "./resolve-auto-adapter.js";
+import { consumeResumePacketFor } from "./resume-packet-store.js";
 import { withRetry } from "./retry.js";
+import { persistRunSystemPrompt, recordRunChunk } from "./run-chunks.js";
 import { onRunCompleted } from "./run-lifecycle.js";
 import {
 	buildToolDefinitions,
@@ -38,6 +59,8 @@ import type {
 const log = createLogger("server-runner");
 const HEARTBEAT_MS = 60_000;
 const RUN_TIMEOUT_MS = 5 * 60 * 1000;
+// Codex CLI can take longer to start up and process; give it a larger window.
+const CODEX_TIMEOUT_MS = 10 * 60 * 1000;
 
 function loadRuntimeKeys(companyId: string | null): RuntimeKeys {
 	const settings = (getCompanySettings(companyId) ?? {}) as Record<
@@ -136,6 +159,52 @@ function syncAgentStatusFromRuns(agent: AgentRow): void {
 function extractFirstUrl(text: string): string | null {
 	const match = text.match(/https?:\/\/\S+/i);
 	return match?.[0] ?? null;
+}
+
+/**
+ * Strips internal agent metadata from codex output before it is shown in the
+ * user-facing collaboration channel. Removes:
+ *  - "Delegation for @X: ..." lines and the subsequent "Context:" block
+ *  - JSON object blobs (lines that look like {…})
+ *  - exec / succeeded / failed shell output lines
+ *  - [server-runner] prefixed lines
+ */
+function sanitizeAgentReply(raw: string): string {
+	const lines = raw.split("\n");
+	const out: string[] = [];
+	let skipUntilBlank = false;
+
+	for (const line of lines) {
+		const t = line.trim();
+
+		// Entering a delegation/context block — skip until next blank line
+		if (/^Delegation for @/i.test(t) || /^Context:\s*/i.test(t)) {
+			skipUntilBlank = true;
+			continue;
+		}
+		if (skipUntilBlank) {
+			if (t === "") {
+				skipUntilBlank = false;
+			}
+			continue;
+		}
+
+		if (!t) {
+			out.push("");
+			continue;
+		}
+		if (/^\{/.test(t) && /\}$/.test(t)) continue; // JSON blob
+		if (/^(exec|succeeded in|failed in)\b/.test(t)) continue;
+		if (/^\[server-runner\]/.test(t)) continue;
+
+		out.push(line);
+	}
+
+	// Collapse 3+ consecutive blank lines to 1
+	return out
+		.join("\n")
+		.replace(/\n{3,}/g, "\n\n")
+		.trim();
 }
 
 function buildPipelineInitialState(
@@ -336,19 +405,7 @@ function writeChunk(
 	content: string,
 	type: "input" | "stdout" | "stderr" | "system" = "stdout",
 ): void {
-	try {
-		getRawDb()
-			.prepare(
-				`INSERT INTO chunks (run_id, sequence, content, chunk_type, recorded_at)
-       VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
-			)
-			.run(runId, getNextChunkSeq(runId), content, type);
-	} catch (error) {
-		log.warn("writeChunk failed", {
-			runId,
-			error: error instanceof Error ? error.message : String(error),
-		});
-	}
+	recordRunChunk({ runId, type, content });
 }
 
 function compactRunChunks(runId: string, companyId: string | null): void {
@@ -528,6 +585,119 @@ export function registerRunQueueProcessor(): void {
 	});
 }
 
+/**
+ * Run `codex exec` as a child process (non-interactive, full-auto).
+ * Codex CLI v0.128+ uses its own auth (codex login) — no API key needed.
+ * Uses async spawn to avoid blocking the event loop during the run.
+ */
+async function callCodexOnce(
+	model: string,
+	systemPrompt: string | null,
+	task: string,
+	cwd?: string,
+): Promise<import("./types.js").LlmCallResult> {
+	const args = [
+		"exec",
+		"-m",
+		model,
+		"--dangerously-bypass-approvals-and-sandbox",
+		"--skip-git-repo-check",
+	];
+	if (cwd) args.push("-C", cwd);
+	if (systemPrompt)
+		args.push("-c", `instructions=${JSON.stringify(systemPrompt)}`);
+	args.push(task);
+
+	return new Promise((resolve, reject) => {
+		const wrapped = wrapWithSandbox("codex", args, {
+			projectRoot: cwd ?? process.cwd(),
+			readOnlyPaths: defaultReadOnlyPaths(),
+			allowNetwork: true,
+		});
+		const proc = spawnAsync(wrapped.command, wrapped.args, {
+			...(cwd ? { cwd } : {}),
+			// Explicitly close stdin so codex doesn't block waiting for input.
+			// pipe stdout/stderr to collect output; pipe stdin so it's not inherited.
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+
+		const chunks: Buffer[] = [];
+		proc.stdout?.on("data", (d: Buffer) => chunks.push(d));
+		proc.stderr?.on("data", (d: Buffer) => chunks.push(d));
+
+		proc.on("error", (err) =>
+			reject(new Error(`codex exec failed: ${err.message}`)),
+		);
+
+		proc.on("close", () => {
+			const output = Buffer.concat(chunks).toString("utf8");
+			// Strip ANSI escape codes
+			// eslint-disable-next-line no-control-regex
+			const clean = output.replace(/\x1b\[[0-9;]*[mGKHFABCDJsu]/g, "");
+
+			// Parse token usage from codex output.
+			// Format: "tokens used\n1,760" (total) or "prompt tokens: N" / "completion tokens: N"
+			const parseNum = (re: RegExp) => {
+				const m = re.exec(clean);
+				return m ? Number.parseInt((m[1] ?? "0").replace(/,/g, ""), 10) : 0;
+			};
+			const promptTokens = parseNum(/prompt tokens:\s+([\d,]+)/i);
+			const completionTokens = parseNum(/completion tokens:\s+([\d,]+)/i);
+			// "tokens used\nN,NNN" — fallback when per-type breakdown isn't present
+			const totalTokens = parseNum(/tokens used\n([\d,]+)/i);
+			const costMatch = /cost:\s+\$?([\d.]+)/i.exec(clean);
+			const costUsd = costMatch ? Number.parseFloat(costMatch[1] ?? "0") : 0;
+
+			// Extract just the agent's human-readable reply.
+			// codex output format (v0.128 exec mode):
+			//   header lines  →  user  →  <task>  →  codex  →  <reply+tool calls>  →  tokens used  →  N
+			// Inside the reply section, skip exec blocks and JSON memory blobs.
+			const lines = clean.split("\n");
+			const replyLines: string[] = [];
+			let inReply = false;
+			let skipUntilBlank = false;
+			for (const line of lines) {
+				const trimmed = line.trim();
+				if (/^codex$/i.test(trimmed)) {
+					inReply = true;
+					continue;
+				}
+				if (/^user$/i.test(trimmed) && inReply) break;
+				if (/^Usage$/i.test(trimmed)) break;
+				if (/^tokens used$/i.test(trimmed)) break;
+				if (!inReply) continue;
+				// Skip exec tool output blocks (exec header + body)
+				if (/^exec$/.test(trimmed)) {
+					skipUntilBlank = true;
+					continue;
+				}
+				if (skipUntilBlank) {
+					if (trimmed === "") skipUntilBlank = false;
+					continue;
+				}
+				// Skip lines that are pure JSON objects (memory tool output)
+				if (/^\{/.test(trimmed) && /\}$/.test(trimmed)) continue;
+				// Skip "succeeded in Nms:" / "failed in Nms:" tool result headers
+				if (/^(succeeded|failed) in \d+ms:?$/.test(trimmed)) continue;
+				replyLines.push(line);
+			}
+			const content =
+				replyLines.length > 0 ? replyLines.join("\n").trim() : clean.trim();
+
+			resolve({
+				content,
+				usage: {
+					promptTokens: promptTokens || (totalTokens > 0 ? totalTokens : 0),
+					completionTokens,
+					cacheReadTokens: 0,
+					cacheWriteTokens: 0,
+				},
+				costUsd,
+			});
+		});
+	});
+}
+
 export async function spawnServerRun(input: SpawnRunInput): Promise<void> {
 	registerRunQueueProcessor();
 	const existing = getRawDb()
@@ -547,7 +717,7 @@ export async function spawnServerRun(input: SpawnRunInput): Promise<void> {
 }
 
 export async function executeServerRun(input: SpawnRunInput): Promise<void> {
-	const { runId, agentSlug, issueId, companyId } = input;
+	const { runId, agentSlug, issueId, companyId, sourceChannel } = input;
 	const run = loadRun(runId);
 	if (!run) {
 		log.warn("run not found", { runId });
@@ -562,15 +732,17 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		return;
 	}
 	let adapterId = normalizeAdapterId(agent.adapter_type);
-	const supported = new Set([
-		"anthropic-api",
-		"openai-api",
-		"gemini-api",
-		"openrouter",
-		"groq",
-		"ollama",
-	]);
-	const ptyOnly = new Set(["claude", "codex", "gemini", "amp", "opencode"]);
+
+	// If the agent was stored as "auto" (or is empty/unknown), resolve it now
+	// using global preferred adapter or cost-priority fallback.
+	let resolvedModel: string | null = null;
+	if (!adapterId || adapterId === "auto") {
+		const resolved = resolveAutoAdapter("auto", agent.model_id, companyId);
+		if (resolved.adapter) {
+			adapterId = resolved.adapter;
+			resolvedModel = resolved.model;
+		}
+	}
 	const offline = isOfflineForCompany(companyId);
 	if (offline && isCloudAdapter(adapterId)) {
 		setRunStatus(runId, {
@@ -580,16 +752,16 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		setAgentRuntimeStatus(agent.id, "idle");
 		return;
 	}
-	if (!supported.has(adapterId)) {
-		if (ptyOnly.has(adapterId)) {
+	if (!isServerRunnableAdapter(adapterId)) {
+		if (isPtyOnlyAdapter(adapterId)) {
 			setRunStatus(runId, {
 				status: "failed",
-				errorMessage: `Adapter '${adapterId}' requires the desktop app (PTY). Use anthropic-api, openai-api, gemini-api, openrouter, groq, or ollama for server-side runs.`,
+				errorMessage: `Adapter '${adapterId}' requires the desktop app (PTY). Use anthropic-api, openai-api, gemini-api, openrouter, groq, ollama, codex, or copilot for server-side runs.`,
 			});
 		} else {
 			setRunStatus(runId, {
 				status: "failed",
-				errorMessage: `Unsupported adapter '${agent.adapter_type ?? "null"}'. Supported: ${Array.from(supported).join(", ")}.`,
+				errorMessage: `Unsupported adapter '${agent.adapter_type ?? "null"}'. Supported server-side: anthropic-api, openai-api, gemini-api, openrouter, groq, ollama, codex, copilot.`,
 			});
 		}
 		setAgentRuntimeStatus(agent.id, "idle");
@@ -604,6 +776,10 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		openrouter: "openRouterKey",
 		groq: "groqKey",
 		ollama: null,
+		// codex authenticates via `codex login` (OAuth) — no API key needed.
+		codex: null,
+		// copilot authenticates via `copilot auth login` (subscription OAuth).
+		copilot: null,
 	};
 	const requiredEnvName: Record<keyof RuntimeKeys, string> = {
 		anthropicKey: "ANTHROPIC_API_KEY",
@@ -631,10 +807,15 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		openrouter: "openrouter/auto",
 		groq: "llama-3.3-70b-versatile",
 		ollama: "qwen2.5-coder:7b",
+		codex: "gpt-5.5",
+		copilot: "claude-sonnet-4.6",
 	};
+	// Treat "auto" as unset — fall through to resolvedModel or defaultModel
+	const isAutoOrEmpty = (v: string | null | undefined) => !v || v === "auto";
 	let model =
-		run.agent_version ??
-		agent.model_id ??
+		(!isAutoOrEmpty(run.agent_version) ? run.agent_version : null) ??
+		(!isAutoOrEmpty(agent.model_id) ? agent.model_id : null) ??
+		resolvedModel ??
 		defaultModel[adapterId] ??
 		"claude-haiku-4-5";
 	const prefixToAdapter: Record<string, string> = {
@@ -658,10 +839,17 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		issue?.workspacePath && issue.workspacePath.trim().length > 0
 			? readProjectContext(issue.workspacePath).content
 			: "";
+	const resumePacket = consumeResumePacketFor(companyId, agent.slug);
+	const resumePreamble = resumePacket?.body
+		? `${resumePacket.body}\n\n---\n\n`
+		: "";
 	const systemPrompt =
+		resumePreamble +
 		(projectContext
 			? `## Project Context\n\n${projectContext}\n\n---\n\n`
-			: "") + (await buildSystemPrompt(agent, issue, task));
+			: "") +
+		(await buildSystemPrompt(agent, issue, task));
+	persistRunSystemPrompt(runId, systemPrompt);
 	const runArgs = safeParseJsonObject(run.agent_args);
 	const pipelineTemplate =
 		typeof runArgs.pipelineTemplate === "string"
@@ -858,6 +1046,39 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 				RUN_TIMEOUT_MS,
 				`${adapterId}/${model}`,
 			);
+		} else if (adapterId === "codex") {
+			result = await withTimeout(
+				withRetry(
+					() =>
+						callCodexExecOnce({
+							model,
+							systemPrompt,
+							task,
+							...(worktreePath ? { cwd: worktreePath } : {}),
+							runId,
+						}),
+					retryOptions,
+				),
+				// codex exec can take longer than API calls; give it a larger window.
+				10 * 60 * 1000,
+				`${adapterId}/${model}`,
+			);
+		} else if (adapterId === "copilot") {
+			result = await withTimeout(
+				withRetry(
+					() =>
+						callCopilotExecOnce({
+							model,
+							systemPrompt,
+							task,
+							...(worktreePath ? { cwd: worktreePath } : {}),
+							runId,
+						}),
+					retryOptions,
+				),
+				10 * 60 * 1000,
+				`${adapterId}/${model}`,
+			);
 		} else {
 			throw new Error(`unreachable: unsupported adapter ${adapterId}`);
 		}
@@ -881,16 +1102,21 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 			});
 		}
 		const trimmedContent = result.content.trim();
-		if (issueId && trimmedContent) {
+		// Build a clean version: strip internal metadata blocks before showing to users.
+		// Removes: JSON blobs, exec output, server-runner lines, delegation/context blocks.
+		const channelReply = sanitizeAgentReply(trimmedContent);
+
+		// Post clean content as issue comment (low threshold — even short replies matter)
+		if (issueId && channelReply) {
 			if (
-				trimmedContent.length > 50 &&
-				!trimmedContent.startsWith("🔄") &&
-				!trimmedContent.startsWith("[server-runner]")
+				channelReply.length > 20 &&
+				!channelReply.startsWith("🔄") &&
+				!channelReply.startsWith("[server-runner]")
 			) {
 				addAutomationIssueComment(
 					issueId,
 					issue?.companyId ?? companyId,
-					trimmedContent.slice(0, 5000),
+					channelReply.slice(0, 5000),
 					agent.slug,
 				);
 			}
@@ -903,6 +1129,30 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 				issueId: issueId ?? null,
 				runId,
 			});
+		}
+		if (
+			companyId &&
+			sourceChannel &&
+			channelReply &&
+			channelReply.length > 10 &&
+			!channelReply.startsWith("🚀") &&
+			!channelReply.startsWith("✅")
+		) {
+			try {
+				createCollabMessage({
+					channel: sourceChannel,
+					content: channelReply.slice(0, 5000),
+					fromAgent: agent.slug,
+					companyId,
+				});
+				emit("collab:message", { channel: sourceChannel, companyId });
+			} catch (err) {
+				log.warn("failed to post agent reply to channel", {
+					channel: sourceChannel,
+					agentSlug: agent.slug,
+					error: err,
+				});
+			}
 		}
 		setRunStatus(runId, {
 			status: "completed",
@@ -926,6 +1176,57 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 				},
 			);
 		}
+		// Auto-commit when all issues in the project are done
+		if (issueId && companyId) {
+			try {
+				const issueForProject = loadIssue(issueId);
+				if (issueForProject?.projectId) {
+					const raw = getRawDb();
+					const openCount =
+						(
+							raw
+								.prepare(
+									`SELECT COUNT(*) as c FROM board_issues WHERE project_id = ? AND status NOT IN ('done','cancelled','rejected')`,
+								)
+								.get(issueForProject.projectId) as { c: number } | undefined
+						)?.c ?? 1;
+					if (openCount === 0) {
+						const projectRow = raw
+							.prepare(
+								`SELECT name, workspace_path FROM board_projects WHERE id = ?`,
+							)
+							.get(issueForProject.projectId) as
+							| { name: string; workspace_path: string | null }
+							| undefined;
+						if (projectRow?.workspace_path) {
+							const { execSync } = await import("node:child_process");
+							const wp = projectRow.workspace_path;
+							const projName = projectRow.name;
+							try {
+								execSync(
+									`git -C ${JSON.stringify(wp)} add -A && git -C ${JSON.stringify(wp)} diff --staged --quiet || git -C ${JSON.stringify(wp)} commit -m "chore: all issues complete — auto-checkpoint for ${projName}"`,
+									{ shell: "/bin/sh" },
+								);
+								log.info("auto-committed project checkpoint", {
+									projectId: issueForProject.projectId,
+									projectName: projName,
+								});
+								postProjectMessage(
+									companyId,
+									issueForProject.projectId,
+									"system",
+									`✅ All tasks complete — auto-committed checkpoint for **${projName}**`,
+								);
+							} catch (commitErr) {
+								log.warn("auto-commit failed", { error: commitErr });
+							}
+						}
+					}
+				}
+			} catch {
+				/* best-effort */
+			}
+		}
 		void onRunCompleted(runId, 0).catch((error) => {
 			log.warn("run completion hook failed", {
 				runId,
@@ -935,6 +1236,19 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 		});
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
+		// Codex pre-flight failures should pause the agent (awaiting login/install)
+		// rather than burning a retry budget.
+		if (
+			error instanceof CodexLoginRequiredError ||
+			error instanceof CodexNotInstalledError
+		) {
+			writeChunk(runId, `[codex] ${message}\n`, "stderr");
+			setRunStatus(runId, { status: "failed", errorMessage: message });
+			setAgentRuntimeStatus(agent.id, "awaiting_key", message);
+			emit("run:updated", { runId, agentId: agent.slug, status: "failed" });
+			void onRunCompleted(runId, 1).catch(() => {});
+			return;
+		}
 		writeChunk(runId, `[server-runner] error: ${message}\n`, "stderr");
 		setRunStatus(runId, { status: "failed", errorMessage: message });
 		emit("run:updated", { runId, agentId: agent.slug, status: "failed" });
@@ -951,6 +1265,32 @@ export async function executeServerRun(input: SpawnRunInput): Promise<void> {
 					error: message,
 				},
 			);
+			if (issue?.projectId) {
+				try {
+					await postProjectHelpRequest({
+						companyId,
+						projectId: issue.projectId,
+						agentRosterId: agent.id,
+						agentSlug: agent.slug,
+						agentName: agent.display_name,
+						task,
+						tried: `Attempted run ${runId} with ${adapterId}/${model}.`,
+						question: message,
+						...(issue.description ? { context: issue.description } : {}),
+						runId,
+						issueId: issue.id,
+					});
+				} catch (escalationError) {
+					log.warn("project help escalation failed", {
+						runId,
+						agentId: agent.slug,
+						error:
+							escalationError instanceof Error
+								? escalationError.message
+								: String(escalationError),
+					});
+				}
+			}
 		}
 		log.error("adapter failed", {
 			runId,

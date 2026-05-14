@@ -1,4 +1,4 @@
-import { estimateCost } from "@setra/agent-runner";
+import { LoopDetector, estimateCost } from "@setra/agent-runner";
 import {
 	buildToolDefinitions,
 	emptyUsage,
@@ -97,6 +97,7 @@ export async function callOpenAiWithTools(
 	}));
 	const usage = emptyUsage();
 	const assistantTexts: string[] = [];
+	const loopDetector = new LoopDetector();
 	for (let step = 0; step < 15; step++) {
 		const response = await fetch(endpoint, {
 			method: "POST",
@@ -169,12 +170,40 @@ export async function callOpenAiWithTools(
 				runtimeKeys: input.runtimeKeys,
 			});
 			mergeUsage(usage, toolResult.usage);
+			let toolResultParsedError: string | null = null;
+			try {
+				const errParsed = JSON.parse(toolResult.content) as Record<
+					string,
+					unknown
+				>;
+				if (
+					errParsed &&
+					typeof errParsed === "object" &&
+					typeof errParsed.error === "string"
+				) {
+					toolResultParsedError = errParsed.error;
+				}
+			} catch {
+				/* non-JSON tool result */
+			}
+			const loopSignal = loopDetector.record(
+				fnName,
+				parsed,
+				toolResultParsedError,
+			);
 			messages.push({
 				role: "tool",
 				tool_call_id: toolCall.id,
 				content: toolResult.content,
 			});
 			if (toolResult.stopLoop) shouldStop = true;
+			if (loopSignal.shouldReplan) {
+				messages.push({
+					role: "system",
+					content: loopSignal.reason,
+				});
+				loopDetector.reset();
+			}
 		}
 		if (shouldStop) break;
 	}

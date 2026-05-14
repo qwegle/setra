@@ -159,7 +159,7 @@ const PROVIDERS: Array<{
 const tabs = [
 	{ id: "general", label: "General", icon: Info },
 	{ id: "aiProviders", label: "AI Providers", icon: Cpu },
-	{ id: "secrets", label: "Secrets", icon: Key },
+	{ id: "secrets", label: "Password Manager", icon: Key },
 	{ id: "governance", label: "Governance", icon: Shield },
 	{ id: "autonomy", label: "Autonomy", icon: Zap },
 	{ id: "appearance", label: "Appearance", icon: Palette },
@@ -179,6 +179,9 @@ function useLocalSetting<T>(key: string, defaultValue: T): [T, (v: T) => void] {
 		setValue(v);
 		try {
 			localStorage.setItem(`setra:${key}`, JSON.stringify(v));
+			if (key.startsWith("appearance:")) {
+				window.dispatchEvent(new Event("setra:appearance-change"));
+			}
 		} catch {
 			/* noop */
 		}
@@ -576,6 +579,14 @@ export function SettingsPage() {
 		"model.small",
 		"claude-haiku-4-5",
 	);
+	const [preferredAdapter, setPreferredAdapter] = useLocalSetting(
+		"adapter.preferred",
+		"",
+	);
+	const [preferredModel, setPreferredModel] = useLocalSetting(
+		"adapter.preferred_model",
+		"",
+	);
 	const [deployMode, setDeployMode] = useLocalSetting<
 		"manual" | "semi" | "auto"
 	>("governance.deployMode", "manual");
@@ -624,7 +635,7 @@ export function SettingsPage() {
 	);
 	const [theme, setTheme] = useLocalSetting<"dark" | "light" | "system">(
 		"appearance:theme",
-		"dark",
+		"light",
 	);
 	const [uiScale, setUiScale] = useLocalSetting<number>(
 		"appearance:uiScale",
@@ -826,9 +837,13 @@ export function SettingsPage() {
 			...selectableModelOptions,
 		];
 		if (!options.some((option) => option.id === currentValue)) {
+			const known = modelLabelById.get(currentValue);
+			const note = known
+				? `${known} (saved — provider key missing)`
+				: `${currentValue} (saved — provider key missing)`;
 			options.unshift({
 				id: currentValue,
-				label: `${modelLabelById.get(currentValue) ?? currentValue} (current)`,
+				label: note,
 				disabled: true,
 			});
 		}
@@ -865,6 +880,14 @@ export function SettingsPage() {
 		if (serverSettings.defaultModel)
 			setDefaultModel(serverSettings.defaultModel);
 		if (serverSettings.smallModel) setSmallModel(serverSettings.smallModel);
+		if ((serverSettings as Record<string, unknown>).preferredAdapter)
+			setPreferredAdapter(
+				(serverSettings as Record<string, unknown>).preferredAdapter as string,
+			);
+		if ((serverSettings as Record<string, unknown>).preferredModel)
+			setPreferredModel(
+				(serverSettings as Record<string, unknown>).preferredModel as string,
+			);
 		if (serverSettings.governance) {
 			setDeployMode(
 				serverSettings.governance.deployMode as "manual" | "semi" | "auto",
@@ -948,6 +971,8 @@ export function SettingsPage() {
 					webSearchEnabled,
 					defaultModel,
 					smallModel,
+					preferredAdapter: preferredAdapter || undefined,
+					preferredModel: preferredModel || undefined,
 					governance: {
 						deployMode,
 						autoApprove,
@@ -1042,7 +1067,7 @@ export function SettingsPage() {
 	const [loggingInCli, setLoggingInCli] = useState<string | null>(null);
 	const [installingOllama, setInstallingOllama] = useState(false);
 	const [cliError, setCliError] = useState<string | null>(null);
-	const handleInstallCli = async (tool: "codex" | "claude") => {
+	const handleInstallCli = async (tool: "codex" | "claude" | "copilot") => {
 		setInstallingCli(tool);
 		setCliError(null);
 		try {
@@ -1056,7 +1081,7 @@ export function SettingsPage() {
 			setInstallingCli(null);
 		}
 	};
-	const handleLoginCli = async (tool: "codex" | "claude") => {
+	const handleLoginCli = async (tool: "codex" | "claude" | "copilot") => {
 		setLoggingInCli(tool);
 		setCliError(null);
 		try {
@@ -1503,15 +1528,102 @@ export function SettingsPage() {
 			<Card>
 				<div className="space-y-6">
 					<SectionIntro
+						icon={Terminal}
+						title="CLI tools"
+						description="Use your existing ChatGPT Plus, Claude Pro, or GitHub Copilot subscription instead of API keys. Once a CLI is installed and logged in, agents with the matching adapter can run without a separate key."
+					/>
+					<div className="space-y-3">
+						{(
+							[
+								{
+									key: "codex",
+									label: "Codex CLI (OpenAI)",
+									note: "Drives GPT-5.x agents using your ChatGPT subscription.",
+								},
+								{
+									key: "claude",
+									label: "Claude Code (Anthropic)",
+									note: "Drives Claude agents using your Claude Pro or Max plan.",
+								},
+								{
+									key: "copilot",
+									label: "GitHub Copilot CLI",
+									note: "Drives Copilot agents using your GitHub Copilot subscription.",
+								},
+							] as const
+						).map((tool) => {
+							const entry = cliStatus?.[tool.key];
+							const isInstalling = installingCli === tool.key;
+							const isLoggingIn = loggingInCli === tool.key;
+							return (
+								<div
+									key={tool.key}
+									className="flex flex-col gap-3 rounded-lg border border-border/50 bg-muted/10 p-4 sm:flex-row sm:items-center sm:justify-between"
+								>
+									<div className="flex items-start gap-3">
+										<Terminal className="mt-0.5 h-4 w-4 text-muted-foreground" />
+										<div>
+											<div className="text-sm font-medium text-foreground">
+												{tool.label}
+											</div>
+											<p className="text-xs text-muted-foreground">
+												{tool.note}
+											</p>
+											<p className="mt-1 text-[11px] text-muted-foreground">
+												{!entry
+													? "Status unavailable."
+													: !entry.installed
+														? "Not installed."
+														: entry.loggedIn
+															? `Installed${entry.version ? ` (${entry.version})` : ""} — logged in.`
+															: `Installed${entry.version ? ` (${entry.version})` : ""} — login required.`}
+											</p>
+										</div>
+									</div>
+									<div className="flex flex-wrap items-center gap-2">
+										{!entry?.installed ? (
+											<button
+												type="button"
+												onClick={() => handleInstallCli(tool.key)}
+												disabled={installingCli !== null}
+												className="rounded border border-setra-500/40 bg-setra-600/10 px-3 py-1 text-xs font-medium text-setra-300 transition-colors hover:bg-setra-600/20 disabled:opacity-50"
+											>
+												{isInstalling ? "Installing…" : "Install"}
+											</button>
+										) : !entry.loggedIn ? (
+											<button
+												type="button"
+												onClick={() => handleLoginCli(tool.key)}
+												disabled={loggingInCli !== null}
+												className="rounded border border-amber-400/40 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-500/20 disabled:opacity-50"
+											>
+												{isLoggingIn ? "Opening login…" : "Login"}
+											</button>
+										) : (
+											<span className="rounded border border-accent-green/30 px-2 py-0.5 text-[11px] uppercase tracking-wider text-accent-green">
+												connected
+											</span>
+										)}
+									</div>
+								</div>
+							);
+						})}
+					</div>
+					{cliError && <p className="text-sm text-red-400">{cliError}</p>}
+				</div>
+			</Card>
+			<Card>
+				<div className="space-y-6">
+					<SectionIntro
 						icon={Sparkles}
 						title="Default selections"
-						description="Choose the default primary and lightweight models used across the workspace. Only ready providers contribute selectable models."
+						description="Powers the in-app Assistant chat (top-right panel) and lightweight summaries. Hired agents pick their own adapter — including any CLI you've connected — under Agents → Roster."
 					/>
 					<div className="grid gap-4 md:grid-cols-2">
 						<Select
 							id="default-model"
 							label="Default model"
-							helperText="Used for main agent turns."
+							helperText="Used by the Assistant chat. Requires a saved API key for the matching provider."
 							value={defaultModel}
 							onChange={(event) => setDefaultModel(event.target.value)}
 						>
@@ -1527,10 +1639,27 @@ export function SettingsPage() {
 							{renderModelOptions(smallModelSelectOptions)}
 						</Select>
 					</div>
+					{cliStatus &&
+						(cliStatus.codex.loggedIn ||
+							cliStatus.claude.loggedIn ||
+							cliStatus.copilot.loggedIn) && (
+							<p className="text-xs text-muted-foreground">
+								CLI subscriptions detected (
+								{[
+									cliStatus.codex.loggedIn && "Codex",
+									cliStatus.claude.loggedIn && "Claude",
+									cliStatus.copilot.loggedIn && "Copilot",
+								]
+									.filter(Boolean)
+									.join(", ")}
+								). They are not selectable here — assign them to a hired agent
+								under Agents → Roster to use them.
+							</p>
+						)}
 					{selectableModelOptions.length === 0 && (
 						<p className="text-sm text-zinc-400">
-							No model is currently selectable. Add and save an API key, or use
-							a local Ollama model.
+							No model is currently selectable. Add and save an API key above,
+							or use a local Ollama model.
 						</p>
 					)}
 				</div>
@@ -1790,19 +1919,44 @@ export function SettingsPage() {
 						<Select
 							id="font-family"
 							label="Font family"
-							helperText="Monospace font for editor and terminal surfaces."
+							helperText="Typography used across the interface."
 							value={fontFamily}
 							onChange={(event) => setFontFamily(event.target.value)}
 						>
-							{renderModelOptions([
-								"JetBrains Mono, monospace",
-								"Fira Code, monospace",
-								"Source Code Pro, monospace",
-								"Cascadia Code, monospace",
-								"Monaco, monospace",
-								"Menlo, monospace",
-								"Consolas, monospace",
-							])}
+							<optgroup label="Sans-serif (Enterprise)">
+								<option value="Inter, system-ui, sans-serif">Inter</option>
+								<option value="Poppins, system-ui, sans-serif">Poppins</option>
+								<option value="'Plus Jakarta Sans', system-ui, sans-serif">
+									Plus Jakarta Sans
+								</option>
+								<option value="'DM Sans', system-ui, sans-serif">
+									DM Sans
+								</option>
+								<option value="Outfit, system-ui, sans-serif">Outfit</option>
+								<option value="Satoshi, system-ui, sans-serif">Satoshi</option>
+								<option value="Geist, system-ui, sans-serif">Geist</option>
+								<option value="'IBM Plex Sans', system-ui, sans-serif">
+									IBM Plex Sans
+								</option>
+								<option value="Roboto, system-ui, sans-serif">Roboto</option>
+								<option value="Lato, system-ui, sans-serif">Lato</option>
+								<option value="Nunito, system-ui, sans-serif">Nunito</option>
+								<option value="system-ui, sans-serif">System Default</option>
+							</optgroup>
+							<optgroup label="Monospace">
+								<option value="JetBrains Mono, monospace">
+									JetBrains Mono
+								</option>
+								<option value="'Geist Mono', monospace">Geist Mono</option>
+								<option value="Fira Code, monospace">Fira Code</option>
+								<option value="Source Code Pro, monospace">
+									Source Code Pro
+								</option>
+								<option value="Cascadia Code, monospace">Cascadia Code</option>
+								<option value="Monaco, monospace">Monaco</option>
+								<option value="Menlo, monospace">Menlo</option>
+								<option value="Consolas, monospace">Consolas</option>
+							</optgroup>
 						</Select>
 						<Input
 							id="font-size"
