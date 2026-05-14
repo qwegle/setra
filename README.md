@@ -1,298 +1,183 @@
-# setra.sh
+<div align="center">
 
-> Multi-agent AI workbench for teams that need speed, control, and offline capability.
+# Setra
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Offline Ready](https://img.shields.io/badge/offline-ready-green)](#government-of-india--enterprise-fit)
-[![Desktop](https://img.shields.io/badge/desktop-electron-purple)](#platform-support)
+**Run AI coding agents anywhere. Remember everything. Promote what works.**
 
-## 1. Quick start
+Setra is an open-source operating layer for AI coding agents — a CEO
+agent that hires specialists, governs their work, learns which skills
+worked, and keeps you in the loop without slowing you down.
 
-### Prerequisites
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-2563eb.svg)](LICENSE)
+[![Offline ready](https://img.shields.io/badge/offline-ready-10b981)](#governance--offline)
+[![Desktop](https://img.shields.io/badge/desktop-electron-7c3aed)](#install)
+[![CI](https://img.shields.io/badge/tests-361%20passing-10b981)](#contributing)
+
+[Quickstart](#quickstart) · [Why Setra](#why-setra) · [Adapters](#cli-adapters) · [Docs](docs/) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md)
+
+</div>
+
+---
+
+## Quickstart
+
+```bash
+# Easiest — one command, zero config
+npx @setra/cli onboard
+
+# Or clone the repo and run the full workspace
+git clone https://github.com/qwegle/setra
+cd setra
+pnpm install
+pnpm dev          # server :3141, board :5173
+```
+
+Open <http://localhost:5173>. The two-screen onboarding asks for a
+company name and one connected CLI — that's it.
+
+## CLI adapters
+
+Setra runs your agents through the coding CLIs you already trust. No
+provider API keys to manage; the CLI picks the best model for the task.
+
+| Adapter | Status | Install |
+| ------- | ------ | ------- |
+| [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code) | Supported | `npm i -g @anthropic-ai/claude-code` |
+| [Codex CLI](https://github.com/openai/codex) | Supported | `npm i -g @openai/codex` |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Supported | `npm i -g @google/gemini-cli` |
+| [Cursor CLI](https://docs.cursor.com/cli) | Supported | `curl https://cursor.com/install \| bash` |
+| [OpenCode](https://github.com/sst/opencode) | Supported | `npm i -g opencode-ai` |
+
+The top-bar **adapter pill** turns green when at least one CLI is
+detected and the popover lists each adapter's connection state.
+
+## Why Setra
+
+Most AI agent platforms hand you raw model access and a chat box. Setra
+gives you an operating model.
+
+- **CEO + specialists.** A CEO agent hires the right specialist for each
+  goal. Hires above sensitivity thresholds route to a human approver.
+- **Adaptive skill promotion.** Successful task patterns are distilled
+  into versioned reusable skills — the only agent platform that learns
+  this way today.
+- **Governance you can show your CISO.** Approval gates, per-tool
+  policies, budget caps, full audit trail, SSE event stream.
+- **Tenant-isolated by construction.** Every read and write is scoped to
+  a company; cross-tenant access returns 404, not 403.
+- **Offline-first.** Run fully air-gapped with local CLIs and SQLite.
+
+## How it compares
+
+| Capability | Paperclip | OpenSpace | DeepCode | **Setra** |
+| ---------- | --------- | --------- | -------- | --------- |
+| CEO + specialist hiring | Yes | No | No | **Yes** |
+| Adaptive skill promotion | No | Yes | No | **Yes** |
+| Governance / approval gates | Partial | No | No | **Yes** |
+| Offline / air-gapped | No | No | No | **Yes** |
+| CLI-only adapters (no API keys) | Yes | No | Partial | **Yes** |
+| Multi-agent broker | No | No | No | **Yes** |
+| Tenant isolation | Hosted only | No | No | **Yes** |
+| Audit + SSE event stream | Partial | No | No | **Yes** |
+| Open source | Hosted | Yes | Yes | **Yes** |
+
+## Feature grid
+
+<table>
+<tr>
+<td width="33%">
+
+### Agents
+- CEO agent + on-demand hiring
+- Specialist roles: engineer, QA, security, GTM, research, more
+- Multi-agent broker with role channels
+- Continuous mode for long tasks
+- Persistent tmux sessions
+
+</td>
+<td width="33%">
+
+### Work
+- Issues, kanban, wiki, PRs
+- Goal -> issue tree decomposition
+- Skill library with quality monitoring
+- Built-in NewIssueDialog with markdown
+- Recharts analytics dashboard
+
+</td>
+<td width="33%">
+
+### Trust
+- Approval gates for sensitive actions
+- Budget caps and token tracking
+- Per-tool policy controls
+- Process sandbox per adapter run
+- Full audit trail + SSE stream
+
+</td>
+</tr>
+</table>
+
+## Governance & offline
+
+Setra is built for regulated and high-trust environments:
+
+- **Approval gates.** Hires above sensitivity thresholds, destructive
+  tools, and SSH/DB writes all gate on a human approver.
+- **Budget caps.** Per-company spend ceilings with auto-stop and Resend
+  alerting.
+- **Air-gapped install.** No cloud dependency — drop in local CLIs and
+  the SQLite-backed server runs anywhere Node 20 runs.
+- **Audit-ready.** Every tool call, model response, and approval is
+  recorded with the agent, run, and tenant scope.
+
+See [`docs/security/`](docs/security) for hardening guidance and the
+private-portal cloud setup in [`docs/enterprise-cloud-setup.md`](docs/enterprise-cloud-setup.md).
+
+## Install
+
+| Surface | Install | Notes |
+| ------- | ------- | ----- |
+| CLI / TUI | `npx @setra/cli onboard` | Single command, embeds server + opens UI |
+| Web + server | `pnpm install && pnpm dev` | Full workspace from source |
+| Desktop | Download from [Releases](https://github.com/qwegle/setra/releases) | macOS DMG, Windows EXE, Linux AppImage |
+
+Requirements:
 
 - Node.js 20+
 - pnpm 9+
-- git
-- Bun is optional for local workflows, but not required
+- At least one CLI adapter installed (see table above)
 
-### Quick Start
+## Roadmap
 
-```bash
-git clone https://github.com/qwegle/setra
-cd setra
-cp .env.example .env
-pnpm install
-pnpm dev          # → server on :3141, board on :5173
-```
+- **Phase 0 (current)** Internal alpha — stable core workflows, skill promotion, continuous mode, approval gates.
+- **Phase 1** Public OSS release — `npx @setra/cli onboard`, docs site, release automation.
+- **Phase 2** SaaS collaboration — hosted auth, usage analytics, billing.
+- **Phase 3** Enterprise scale — SSO, policy packs, marketplace.
 
-Use [.env.example](./.env.example) as the source of truth for available
-configuration. Set at least one provider key in `.env` or add it later in
-**Settings** after startup.
+Full plan in [ROADMAP.md](ROADMAP.md).
 
-Open http://localhost:5173 — the **onboarding wizard** opens
-automatically the first time. Create a company, add an API key in
-**Settings**, hire an agent, and start a run.
+## Contributing
 
-Other modes:
-
-| Command               | What runs                                  |
-| --------------------- | ------------------------------------------ |
-| `pnpm dev`            | Server + web board (recommended for daily) |
-| `pnpm dev:desktop`    | Electron desktop app + dev tooling         |
-| `pnpm dev:everything` | Everything in parallel (Turbo)             |
-| `pnpm verify`         | typecheck + tests + lint (used by CI)      |
-| `pnpm test:ci`        | All tests, no watcher                      |
-| `pnpm build`          | Production build of every package + app    |
-
-### API keys & smart routing
-
-Setra resolves the cheapest *connected* model automatically. Set any
-**one** key to get started:
-
-```bash
-# In the UI: Settings → API keys
-#   OR via env at startup:
-export OPENROUTER_API_KEY=...   # cheapest path (free models available)
-export GROQ_API_KEY=...
-export OPENAI_API_KEY=...
-export ANTHROPIC_API_KEY=...
-export GEMINI_API_KEY=...
-```
-
-When you save a key, agents that were waiting for one **auto-activate**
-(no restart needed). Saving a key while at budget cap also lifts the
-hard-stop.
-
-### The Assistant
-
-A built-in agent named **Assistant** (chat panel, top-right) can take
-real actions for you via tool calls: set keys, hire agents, run agents,
-query the budget. Just type what you want.
-
-## Platform support
-
-- **Desktop app (Electron):** macOS, Windows, Linux
-- **CLI/TUI:** macOS, Linux, Windows (WSL recommended for tmux-based workflows)
-
-Current repo already uses Electron + electron-builder, so this is **not Mac-only**.
-
----
-
-## 2. What is setra?
-
-setra is an open-source operating layer for AI agents:
-
-- Run single or multi-agent workflows
-- Keep long tasks alive in persistent tmux sessions
-- Track token/cost usage in real time
-- Work online (cloud models) or fully offline (local models)
-- Use company-style teams (architect, engineer, QA, GTM, security, etc.)
-
-Brand direction: **setra.sh** is built to feel practical, reliable, and human-led.
-
----
-
-## 3. Vision
-
-Build the default execution platform for AI-native teams in India and globally:
-
-1. Internal automation first (high trust, high control)
-2. Public open-source adoption
-3. SaaS collaboration layer
-4. Enterprise/government-grade deployments at scale
-
----
-
-## 4. Problem we are solving
-
-Most AI agent setups fail in production because they are:
-
-- stateless (lose context on disconnect)
-- expensive (waste tokens on repeated context)
-- hard to govern (weak audit, weak budget controls)
-- cloud-locked (not usable in offline/on-prem environments)
-
-setra solves this with persistent runs, context discipline, budget controls, and offline-first architecture.
-
----
-
-## 5. Roadmap and future plan
-
-See full phased roadmap in **[ROADMAP.md](./ROADMAP.md)**.
-
-At a high level:
-
-- **Phase 0 (current):** Internal alpha, local-first, core workflow stabilization
-- **Phase 1:** Public OSS release (`npx setra@latest`, docs, release pipeline)
-- **Phase 2:** SaaS layer (team auth, usage analytics, billing, hosted APIs)
-- **Phase 3:** Enterprise scale (SSO, policy packs, marketplace, advanced governance)
-
----
-
-## 6. How it works
-
-Core execution flow:
-
-1. User creates a task (CLI, TUI, or Desktop)
-2. setra launches agent session in tmux (persistent)
-3. Agents coordinate through broker channels
-4. Tool output and messages are stored in SQLite
-5. Cost/token usage is parsed and monitored continuously
-6. Human can interrupt, approve, redirect, or resume anytime
-
-Key architecture choices:
-
-- **Persistent sessions:** survives app close/network drop
-- **Prompt caching strategy:** reuses stable context
-- **Context graph approach:** agents receive scoped context, not raw transcript dump
-- **Role-aware model routing:** expensive models only where needed
-- **Offline mode:** local Ollama/SLM workflows with governance controls
-
----
-
-## 7. Differentiation (USPs)
-
-- Multi-agent orchestration with real roles and channels
-- Offline-first + air-gapped deployment capability
-- Human approval model for sensitive actions
-- SSH and database grounds with safety constraints
-- Security scanning agent stack with extensible tooling
-- Cost governance (budget caps, usage visibility, daily controls)
-- Wiki + Kanban + PR workflows integrated into agent operations
-
----
-
-## 8. Agent system
-
-setra supports both built-in and company-defined agents.
-
-Common roles:
-
-- Architect / Tech Lead
-- Full-stack / Frontend / Backend Engineer
-- QA / Reviewer / Documentation
-- GTM / Sales / CRM Ops
-- Research lead and analysts
-- Governance/compliance roles
-
-New specialist capability tracks added:
-
-- **Game Engineer**
-- **AI Model Creator**
-- **Web3 / Blockchain Developer**
-- **Smart Contract Auditor**
-- **Mobile App Developer (Expo / React Native first)**
-
-### Mobile note
-
-setra agents are strongest today on **Expo + React Native hybrid development**.
-Native Kotlin/Swift support exists, but output quality and iteration speed can be lower until native-specialized training layers are expanded.
-
----
-
-## 9. Security agent (Sentinel)
-
-Sentinel is setra’s cybersecurity agent layer for:
-
-- attack surface discovery
-- web and network scanning workflows
-- vulnerability triage and reporting
-- tool-assisted checks (e.g., nmap-style and web security workflows)
-
-Design principles:
-
-- typed output before LLM reasoning
-- explicit confirmation for install/destructive actions
-- strong guardrails around remote and privileged operations
-- auditable findings and workflow traces
-
----
-
-## 10. Government of India & Enterprise fit
-
-setra is designed for high-governance environments:
-
-- **Air-gapped deployments** (no cloud dependency required)
-- **Data residency and control** (local infra first)
-- **Role and approval workflows** for operational safety
-- **Audit trail ready** for compliance and review
-- **Cost visibility** for budgeting and policy enforcement
-
-This makes setra suitable for:
-
-- Indian government departments and public-sector programs
-- regulated enterprises (BFSI, healthcare, infrastructure, defense-adjacent)
-- internal secure AI execution environments
-
----
-
-## 11. Enterprise cloud-only web version (private SaaS)
-
-Use this when you want **web + cloud providers only** (no local LLM dependency).
-
-Deploy:
-
-```bash
-bash scripts/deploy-enterprise-cloud.sh infra/.env.enterprise
-```
-
-Full setup guide:
-
-- `docs/enterprise-cloud-setup.md`
-
-Private enterprise controls:
-
-- `SETRA_PRIVATE_PORTAL=true`
-- `SETRA_PORTAL_ACCESS_KEY=<secret>`
-- web portal at `/app` requires `x-setra-access-key` header when private mode is enabled
-
-Access control:
-
-- optional instance-wide API protection via `SETRA_INSTANCE_TOKEN`
-- provider keys can be supplied through environment variables or per-company settings
-- `/` shows the GitHub link, install/download paths, and portal entry points
-
----
-
-## 12. Active agent tracks in this repo
-
-Current active built-in specialization tracks include:
-
-- Core engineering and QA
-- Security audit and Sentinel security workflows
-- Game engineering
-- Model creator + model evaluation
-- Web3 developer + smart contract audit
-- Mobile app development (Expo/React Native first)
-
-Current active company templates include:
-
-- starter, founding-team, gtm-sales, code-review, governance-onprem, support-team, research
-- game-studio, model-lab, web3-protocol, mobile-expo
-
----
-
-## 13. Quick commands
-
-```bash
-setra init
-setra run --task "Implement feature X"
-setra company templates
-setra company run --name my-team --task "Review current PR"
-setra pr review 42
-setra connect db --driver postgres --host localhost --database appdb --user app
-```
-
----
-
-## 14. Contributing
-
-Apache 2.0. PRs welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the fork / branch / PR workflow, local setup, and code style expectations.
+Setra is Apache 2.0. PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
 pnpm install
-pnpm build
-pnpm test
+pnpm test:ci
+pnpm --filter @setra/server build
+pnpm --filter @setra/board build
 ```
 
-Built by Qwegle Technologies, Odisha, India.
+All PRs go through `dev` first. Use the PR template — it asks for
+**Model Used**, **Thinking Path**, and **Test Plan**, which we treat as
+first-class review artifacts.
+
+## Security
+
+Please do not file public issues for security problems. See
+[SECURITY.md](SECURITY.md) — disclosure to `security@setra.sh` or a
+private GitHub security advisory.
+
+## License
+
+[Apache 2.0](LICENSE). Built by Qwegle Technologies, Odisha, India.
