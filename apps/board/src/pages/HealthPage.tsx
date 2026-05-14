@@ -58,7 +58,7 @@ function MiniBar({
 }: { value: number; max: number; color: string }) {
 	const pct = Math.min(100, Math.round((value / max) * 100));
 	return (
-		<div className="h-2 w-full rounded-full bg-zinc-800">
+		<div className="h-2 w-full rounded-full bg-white">
 			<div
 				className={cn("h-2 rounded-full transition-all", color)}
 				style={{ width: `${pct}%` }}
@@ -129,10 +129,10 @@ function StatCard({
 		danger: "text-red-400",
 	};
 	return (
-		<div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+		<div className="rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 p-4">
 			<div className="flex items-center gap-2 mb-2">
 				<Icon className={cn("h-4 w-4", colors[level ?? "ok"])} />
-				<span className="text-xs text-zinc-400 uppercase tracking-wider">
+				<span className="text-xs text-[#6f6044] uppercase tracking-wider">
 					{label}
 				</span>
 			</div>
@@ -145,9 +145,9 @@ function StatCard({
 				>
 					{value}
 				</span>
-				{unit && <span className="text-sm text-zinc-500">{unit}</span>}
+				{unit && <span className="text-sm text-[#8a7a5c]">{unit}</span>}
 			</div>
-			{sub && <p className="text-[10px] text-zinc-500 mt-1">{sub}</p>}
+			{sub && <p className="text-[10px] text-[#8a7a5c] mt-1">{sub}</p>}
 		</div>
 	);
 }
@@ -304,7 +304,7 @@ export function HealthPage() {
 			{gcMutation.data && (
 				<div className="rounded-lg border border-accent-green/30 bg-accent-green/5 p-3 flex items-center gap-3">
 					<CheckCircle className="h-4 w-4 text-accent-green shrink-0" />
-					<p className="text-sm text-zinc-300">
+					<p className="text-sm text-[#4b3f2d]">
 						GC{" "}
 						{gcMutation.data.gcAvailable
 							? "completed"
@@ -321,7 +321,7 @@ export function HealthPage() {
 
 			{/* System stats */}
 			<div>
-				<h3 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2">
+				<h3 className="text-sm font-medium text-[#6f6044] mb-3 flex items-center gap-2">
 					<Server className="h-4 w-4" /> System
 				</h3>
 				<div className="grid gap-3 grid-cols-2 md:grid-cols-4">
@@ -362,7 +362,7 @@ export function HealthPage() {
 			{/* Setra App (renderer) memory */}
 			{appMem && (
 				<div>
-					<h3 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2">
+					<h3 className="text-sm font-medium text-[#6f6044] mb-3 flex items-center gap-2">
 						<Zap className="h-4 w-4" /> Setra App
 					</h3>
 					<div className="grid gap-3 grid-cols-2 md:grid-cols-4">
@@ -409,7 +409,7 @@ export function HealthPage() {
 
 			{/* Process stats */}
 			<div>
-				<h3 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2">
+				<h3 className="text-sm font-medium text-[#6f6044] mb-3 flex items-center gap-2">
 					<Zap className="h-4 w-4" /> Setra Server Process (PID{" "}
 					{data.process.pid})
 				</h3>
@@ -457,12 +457,12 @@ export function HealthPage() {
 			{/* Memory bars */}
 			<Card>
 				<div className="space-y-4">
-					<h3 className="text-sm font-medium text-zinc-300">
+					<h3 className="text-sm font-medium text-[#4b3f2d]">
 						Memory Breakdown
 					</h3>
 					<div className="space-y-3">
 						<div>
-							<div className="flex justify-between text-xs text-zinc-400 mb-1">
+							<div className="flex justify-between text-xs text-[#6f6044] mb-1">
 								<span>System RAM</span>
 								<span>
 									{data.system.ramUsedMb} / {data.system.ramTotalMb} MB (
@@ -482,7 +482,7 @@ export function HealthPage() {
 							/>
 						</div>
 						<div>
-							<div className="flex justify-between text-xs text-zinc-400 mb-1">
+							<div className="flex justify-between text-xs text-[#6f6044] mb-1">
 								<span>V8 Heap</span>
 								<span>
 									{data.process.heapUsedMb} / {data.process.heapTotalMb} MB
@@ -501,19 +501,19 @@ export function HealthPage() {
 							/>
 						</div>
 						<div>
-							<div className="flex justify-between text-xs text-zinc-400 mb-1">
+							<div className="flex justify-between text-xs text-[#6f6044] mb-1">
 								<span>Process RSS</span>
 								<span>{data.process.rssMb} MB</span>
 							</div>
 							<MiniBar
 								value={data.process.rssMb}
 								max={1024}
-								color="bg-blue-500"
+								color="bg-[#7a5421]"
 							/>
 						</div>
 						{appMem && (
 							<div>
-								<div className="flex justify-between text-xs text-zinc-400 mb-1">
+								<div className="flex justify-between text-xs text-[#6f6044] mb-1">
 									<span>Setra App Heap</span>
 									<span>
 										{appMem.usedMb} / {appMem.limitMb} MB ({appMem.percent}%)
@@ -540,21 +540,21 @@ export function HealthPage() {
 			{history.length >= 2 && (
 				<Card>
 					<div className="space-y-4">
-						<h3 className="text-sm font-medium text-zinc-300">
+						<h3 className="text-sm font-medium text-[#4b3f2d]">
 							Trend (last {Math.min(history.length, MAX_HISTORY)} samples · 5s
 							interval)
 						</h3>
 						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 							<div>
-								<p className="text-xs text-zinc-400 mb-1">CPU %</p>
+								<p className="text-xs text-[#6f6044] mb-1">CPU %</p>
 								<Sparkline data={cpuHistory} max={100} color="#22c55e" />
 							</div>
 							<div>
-								<p className="text-xs text-zinc-400 mb-1">RAM %</p>
+								<p className="text-xs text-[#6f6044] mb-1">RAM %</p>
 								<Sparkline data={ramHistory} max={100} color="#3b82f6" />
 							</div>
 							<div>
-								<p className="text-xs text-zinc-400 mb-1">Server Heap (MB)</p>
+								<p className="text-xs text-[#6f6044] mb-1">Server Heap (MB)</p>
 								<Sparkline
 									data={heapHistory}
 									max={Math.max(...heapHistory, 256)}
@@ -562,7 +562,7 @@ export function HealthPage() {
 								/>
 							</div>
 							<div>
-								<p className="text-xs text-zinc-400 mb-1">Server RSS (MB)</p>
+								<p className="text-xs text-[#6f6044] mb-1">Server RSS (MB)</p>
 								<Sparkline
 									data={rssHistory}
 									max={Math.max(...rssHistory, 512)}
@@ -571,7 +571,7 @@ export function HealthPage() {
 							</div>
 							{appMemHistory.length >= 2 && (
 								<div>
-									<p className="text-xs text-zinc-400 mb-1">
+									<p className="text-xs text-[#6f6044] mb-1">
 										Setra App Heap (MB)
 									</p>
 									<Sparkline
@@ -589,13 +589,13 @@ export function HealthPage() {
 			{/* Auto-heal settings */}
 			<Card>
 				<div className="space-y-4">
-					<h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+					<h3 className="text-sm font-medium text-[#4b3f2d] flex items-center gap-2">
 						<Heart className="h-4 w-4 text-red-400" /> Auto-Heal
 					</h3>
 					<div className="flex items-center justify-between">
 						<div>
-							<p className="text-sm text-zinc-300">Auto garbage collection</p>
-							<p className="text-xs text-zinc-500">
+							<p className="text-sm text-[#4b3f2d]">Auto garbage collection</p>
+							<p className="text-xs text-[#8a7a5c]">
 								Automatically trigger GC when heap exceeds 400 MB (60s cooldown)
 							</p>
 						</div>
@@ -606,7 +606,7 @@ export function HealthPage() {
 							onClick={() => setAutoGcEnabled(!autoGcEnabled)}
 							className={cn(
 								"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
-								autoGcEnabled ? "bg-setra-500" : "bg-zinc-700",
+								autoGcEnabled ? "bg-setra-500" : "bg-[#f3e7cf]",
 							)}
 						>
 							<span
@@ -617,7 +617,7 @@ export function HealthPage() {
 							/>
 						</button>
 					</div>
-					<p className="text-[10px] text-zinc-600">
+					<p className="text-[10px] text-[#9d8d6e]">
 						Auto-heal monitors heap usage and reclaims memory before it causes
 						slowdowns. The Force GC button above triggers an immediate
 						collection.
@@ -641,18 +641,18 @@ function ProcessTable() {
 	return (
 		<Card>
 			<div className="space-y-3">
-				<h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+				<h3 className="text-sm font-medium text-[#4b3f2d] flex items-center gap-2">
 					<Activity className="h-4 w-4 text-cyan-400" /> Top Processes by Memory
 				</h3>
 				{isLoading ? (
-					<p className="text-xs text-zinc-500">Loading…</p>
+					<p className="text-xs text-[#8a7a5c]">Loading…</p>
 				) : !data?.processes?.length ? (
-					<p className="text-xs text-zinc-500">No process data available</p>
+					<p className="text-xs text-[#8a7a5c]">No process data available</p>
 				) : (
 					<div className="overflow-x-auto">
 						<table className="w-full text-xs">
 							<thead>
-								<tr className="border-b border-zinc-800 text-zinc-500">
+								<tr className="border-b border-[#e5d6b8] text-[#8a7a5c]">
 									<th className="text-left py-2 pr-3 font-medium">PID</th>
 									<th className="text-left py-2 pr-3 font-medium">Process</th>
 									<th className="text-right py-2 pr-3 font-medium">CPU %</th>
@@ -664,13 +664,13 @@ function ProcessTable() {
 								{data.processes.map((p, i) => (
 									<tr
 										key={`${p.pid}-${i}`}
-										className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
+										className="border-b border-[#e5d6b8]/50 hover:bg-white/30 transition-colors"
 									>
-										<td className="py-1.5 pr-3 tabular-nums text-zinc-400">
+										<td className="py-1.5 pr-3 tabular-nums text-[#6f6044]">
 											{p.pid}
 										</td>
 										<td
-											className="py-1.5 pr-3 text-zinc-200 truncate max-w-[200px]"
+											className="py-1.5 pr-3 text-[#3b3224] truncate max-w-[200px]"
 											title={p.name}
 										>
 											{(p.name.split("/").pop() ?? "").replace(
@@ -685,7 +685,7 @@ function ProcessTable() {
 														? "text-red-400"
 														: p.cpu > 20
 															? "text-amber-400"
-															: "text-zinc-400"
+															: "text-[#6f6044]"
 												}
 											>
 												{p.cpu.toFixed(1)}
@@ -698,13 +698,13 @@ function ProcessTable() {
 														? "text-red-400"
 														: p.mem > 5
 															? "text-amber-400"
-															: "text-zinc-400"
+															: "text-[#6f6044]"
 												}
 											>
 												{p.mem.toFixed(1)}
 											</span>
 										</td>
-										<td className="py-1.5 text-right tabular-nums text-zinc-300">
+										<td className="py-1.5 text-right tabular-nums text-[#4b3f2d]">
 											{p.rssMb.toFixed(1)}
 										</td>
 									</tr>
@@ -713,7 +713,7 @@ function ProcessTable() {
 						</table>
 					</div>
 				)}
-				<p className="text-[10px] text-zinc-600">
+				<p className="text-[10px] text-[#9d8d6e]">
 					Top 20 processes sorted by memory usage · refreshes every 10s
 				</p>
 			</div>

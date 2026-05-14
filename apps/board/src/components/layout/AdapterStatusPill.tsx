@@ -102,7 +102,7 @@ export function AdapterStatusPill() {
 			</button>
 
 			{open && (
-				<div className="absolute right-0 top-full mt-2 w-80 rounded-lg border border-border/40 bg-ground-900/95 shadow-xl backdrop-blur-sm z-50 p-3">
+				<div className="absolute right-0 top-full mt-2 w-80 rounded-lg border border-border/40 bg-[#fdfaf3]/95 shadow-xl backdrop-blur-sm z-50 p-3">
 					<p className="text-xs text-muted-foreground mb-2 font-medium">
 						Preferred coding CLI
 					</p>

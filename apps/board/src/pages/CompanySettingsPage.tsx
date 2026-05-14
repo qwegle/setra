@@ -73,7 +73,7 @@ function useToast() {
 function RoleBadge({ role }: { role: CompanyMember["role"] | string }) {
 	const cfg: Record<string, string> = {
 		owner: "bg-accent-purple/10 text-accent-purple border-accent-purple/30",
-		admin: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+		admin: "bg-[#7a5421]/10 text-[#7a5421] border-[#c9a25f]/30",
 		member: "bg-muted text-muted-foreground border-border/30",
 	};
 	return (
@@ -276,7 +276,7 @@ function GeneralTab({ toast }: { toast: (msg: string) => void }) {
 				<button
 					disabled={saving || saveMutation.isPending}
 					onClick={() => saveMutation.mutate()}
-					className="flex items-center gap-2 px-4 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-white text-sm font-medium transition-colors disabled:opacity-50"
+					className="flex items-center gap-2 px-4 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-[#2b2418] text-sm font-medium transition-colors disabled:opacity-50"
 				>
 					{saveMutation.isPending ? (
 						<Loader2 className="w-4 h-4 animate-spin" />
@@ -341,9 +341,9 @@ function MembersTab({ toast }: { toast: (msg: string) => void }) {
 
 	return (
 		<div className="space-y-4">
-			<div className="rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3">
-				<p className="text-xs text-zinc-400">
-					<strong className="text-zinc-300">Prerequisites:</strong> To send
+			<div className="rounded-lg border border-[#d9c6a3]/50 bg-[#faf3e3]/50 p-3">
+				<p className="text-xs text-[#6f6044]">
+					<strong className="text-[#4b3f2d]">Prerequisites:</strong> To send
 					email invites, add a Resend API key in Settings → AI Providers.
 					Without it, invites are created but emails won't be sent — members can
 					still register with the invited email to auto-join.
@@ -351,7 +351,7 @@ function MembersTab({ toast }: { toast: (msg: string) => void }) {
 			</div>
 			<div className="flex justify-end">
 				<button
-					className="flex items-center gap-1.5 px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-white text-sm font-medium transition-colors"
+					className="flex items-center gap-1.5 px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-[#2b2418] text-sm font-medium transition-colors"
 					onClick={() => setShowInviteModal(true)}
 				>
 					<Plus className="w-4 h-4" /> Invite member
@@ -360,7 +360,7 @@ function MembersTab({ toast }: { toast: (msg: string) => void }) {
 
 			{/* Invite modal */}
 			{showInviteModal && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/50">
 					<div className="glass rounded-xl p-6 w-full max-w-sm space-y-4 shadow-xl">
 						<div className="flex items-center justify-between">
 							<p className="font-semibold text-sm">Invite member</p>
@@ -398,7 +398,7 @@ function MembersTab({ toast }: { toast: (msg: string) => void }) {
 							<button
 								onClick={() => inviteM.mutate()}
 								disabled={!inviteEmail || inviteM.isPending}
-								className="flex items-center gap-1.5 px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-white text-sm font-medium transition-colors disabled:opacity-50"
+								className="flex items-center gap-1.5 px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-[#2b2418] text-sm font-medium transition-colors disabled:opacity-50"
 							>
 								{inviteM.isPending ? (
 									<Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -744,7 +744,7 @@ function EnvironmentTab({ toast }: { toast: (msg: string) => void }) {
 				<button
 					disabled={saving}
 					onClick={() => void handleSave()}
-					className="flex items-center gap-2 px-4 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-white text-sm font-medium transition-colors disabled:opacity-50"
+					className="flex items-center gap-2 px-4 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-[#2b2418] text-sm font-medium transition-colors disabled:opacity-50"
 				>
 					{saving ? (
 						<Loader2 className="w-4 h-4 animate-spin" />
@@ -950,7 +950,7 @@ function DangerTab({ toast }: { toast: (msg: string) => void }) {
 
 			{/* Delete confirmation modal */}
 			{showDeleteModal && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/60">
 					<div className="glass rounded-xl p-6 w-full max-w-sm shadow-xl space-y-4 border border-accent-red/30">
 						<div className="flex items-start gap-3">
 							<AlertTriangle className="w-5 h-5 text-accent-red shrink-0 mt-0.5" />
@@ -987,7 +987,7 @@ function DangerTab({ toast }: { toast: (msg: string) => void }) {
 									!selectedCompanyId
 								}
 								onClick={() => deleteCompany.mutate()}
-								className="px-3 py-2 rounded bg-accent-red text-white text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent-red/80"
+								className="px-3 py-2 rounded bg-accent-red text-[#2b2418] text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent-red/80"
 							>
 								{deleteCompany.isPending ? "Deleting…" : "Delete permanently"}
 							</button>

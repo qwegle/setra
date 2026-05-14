@@ -15,6 +15,7 @@
 
 import { type FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
+import { ParticleField } from "../components/ParticleField";
 import { Button, Input } from "../components/ui";
 import { useAuth } from "../context/AuthContext";
 
@@ -51,17 +52,18 @@ function LoginPageInner() {
 	}
 
 	return (
-		<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#fbf6ec] via-[#f7efe0] to-[#f1e6d0]">
+		<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#fdfaf3] via-[#faf3e3] to-[#f4ead3]">
+			<ParticleField />
 			<div
 				aria-hidden
-				className="pointer-events-none absolute inset-0 opacity-50"
+				className="pointer-events-none absolute inset-0 opacity-40"
 				style={{
 					backgroundImage:
-						"radial-gradient(circle at 20% 15%, rgba(212,165,116,0.18), transparent 45%), radial-gradient(circle at 85% 80%, rgba(168,140,98,0.16), transparent 50%)",
+						"radial-gradient(circle at 20% 15%, rgba(212,165,116,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(168,140,98,0.12), transparent 50%)",
 				}}
 			/>
 
-			<div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center gap-12 px-6 py-12 md:flex-row md:items-stretch md:gap-16">
+			<div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center gap-10 px-4 py-12 md:flex-row md:items-center md:gap-10">
 				{/* Brand panel */}
 				<div className="hidden flex-1 flex-col justify-center md:flex">
 					<div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2b2418] text-2xl font-semibold text-[#fbf6ec] shadow-lg">
@@ -94,16 +96,16 @@ function LoginPageInner() {
 				</div>
 
 				{/* Form card */}
-				<div className="w-full max-w-md flex-shrink-0">
-					<div className="rounded-2xl border border-[#e5d6b8] bg-white/90 p-7 shadow-[0_24px_48px_-24px_rgba(74,55,28,0.25)] backdrop-blur-sm md:p-9">
-						<div className="mb-6 flex items-center justify-between gap-2">
+				<div className="w-full max-w-xl flex-shrink-0">
+					<div className="rounded-2xl border border-[#e5d6b8] bg-white/95 px-5 py-8 shadow-[0_24px_48px_-24px_rgba(74,55,28,0.18)] backdrop-blur-sm md:px-6 md:py-10">
+						<div className="mb-6 flex items-center justify-between gap-2 rounded-lg bg-[#f7eed8]/70 p-1">
 							<button
 								type="button"
 								onClick={() => setMode("signin")}
-								className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+								className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
 									mode === "signin"
-										? "bg-[#2b2418] text-[#fbf6ec]"
-										: "text-[#5b4f3a] hover:bg-[#f3e7cf]"
+										? "bg-[#2b2418] text-[#fbf6ec] shadow-sm"
+										: "text-[#5b4f3a] hover:bg-white/60"
 								}`}
 							>
 								Sign in
@@ -111,10 +113,10 @@ function LoginPageInner() {
 							<button
 								type="button"
 								onClick={() => setMode("register")}
-								className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+								className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
 									mode === "register"
-										? "bg-[#2b2418] text-[#fbf6ec]"
-										: "text-[#5b4f3a] hover:bg-[#f3e7cf]"
+										? "bg-[#2b2418] text-[#fbf6ec] shadow-sm"
+										: "text-[#5b4f3a] hover:bg-white/60"
 								}`}
 							>
 								Create account
@@ -139,7 +141,7 @@ function LoginPageInner() {
 						)}
 					</div>
 					<p className="mt-4 text-center text-xs text-[#6f6044]">
-						Need help? Browse the docs at setra.sh/docs
+						No API keys required — connect any CLI you already use.
 					</p>
 				</div>
 			</div>
@@ -303,7 +305,7 @@ function RegisterForm({ onSuccess, register, onSwitchToSignIn }: RegisterFormPro
 
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4" noValidate>
-			<div className="grid grid-cols-2 gap-3">
+			<div className="grid grid-cols-2 gap-4">
 				<Field label="First name">
 					<Input
 						required
@@ -321,7 +323,7 @@ function RegisterForm({ onSuccess, register, onSwitchToSignIn }: RegisterFormPro
 					/>
 				</Field>
 			</div>
-			<div className="grid grid-cols-2 gap-3">
+			<div className="grid grid-cols-2 gap-4">
 				<Field label="Email">
 					<Input
 						type="email"
@@ -342,7 +344,7 @@ function RegisterForm({ onSuccess, register, onSwitchToSignIn }: RegisterFormPro
 					/>
 				</Field>
 			</div>
-			<div className="grid grid-cols-2 gap-3">
+			<div className="grid grid-cols-2 gap-4">
 				<Field label="Password">
 					<Input
 						type="password"
@@ -364,7 +366,7 @@ function RegisterForm({ onSuccess, register, onSwitchToSignIn }: RegisterFormPro
 					/>
 				</Field>
 			</div>
-			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<Field label="Security question">
 					<select
 						value={securityQuestion}

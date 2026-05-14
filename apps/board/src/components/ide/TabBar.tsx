@@ -31,7 +31,7 @@ export function TabBar({ tabs, activeTabId, onSelect, onClose }: TabBarProps) {
 							onClick={() => onSelect(id)}
 							className={cn(
 								"group flex h-9 min-w-0 max-w-[220px] items-center gap-2 rounded-t-md border px-3 text-xs transition-colors",
-								active ? "text-white" : "text-[#9DA2A6] hover:text-white",
+								active ? "text-[#2b2418]" : "text-[#9DA2A6] hover:text-[#2b2418]",
 							)}
 							style={{
 								borderColor: REPLIT.border,

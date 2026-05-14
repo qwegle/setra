@@ -382,7 +382,7 @@ QUICK_ACTIONS: [{"label": "Create first issue", "route": "/projects"}, {"label":
 											"rounded-xl px-3 py-2 text-sm leading-relaxed",
 											msg.role === "assistant"
 												? "bg-muted/50 text-foreground"
-												: "bg-setra-600 text-white ml-auto",
+												: "bg-setra-600 text-[#2b2418] ml-auto",
 										)}
 									>
 										{msg.content}
@@ -439,7 +439,7 @@ QUICK_ACTIONS: [{"label": "Create first issue", "route": "/projects"}, {"label":
 								type="button"
 								onClick={() => sendMessage(input)}
 								disabled={!input.trim() || loading}
-								className="flex items-center justify-center w-9 h-9 rounded-lg bg-setra-600 text-white disabled:opacity-40 hover:bg-setra-500 transition-colors shrink-0"
+								className="flex items-center justify-center w-9 h-9 rounded-lg bg-setra-600 text-[#2b2418] disabled:opacity-40 hover:bg-setra-500 transition-colors shrink-0"
 							>
 								<Send className="w-3.5 h-3.5" />
 							</button>

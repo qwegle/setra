@@ -89,7 +89,7 @@ export function Modal({
 
 	return createPortal(
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/70 p-4 backdrop-blur-sm"
 			onMouseDown={(event) => {
 				if (event.target === event.currentTarget) onClose();
 			}}
@@ -101,12 +101,12 @@ export function Modal({
 				aria-labelledby={titleId}
 				tabIndex={-1}
 				className={cn(
-					"mx-4 w-full rounded-lg border border-zinc-700 bg-zinc-900 p-6 shadow-2xl outline-none md:mx-auto max-h-[90vh] flex flex-col",
+					"mx-4 w-full rounded-lg border border-[#d9c6a3] bg-[#faf3e3] p-6 shadow-2xl outline-none md:mx-auto max-h-[90vh] flex flex-col",
 					sizeClasses[size],
 				)}
 			>
 				<div className="mb-4 flex items-start justify-between gap-4 flex-shrink-0">
-					<h2 id={titleId} className="text-lg font-semibold text-white">
+					<h2 id={titleId} className="text-lg font-semibold text-[#2b2418]">
 						{title}
 					</h2>
 					<Button

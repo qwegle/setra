@@ -41,7 +41,7 @@ const STATUS_CONFIG: Partial<
 > & {
 	idle: { variant: "default"; dot: string; label: string };
 } = {
-	idle: { variant: "default", dot: "bg-zinc-500", label: "Idle" },
+	idle: { variant: "default", dot: "bg-[#a39074]", label: "Idle" },
 	running: { variant: "success", dot: "bg-green-400", label: "Running" },
 	waiting_approval: {
 		variant: "warning",
@@ -57,7 +57,7 @@ const STATUS_CONFIG: Partial<
 	error: { variant: "danger", dot: "bg-red-400", label: "Error" },
 	done: { variant: "info", dot: "bg-blue-400", label: "Done" },
 	completed: { variant: "info", dot: "bg-blue-400", label: "Completed" },
-	pending: { variant: "default", dot: "bg-zinc-400", label: "Pending" },
+	pending: { variant: "default", dot: "bg-[#a39074]", label: "Pending" },
 };
 
 type FilterOption = "all" | AgentStatus;
@@ -226,7 +226,7 @@ export function AgentsPage() {
 				className="flex flex-wrap items-center gap-2"
 				aria-label="Agent status filters"
 			>
-				<Filter className="h-4 w-4 text-zinc-500" aria-hidden="true" />
+				<Filter className="h-4 w-4 text-[#8a7a5c]" aria-hidden="true" />
 				{FILTER_OPTIONS.map((option) => (
 					<Button
 						key={option.value}
@@ -311,18 +311,18 @@ function AgentCard({
 
 	return (
 		<Link to={`/agents/${agent.id}/dashboard`} className="block">
-			<Card className="h-full transition-colors hover:border-zinc-600">
+			<Card className="h-full transition-colors hover:border-[#d9c6a3]">
 				<div className="space-y-4">
 					<div className="flex items-start justify-between gap-3">
 						<div className="flex items-center gap-3">
-							<div className="rounded-lg bg-blue-500/15 p-3 text-blue-300">
+							<div className="rounded-lg bg-[#7a5421]/15 p-3 text-[#7a5421]">
 								<Bot className="h-5 w-5" aria-hidden="true" />
 							</div>
 							<div className="min-w-0">
-								<p className="truncate text-sm font-semibold text-white">
+								<p className="truncate text-sm font-semibold text-[#2b2418]">
 									{agent.displayName || agent.role || agent.slug}
 								</p>
-								<p className="truncate font-mono text-xs text-zinc-400">
+								<p className="truncate font-mono text-xs text-[#6f6044]">
 									{agent.slug}
 								</p>
 							</div>
@@ -336,8 +336,8 @@ function AgentCard({
 						</Badge>
 					</div>
 
-					<div className="flex items-center gap-2 text-xs text-zinc-400">
-						<span className="text-zinc-500">Model:</span>
+					<div className="flex items-center gap-2 text-xs text-[#6f6044]">
+						<span className="text-[#8a7a5c]">Model:</span>
 						<span className="font-mono">
 							{agent.model && agent.model !== "auto"
 								? agent.model
@@ -350,7 +350,7 @@ function AgentCard({
 					</div>
 
 					<div className="space-y-2">
-						<p className="text-xs uppercase tracking-wide text-zinc-500">
+						<p className="text-xs uppercase tracking-wide text-[#8a7a5c]">
 							Run mode
 						</p>
 						<RunModePicker
@@ -366,24 +366,24 @@ function AgentCard({
 							label="Cache hit"
 							value={`${cacheHitPct}%`}
 							icon={
-								<Zap className="h-3 w-3 text-blue-300" aria-hidden="true" />
+								<Zap className="h-3 w-3 text-[#7a5421]" aria-hidden="true" />
 							}
 						/>
 					</div>
 
-					<div className="grid grid-cols-2 gap-3 text-sm text-zinc-400">
-						<div className="rounded-md bg-zinc-900/60 px-3 py-2">
-							<p className="text-xs text-zinc-500">Last active</p>
-							<p className="mt-1 text-white">
+					<div className="grid grid-cols-2 gap-3 text-sm text-[#6f6044]">
+						<div className="rounded-md bg-[#faf3e3]/60 px-3 py-2">
+							<p className="text-xs text-[#8a7a5c]">Last active</p>
+							<p className="mt-1 text-[#2b2418]">
 								{timeAgo(agent.lastActiveAt ?? "")}
 							</p>
 						</div>
-						<div className="rounded-md bg-zinc-900/60 px-3 py-2">
-							<p className="text-xs text-zinc-500">Heartbeat</p>
+						<div className="rounded-md bg-[#faf3e3]/60 px-3 py-2">
+							<p className="text-xs text-[#8a7a5c]">Heartbeat</p>
 							<p
 								className={cn(
 									"mt-1",
-									heartbeat?.stale ? "text-red-300" : "text-white",
+									heartbeat?.stale ? "text-red-300" : "text-[#2b2418]",
 								)}
 							>
 								{heartbeat?.ageSeconds == null
@@ -403,7 +403,7 @@ function AgentCard({
 							{agent.topSkills?.slice(0, 3).map((skill) => (
 								<span
 									key={skill}
-									className="inline-flex items-center rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] text-blue-300"
+									className="inline-flex items-center rounded-full border border-[#c9a25f]/20 bg-[#7a5421]/10 px-2 py-0.5 text-[10px] text-[#7a5421]"
 								>
 									{skill}
 								</span>
@@ -438,9 +438,9 @@ function AgentCard({
 					</div>
 
 					{agent.currentIssueId && (
-						<div className="rounded-md bg-zinc-900/60 px-3 py-2 text-sm text-zinc-300">
+						<div className="rounded-md bg-[#faf3e3]/60 px-3 py-2 text-sm text-[#4b3f2d]">
 							Working on{" "}
-							<span className="font-mono text-white">
+							<span className="font-mono text-[#2b2418]">
 								{agent.currentIssueId}
 							</span>
 						</div>
@@ -457,9 +457,9 @@ function Stat({
 	icon,
 }: { label: string; value: string; icon?: ReactNode }) {
 	return (
-		<div className="rounded-md bg-zinc-900/60 px-3 py-2 text-center">
-			<p className="text-xs text-zinc-500">{label}</p>
-			<p className="mt-1 flex items-center justify-center gap-1 text-sm font-semibold text-white">
+		<div className="rounded-md bg-[#faf3e3]/60 px-3 py-2 text-center">
+			<p className="text-xs text-[#8a7a5c]">{label}</p>
+			<p className="mt-1 flex items-center justify-center gap-1 text-sm font-semibold text-[#2b2418]">
 				{icon}
 				{value}
 			</p>
@@ -700,8 +700,8 @@ function HireAgentModal({
 						</button>
 					</div>
 				)}
-				<p className="flex items-center gap-2 text-sm text-zinc-400">
-					<Sparkles className="h-4 w-4 text-blue-300" aria-hidden="true" />
+				<p className="flex items-center gap-2 text-sm text-[#6f6044]">
+					<Sparkles className="h-4 w-4 text-[#7a5421]" aria-hidden="true" />
 					Choose a role template and model for your next agent.
 				</p>
 
@@ -724,16 +724,16 @@ function HireAgentModal({
 								type="button"
 								onClick={() => setTemplateId(template.id)}
 								className={cn(
-									"rounded-lg border px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+									"rounded-lg border px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e2c787]",
 									templateId === template.id
-										? "border-blue-500/50 bg-blue-500/10"
-										: "border-zinc-700 bg-zinc-900/40 hover:border-zinc-600",
+										? "border-[#c9a25f]/50 bg-[#7a5421]/10"
+										: "border-[#d9c6a3] bg-[#faf3e3]/40 hover:border-[#d9c6a3]",
 								)}
 							>
-								<p className="text-sm font-medium text-white">
+								<p className="text-sm font-medium text-[#2b2418]">
 									{template.name}
 								</p>
-								<p className="mt-1 text-sm text-zinc-400">
+								<p className="mt-1 text-sm text-[#6f6044]">
 									{template.description}
 								</p>
 								<Badge
@@ -763,11 +763,11 @@ function HireAgentModal({
 
 				{/* For CLI adapters, model is managed by the CLI itself — no selection needed */}
 				{["claude", "codex", "gemini", "amp", "opencode"].includes(adapterType) ? (
-					<div className="rounded-md border border-zinc-700/50 bg-zinc-800/40 px-3 py-2.5 text-sm text-zinc-400">
-						<span className="font-medium text-zinc-300">Model:</span> managed by{" "}
-						<span className="font-mono text-zinc-200">{adapterType}</span> CLI
+					<div className="rounded-md border border-[#d9c6a3]/50 bg-white/40 px-3 py-2.5 text-sm text-[#6f6044]">
+						<span className="font-medium text-[#4b3f2d]">Model:</span> managed by{" "}
+						<span className="font-mono text-[#3b3224]">{adapterType}</span> CLI
 						{adapterType === "codex" && modelId && modelId !== "auto" && (
-							<span className="ml-1 text-zinc-300">({modelId})</span>
+							<span className="ml-1 text-[#4b3f2d]">({modelId})</span>
 						)}
 					</div>
 				) : (

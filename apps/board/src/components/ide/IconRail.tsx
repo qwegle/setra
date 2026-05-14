@@ -27,8 +27,8 @@ export function IconRail({
 						className={cn(
 							"flex h-10 w-10 items-center justify-center rounded-lg border border-transparent transition-colors",
 							activeItem === id
-								? "text-white"
-								: "text-[#9DA2A6] hover:text-white",
+								? "text-[#2b2418]"
+								: "text-[#9DA2A6] hover:text-[#2b2418]",
 						)}
 						style={{
 							backgroundColor: activeItem === id ? REPLIT.panel : "transparent",
@@ -42,7 +42,7 @@ export function IconRail({
 				className="flex justify-center border-t py-3"
 				style={{ borderColor: REPLIT.border }}
 			>
-				<div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-[#24304A] text-xs font-semibold text-white">
+				<div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-[#24304A] text-xs font-semibold text-[#2b2418]">
 					{userInitial.slice(0, 1).toUpperCase()}
 					<span
 						className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2"

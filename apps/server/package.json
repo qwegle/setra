@@ -14,7 +14,7 @@
 		}
 	},
 	"scripts": {
-		"dev": "node --require ./server-preload.cjs node_modules/tsx/dist/cli.mjs watch src/index.ts",
+		"dev": "NODE_OPTIONS=\"--require ./server-preload.cjs\" node node_modules/tsx/dist/cli.mjs watch src/index.ts",
 		"build": "tsup src/index.ts --format esm --dts --clean",
 		"typecheck": "tsc --noEmit",
 		"clean": "rm -rf dist"

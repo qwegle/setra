@@ -133,21 +133,21 @@ function EnvironmentCard({
 	isDeleting: boolean;
 }) {
 	return (
-		<div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+		<div className="rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 p-4">
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-2">
 					<div className="flex items-center gap-2">
-						<h3 className="text-sm font-semibold text-white">
+						<h3 className="text-sm font-semibold text-[#2b2418]">
 							{environment.name}
 						</h3>
 						<Badge variant="info">{typeLabel(environment.ground_type)}</Badge>
 						{project ? <Badge>{project.name}</Badge> : null}
 					</div>
-					<p className="text-sm text-zinc-400">
+					<p className="text-sm text-[#6f6044]">
 						{formatEnvironmentSummary(environment)}
 					</p>
 					{environment.ground_type === "ssh" ? (
-						<div className="flex flex-wrap gap-2 text-xs text-zinc-400">
+						<div className="flex flex-wrap gap-2 text-xs text-[#6f6044]">
 							<Badge>{environment.auth_type}</Badge>
 							{environment.secret_ref ? (
 								<Badge>secret:{environment.secret_ref}</Badge>
@@ -159,12 +159,12 @@ function EnvironmentCard({
 					) : null}
 					{environment.ground_type === "docker" &&
 					environment.docker_network ? (
-						<p className="text-xs text-zinc-500">
+						<p className="text-xs text-[#8a7a5c]">
 							Network: {environment.docker_network}
 						</p>
 					) : null}
 					{environment.notes ? (
-						<p className="text-sm text-zinc-500">{environment.notes}</p>
+						<p className="text-sm text-[#8a7a5c]">{environment.notes}</p>
 					) : null}
 				</div>
 				<div className="flex items-center gap-2">
@@ -285,7 +285,7 @@ function EnvironmentModal({
 				</Select>
 				<div className="space-y-1.5 md:col-span-2">
 					<label
-						className="text-sm font-medium text-zinc-100"
+						className="text-sm font-medium text-[#2b2418]"
 						htmlFor="environment-notes"
 					>
 						Notes
@@ -295,7 +295,7 @@ function EnvironmentModal({
 						value={form.notes}
 						onChange={(event) => updateField("notes", event.target.value)}
 						placeholder="Shared staging shell for deployment verification"
-						className="min-h-24 w-full rounded-md border border-zinc-700 bg-zinc-900/70 px-3 py-2 text-sm text-white outline-none transition placeholder:text-zinc-500 focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+						className="min-h-24 w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3]/70 px-3 py-2 text-sm text-[#2b2418] outline-none transition placeholder:text-[#8a7a5c] focus-visible:border-[#c9a25f] focus-visible:ring-2 focus-visible:ring-[#e2c787] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
 					/>
 				</div>
 
@@ -488,7 +488,7 @@ export function EnvironmentsPage() {
 			/>
 
 			{isLoading ? (
-				<div className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-6 py-12 text-center text-sm text-zinc-400">
+				<div className="rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/40 px-6 py-12 text-center text-sm text-[#6f6044]">
 					Loading environments…
 				</div>
 			) : environments.length === 0 ? (
@@ -510,12 +510,12 @@ export function EnvironmentsPage() {
 				<div className="space-y-6">
 					<section className="space-y-3">
 						<div className="flex items-center gap-2">
-							<Server className="h-4 w-4 text-zinc-400" aria-hidden="true" />
-							<h2 className="text-sm font-semibold text-white">Company-wide</h2>
+							<Server className="h-4 w-4 text-[#6f6044]" aria-hidden="true" />
+							<h2 className="text-sm font-semibold text-[#2b2418]">Company-wide</h2>
 							<Badge>{grouped.companyWide.length}</Badge>
 						</div>
 						{grouped.companyWide.length === 0 ? (
-							<div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-900/30 px-4 py-6 text-sm text-zinc-500">
+							<div className="rounded-lg border border-dashed border-[#e5d6b8] bg-[#faf3e3]/30 px-4 py-6 text-sm text-[#8a7a5c]">
 								No shared environments yet.
 							</div>
 						) : (
@@ -540,10 +540,10 @@ export function EnvironmentsPage() {
 						<section key={projectId} className="space-y-3">
 							<div className="flex items-center gap-2">
 								<FolderKanban
-									className="h-4 w-4 text-zinc-400"
+									className="h-4 w-4 text-[#6f6044]"
 									aria-hidden="true"
 								/>
-								<h2 className="text-sm font-semibold text-white">
+								<h2 className="text-sm font-semibold text-[#2b2418]">
 									{projectMap.get(projectId)?.name ?? "Unknown project"}
 								</h2>
 								<Badge>{items.length}</Badge>

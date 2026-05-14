@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
 						<button
 							type="button"
 							onClick={this.reset}
-							className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-setra-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-setra-500"
+							className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-setra-600 px-4 py-2 text-sm font-medium text-[#2b2418] transition-colors hover:bg-setra-500"
 						>
 							<RotateCcw className="h-4 w-4" />
 							Try again

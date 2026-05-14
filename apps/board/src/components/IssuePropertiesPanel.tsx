@@ -258,7 +258,7 @@ export function IssuePropertiesPanel({
 											{issue.assignedAgentId ? (
 												<>
 													<div className="w-[18px] h-[18px] rounded-full bg-setra-600 flex items-center justify-center shrink-0">
-														<span className="text-[8px] font-mono text-white">
+														<span className="text-[8px] font-mono text-[#2b2418]">
 															{(assignedAgentName ?? issue.assignedAgentId)
 																.slice(0, 2)
 																.toUpperCase()}
@@ -453,7 +453,7 @@ export function IssuePropertiesPanel({
 								<div className="flex flex-col gap-2">
 									<div>
 										{issue.testStatus === "running" ? (
-											<span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2 py-1 text-[10px] font-medium text-blue-400">
+											<span className="inline-flex items-center gap-1.5 rounded-full bg-[#7a5421]/10 px-2 py-1 text-[10px] font-medium text-[#7a5421]">
 												<Loader2 className="h-3 w-3 animate-spin" /> Testing...
 											</span>
 										) : issue.testStatus === "passed" ? (

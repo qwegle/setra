@@ -148,8 +148,8 @@ function TreeNode({
 				className={cn(
 					"group flex h-8 items-center gap-2 rounded-md pr-2 text-sm",
 					isActive
-						? "bg-[#24304A] text-white"
-						: "text-[#9DA2A6] hover:bg-[#1C2333] hover:text-white",
+						? "bg-[#24304A] text-[#2b2418]"
+						: "text-[#9DA2A6] hover:bg-[#1C2333] hover:text-[#2b2418]",
 				)}
 				style={{ paddingLeft: `${12 + depth * 14}px` }}
 			>
@@ -338,7 +338,7 @@ export function FileTree({
 									description: "Create a new file in this workspace.",
 								})
 							}
-							className="rounded-md p-1.5 text-[#9DA2A6] hover:bg-[#1C2333] hover:text-white"
+							className="rounded-md p-1.5 text-[#9DA2A6] hover:bg-[#1C2333] hover:text-[#2b2418]"
 						>
 							<FilePlus2 className="h-4 w-4" />
 						</button>
@@ -353,7 +353,7 @@ export function FileTree({
 									description: "Create a new folder in this workspace.",
 								})
 							}
-							className="rounded-md p-1.5 text-[#9DA2A6] hover:bg-[#1C2333] hover:text-white"
+							className="rounded-md p-1.5 text-[#9DA2A6] hover:bg-[#1C2333] hover:text-[#2b2418]"
 						>
 							<FolderPlus className="h-4 w-4" />
 						</button>
@@ -368,7 +368,7 @@ export function FileTree({
 						value={searchQuery}
 						onChange={(event) => setSearchQuery(event.target.value)}
 						placeholder="Search files..."
-						className="h-9 w-full rounded-md border bg-[#0E1525] pl-9 pr-3 text-sm text-white outline-none"
+						className="h-9 w-full rounded-md border bg-[#0E1525] pl-9 pr-3 text-sm text-[#2b2418] outline-none"
 						style={{ borderColor: REPLIT.border }}
 					/>
 				</div>
@@ -452,7 +452,7 @@ export function FileTree({
 									});
 									setContextMenu(null);
 								}}
-								className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-white hover:bg-[#1C2333]"
+								className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-[#2b2418] hover:bg-[#1C2333]"
 							>
 								<FilePlus2 className="h-3.5 w-3.5" />
 								New file
@@ -469,7 +469,7 @@ export function FileTree({
 									});
 									setContextMenu(null);
 								}}
-								className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-white hover:bg-[#1C2333]"
+								className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-[#2b2418] hover:bg-[#1C2333]"
 							>
 								<FolderPlus className="h-3.5 w-3.5" />
 								New folder
@@ -488,7 +488,7 @@ export function FileTree({
 							});
 							setContextMenu(null);
 						}}
-						className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-white hover:bg-[#1C2333]"
+						className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-[#2b2418] hover:bg-[#1C2333]"
 					>
 						Rename
 					</button>
@@ -499,7 +499,7 @@ export function FileTree({
 							onToast?.("Path copied");
 							setContextMenu(null);
 						}}
-						className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-white hover:bg-[#1C2333]"
+						className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-[#2b2418] hover:bg-[#1C2333]"
 					>
 						Copy path
 					</button>
@@ -577,7 +577,7 @@ export function FileTree({
 									});
 							}
 						}}
-						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-white outline-none"
+						className="h-11 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-[#2b2418] outline-none"
 						style={{ borderColor: REPLIT.border }}
 						placeholder={
 							pathDialog?.entity === "folder"
@@ -617,7 +617,7 @@ export function FileTree({
 				<div className="space-y-3 text-sm text-[#9DA2A6]">
 					<p>
 						Delete{" "}
-						<span className="font-semibold text-white">
+						<span className="font-semibold text-[#2b2418]">
 							{deleteTarget?.path}
 						</span>
 						?

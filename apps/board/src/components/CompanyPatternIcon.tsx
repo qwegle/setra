@@ -51,7 +51,7 @@ export function CompanyPatternIcon({
 			) : (
 				<div
 					className={cn(
-						"flex items-center justify-center w-full h-full font-semibold text-white select-none",
+						"flex items-center justify-center w-full h-full font-semibold text-[#2b2418] select-none",
 						SIZE_TEXT[size],
 					)}
 					style={{ backgroundColor: brandColor }}

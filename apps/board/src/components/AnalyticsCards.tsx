@@ -56,7 +56,7 @@ function KpiCard({
 	hint,
 }: { label: string; value: string | number; hint?: string }) {
 	return (
-		<div className="rounded-xl border border-border/40 bg-ground-900/40 px-4 py-3">
+		<div className="rounded-xl border border-border/40 bg-[#fdfaf3]/40 px-4 py-3">
 			<p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
 				{label}
 			</p>
@@ -78,14 +78,14 @@ export function AnalyticsCards({ days = 14 }: { days?: number }) {
 
 	if (isLoading) {
 		return (
-			<div className="rounded-xl border border-border/40 bg-ground-900/30 px-4 py-6 text-sm text-muted-foreground">
+			<div className="rounded-xl border border-border/40 bg-[#fdfaf3]/30 px-4 py-6 text-sm text-muted-foreground">
 				Loading analytics…
 			</div>
 		);
 	}
 	if (error || !data) {
 		return (
-			<div className="rounded-xl border border-border/40 bg-ground-900/30 px-4 py-6 text-sm text-muted-foreground">
+			<div className="rounded-xl border border-border/40 bg-[#fdfaf3]/30 px-4 py-6 text-sm text-muted-foreground">
 				Analytics unavailable: {error instanceof Error ? error.message : "no data"}
 			</div>
 		);
@@ -238,7 +238,7 @@ function ChartCard({
 	children,
 }: { title: string; children: React.ReactNode }) {
 	return (
-		<div className="rounded-xl border border-border/40 bg-ground-900/40 px-3 py-3">
+		<div className="rounded-xl border border-border/40 bg-[#fdfaf3]/40 px-3 py-3">
 			<p className="text-xs font-medium text-foreground/90 mb-2">{title}</p>
 			{children}
 		</div>

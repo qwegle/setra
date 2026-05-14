@@ -25,7 +25,7 @@ const AVATAR_COLORS = [
 	"bg-setra-600",
 	"bg-accent-purple",
 	"bg-accent-green",
-	"bg-blue-500",
+	"bg-[#7a5421]",
 	"bg-accent-orange",
 	"bg-yellow-500",
 ] as const;
@@ -44,7 +44,7 @@ function initials(name: string): string {
 
 const ROLE_BADGE: Record<CompanyMember["role"], string> = {
 	owner: "bg-accent-purple/15 text-accent-purple border-accent-purple/20",
-	admin: "bg-blue-500/15 text-blue-400 border-blue-500/20",
+	admin: "bg-[#7a5421]/15 text-[#7a5421] border-[#c9a25f]/20",
 	member: "bg-muted text-muted-foreground border-border/30",
 };
 
@@ -71,7 +71,7 @@ function MemberCard({
 					<MoreHorizontal className="w-4 h-4 text-muted-foreground" />
 				</button>
 				{menuOpen && (
-					<div className="absolute right-0 top-7 z-10 bg-ground-900 border border-border/50 rounded-md shadow-lg min-w-[140px] py-1">
+					<div className="absolute right-0 top-7 z-10 bg-[#fdfaf3] border border-border/50 rounded-md shadow-lg min-w-[140px] py-1">
 						<button
 							className="w-full px-3 py-1.5 text-sm text-left text-foreground hover:bg-muted/50"
 							onClick={() => {
@@ -99,7 +99,7 @@ function MemberCard({
 
 			<div
 				className={cn(
-					"w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-white mb-3",
+					"w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-[#2b2418] mb-3",
 					avatarBg(member.name),
 				)}
 			>
@@ -158,7 +158,7 @@ function AgentCard({ agent }: { agent: RosterEntry }) {
 		>
 			<div
 				className={cn(
-					"w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-white mb-3",
+					"w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-[#2b2418] mb-3",
 					avatarBg(agent.display_name ?? agent.agent ?? "?"),
 				)}
 			>
@@ -228,7 +228,7 @@ export function OrgMembersTab() {
 				</div>
 				<Link
 					to="/settings/company?tab=members"
-					className="flex items-center gap-2 px-3 py-1.5 bg-setra-600 hover:bg-setra-500 text-white rounded-md text-sm font-medium transition-colors"
+					className="flex items-center gap-2 px-3 py-1.5 bg-setra-600 hover:bg-setra-500 text-[#2b2418] rounded-md text-sm font-medium transition-colors"
 				>
 					<UserPlus className="w-4 h-4" />
 					Invite member
