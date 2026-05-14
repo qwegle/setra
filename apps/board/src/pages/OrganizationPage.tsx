@@ -117,7 +117,7 @@ function HireModal({
 	}
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-ground-950/80 backdrop-blur-sm">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/80 backdrop-blur-sm">
 			<div className="glass rounded-xl border border-border/60 w-full max-w-md p-6 flex flex-col gap-4">
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ function HireModal({
 						<button
 							type="submit"
 							disabled={loading || !displayName.trim() || !templateId}
-							className="flex items-center gap-1.5 px-4 py-1.5 bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-white text-sm rounded-md transition-colors"
+							className="flex items-center gap-1.5 px-4 py-1.5 bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-[#2b2418] text-sm rounded-md transition-colors"
 						>
 							{loading ? (
 								<Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -264,7 +264,7 @@ function CreateTemplateModal({
 	}
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-ground-950/80 backdrop-blur-sm">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/80 backdrop-blur-sm">
 			<div className="glass rounded-xl border border-border/60 w-full max-w-md p-6 flex flex-col gap-4">
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2">
@@ -360,7 +360,7 @@ function CreateTemplateModal({
 						<button
 							type="submit"
 							disabled={loading || !name.trim() || !agent.trim()}
-							className="flex items-center gap-1.5 px-4 py-1.5 bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-white text-sm rounded-md transition-colors"
+							className="flex items-center gap-1.5 px-4 py-1.5 bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-[#2b2418] text-sm rounded-md transition-colors"
 						>
 							{loading ? (
 								<Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -649,7 +649,7 @@ function RosterTab() {
 				</div>
 				<button
 					onClick={() => setShowHire(true)}
-					className="flex items-center gap-1.5 px-3 py-1.5 bg-setra-600 hover:bg-setra-500 text-white text-sm rounded-md transition-colors"
+					className="flex items-center gap-1.5 px-3 py-1.5 bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-sm rounded-md transition-colors"
 				>
 					<Plus className="w-3.5 h-3.5" />
 					Add Agent
@@ -678,7 +678,7 @@ function RosterTab() {
 						</div>
 						<button
 							onClick={() => setShowHire(true)}
-							className="flex items-center gap-1.5 px-4 py-2 bg-setra-600 hover:bg-setra-500 text-white text-sm rounded-md transition-colors"
+							className="flex items-center gap-1.5 px-4 py-2 bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-sm rounded-md transition-colors"
 						>
 							<Plus className="w-3.5 h-3.5" />
 							Add your first agent
@@ -737,7 +737,7 @@ function TemplatesTab() {
 				</div>
 				<button
 					onClick={() => setShowCreate(true)}
-					className="flex items-center gap-1.5 px-3 py-1.5 bg-setra-600 hover:bg-setra-500 text-white text-sm rounded-md transition-colors"
+					className="flex items-center gap-1.5 px-3 py-1.5 bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-sm rounded-md transition-colors"
 				>
 					<Plus className="w-3.5 h-3.5" />
 					Create Custom Template

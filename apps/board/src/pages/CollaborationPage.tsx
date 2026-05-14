@@ -40,7 +40,7 @@ function avatarColor(slug: string | null | undefined): string {
 		"bg-setra-600",
 		"bg-accent-purple",
 		"bg-accent-green",
-		"bg-blue-500",
+		"bg-[#7a5421]",
 		"bg-accent-orange",
 		"bg-yellow-500",
 	];
@@ -65,7 +65,7 @@ function initials(slug: string | null | undefined): string {
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
 const PRESENCE_WINDOW_MS = 10 * 60 * 1000;
 const MARKDOWN_PROSE_CLASS =
-	"prose prose-sm prose-invert max-w-none break-words text-sm text-foreground/90 leading-6 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1.5 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-border/60 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_a]:no-underline [&_code]:before:content-none [&_code]:after:content-none [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-zinc-900 [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-zinc-100 [&_pre]:shadow-none [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-[13px] [&_pre_code]:leading-6 [&_.hljs-comment]:text-zinc-500 [&_.hljs-keyword]:text-fuchsia-300 [&_.hljs-string]:text-emerald-300 [&_.hljs-number]:text-amber-300 [&_.hljs-title]:text-sky-300 [&_.hljs-built_in]:text-cyan-300 [&_.hljs-literal]:text-violet-300";
+	"prose prose-sm prose-invert max-w-none break-words text-sm text-foreground/90 leading-6 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1.5 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-border/60 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_a]:no-underline [&_code]:before:content-none [&_code]:after:content-none [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-[#faf3e3] [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-[#2b2418] [&_pre]:shadow-none [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-[13px] [&_pre_code]:leading-6 [&_.hljs-comment]:text-[#8a7a5c] [&_.hljs-keyword]:text-fuchsia-300 [&_.hljs-string]:text-emerald-300 [&_.hljs-number]:text-amber-300 [&_.hljs-title]:text-sky-300 [&_.hljs-built_in]:text-cyan-300 [&_.hljs-literal]:text-violet-300";
 
 type MarkdownLinkProps = ComponentPropsWithoutRef<"a"> & ExtraProps;
 type MarkdownCodeProps = ComponentPropsWithoutRef<"code"> & ExtraProps;
@@ -103,7 +103,7 @@ const markdownComponents: Components = {
 	a: ({ href, className, children, ...props }: MarkdownLinkProps) => {
 		if (href?.startsWith("mention:")) {
 			return (
-				<span className="inline-flex items-center rounded bg-blue-500/20 px-1.5 py-0.5 text-xs font-medium text-blue-300 align-middle">
+				<span className="inline-flex items-center rounded bg-[#7a5421]/20 px-1.5 py-0.5 text-xs font-medium text-[#7a5421] align-middle">
 					{children}
 				</span>
 			);
@@ -124,7 +124,7 @@ const markdownComponents: Components = {
 	code: ({ className, children, ...props }: MarkdownCodeProps) => (
 		<code
 			className={cn(
-				"rounded bg-zinc-800 px-1 font-mono text-[0.85em] text-zinc-100",
+				"rounded bg-white px-1 font-mono text-[0.85em] text-[#2b2418]",
 				className,
 			)}
 			{...props}
@@ -135,7 +135,7 @@ const markdownComponents: Components = {
 	pre: ({ className, children, ...props }: ComponentPropsWithoutRef<"pre">) => (
 		<pre
 			className={cn(
-				"my-2 overflow-x-auto rounded-lg bg-zinc-900 px-4 py-3 font-mono text-[13px] leading-6",
+				"my-2 overflow-x-auto rounded-lg bg-[#faf3e3] px-4 py-3 font-mono text-[13px] leading-6",
 				className,
 			)}
 			{...props}
@@ -501,7 +501,7 @@ export function CollaborationPage() {
 
 	return (
 		<div className="flex h-full min-h-0 bg-background text-foreground">
-			<aside className="flex w-64 shrink-0 flex-col border-r border-white/5 bg-zinc-900/95 text-zinc-100">
+			<aside className="flex w-64 shrink-0 flex-col border-r border-white/5 bg-[#faf3e3]/95 text-[#2b2418]">
 				<div className="border-b border-white/10 px-4 py-4">
 					<div className="flex items-center gap-2 text-sm font-semibold">
 						<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-setra-600/20 text-setra-300">
@@ -509,7 +509,7 @@ export function CollaborationPage() {
 						</div>
 						<div>
 							<div>Collaboration</div>
-							<p className="text-[11px] font-normal text-zinc-400">
+							<p className="text-[11px] font-normal text-[#6f6044]">
 								Slack-style agent chatter
 							</p>
 						</div>
@@ -521,7 +521,7 @@ export function CollaborationPage() {
 						<button
 							type="button"
 							onClick={() => setChannelsExpanded((value) => !value)}
-							className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400 transition-colors hover:text-zinc-200"
+							className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6f6044] transition-colors hover:text-[#3b3224]"
 						>
 							{channelsExpanded ? (
 								<ChevronDown className="h-3.5 w-3.5" />
@@ -546,7 +546,7 @@ export function CollaborationPage() {
 								</div>
 							)}
 							{!channelsLoading && !channelsError && channels.length === 0 && (
-								<div className="mx-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-400">
+								<div className="mx-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-[#6f6044]">
 									Channels will appear as agents start collaborating.
 								</div>
 							)}
@@ -558,8 +558,8 @@ export function CollaborationPage() {
 									className={cn(
 										"flex w-full items-center gap-2 rounded-md border-l-2 px-3 py-1.5 text-sm transition-all",
 										channel === activeChannel
-											? "border-setra-500 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]"
-											: "border-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-100",
+											? "border-setra-500 bg-white/10 text-[#2b2418] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]"
+											: "border-transparent text-[#6f6044] hover:bg-white/5 hover:text-[#2b2418]",
 									)}
 								>
 									{isBreakRoom(channel) ? (
@@ -582,7 +582,7 @@ export function CollaborationPage() {
 						<button
 							type="button"
 							onClick={() => setDmsExpanded((value) => !value)}
-							className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400 transition-colors hover:text-zinc-200"
+							className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6f6044] transition-colors hover:text-[#3b3224]"
 						>
 							{dmsExpanded ? (
 								<ChevronDown className="h-3.5 w-3.5" />
@@ -598,10 +598,10 @@ export function CollaborationPage() {
 										<Sparkles className="h-3.5 w-3.5" />
 									</div>
 									<div>
-										<div className="text-xs font-medium text-zinc-200">
+										<div className="text-xs font-medium text-[#3b3224]">
 											Direct messages coming soon
 										</div>
-										<p className="mt-1 text-[11px] leading-5 text-zinc-400">
+										<p className="mt-1 text-[11px] leading-5 text-[#6f6044]">
 											Private side conversations and 1:1 check-ins will land
 											here.
 										</p>
@@ -615,16 +615,16 @@ export function CollaborationPage() {
 				<div className="border-t border-white/10 p-3">
 					<div className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-2">
 						<div className="relative shrink-0">
-							<div className="flex h-9 w-9 items-center justify-center rounded-full bg-setra-600 text-xs font-semibold text-white">
+							<div className="flex h-9 w-9 items-center justify-center rounded-full bg-setra-600 text-xs font-semibold text-[#2b2418]">
 								{initials(currentSenderName)}
 							</div>
-							<span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-zinc-900 bg-emerald-400" />
+							<span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#e5d6b8] bg-emerald-400" />
 						</div>
 						<div className="min-w-0">
-							<div className="truncate text-sm font-medium text-white">
+							<div className="truncate text-sm font-medium text-[#2b2418]">
 								{currentSenderName}
 							</div>
-							<div className="text-xs text-zinc-400">
+							<div className="text-xs text-[#6f6044]">
 								{currentSenderSubtitle}
 							</div>
 						</div>
@@ -822,7 +822,7 @@ export function CollaborationPage() {
 																	<div className="relative h-9 w-9 shrink-0">
 																		<div
 																			className={cn(
-																				"flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-semibold text-white shadow-sm",
+																				"flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-semibold text-[#2b2418] shadow-sm",
 																				avatarColor(message.agentSlug),
 																			)}
 																		>
@@ -833,7 +833,7 @@ export function CollaborationPage() {
 																				"absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background",
 																				online
 																					? "bg-emerald-400"
-																					: "bg-zinc-500",
+																					: "bg-[#a39074]",
 																			)}
 																		/>
 																	</div>
@@ -914,7 +914,7 @@ export function CollaborationPage() {
 												<div className="relative h-8 w-8 shrink-0">
 													<div
 														className={cn(
-															"flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-semibold text-white",
+															"flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-semibold text-[#2b2418]",
 															avatarColor(agent.slug),
 														)}
 													>
@@ -923,7 +923,7 @@ export function CollaborationPage() {
 													<span
 														className={cn(
 															"absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-popover",
-															agent.online ? "bg-emerald-400" : "bg-zinc-500",
+															agent.online ? "bg-emerald-400" : "bg-[#a39074]",
 														)}
 													/>
 												</div>
@@ -993,7 +993,7 @@ export function CollaborationPage() {
 										type="button"
 										onClick={send}
 										disabled={!draft.trim() || post.isPending}
-										className="absolute bottom-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-setra-600 text-white transition-colors hover:bg-setra-500 disabled:cursor-not-allowed disabled:opacity-40"
+										className="absolute bottom-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-setra-600 text-[#2b2418] transition-colors hover:bg-setra-500 disabled:cursor-not-allowed disabled:opacity-40"
 										title="Send message"
 									>
 										{post.isPending ? (

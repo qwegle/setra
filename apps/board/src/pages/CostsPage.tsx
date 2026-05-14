@@ -491,7 +491,7 @@ function BudgetsTab() {
 						</p>
 					</div>
 					<button
-						className="flex items-center gap-1.5 rounded bg-setra-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-setra-600/80 disabled:opacity-50"
+						className="flex items-center gap-1.5 rounded bg-setra-600 px-3 py-2 text-sm font-medium text-[#2b2418] transition-colors hover:bg-setra-600/80 disabled:opacity-50"
 						onClick={() => saveBudgetConfig.mutate()}
 						disabled={saveBudgetConfig.isPending}
 					>
@@ -564,7 +564,7 @@ function BudgetsTab() {
 						className="w-40 bg-muted/40 border border-border/40 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-setra-600/50"
 					/>
 					<button
-						className="flex items-center gap-1.5 px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-white text-sm font-medium transition-colors"
+						className="flex items-center gap-1.5 px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-[#2b2418] text-sm font-medium transition-colors"
 						onClick={() => {
 							const n = Number.parseFloat(globalBudget);
 							if (!isNaN(n))
@@ -613,7 +613,7 @@ function BudgetsTab() {
 							className="w-32 bg-muted/40 border border-border/40 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-setra-600/50"
 						/>
 						<button
-							className="px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-white text-sm font-medium transition-colors"
+							className="px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-[#2b2418] text-sm font-medium transition-colors"
 							onClick={() => {
 								const n = Number.parseFloat(newLimit);
 								if (newAgentId && !isNaN(n)) {
@@ -903,7 +903,7 @@ function ReportsTab() {
 						/>
 					</div>
 					<button
-						className="flex items-center gap-1.5 px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-white text-sm font-medium transition-colors"
+						className="flex items-center gap-1.5 px-3 py-2 rounded bg-setra-600 hover:bg-setra-600/80 text-[#2b2418] text-sm font-medium transition-colors"
 						onClick={() => toast("Export started")}
 					>
 						<Download className="w-3.5 h-3.5" /> Export CSV

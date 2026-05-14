@@ -245,7 +245,7 @@ function TabBar({
 					className={cn(
 						"px-4 py-1.5 text-sm rounded-md transition-colors font-medium",
 						active === t
-							? "bg-setra-600 text-white"
+							? "bg-setra-600 text-[#2b2418]"
 							: "text-muted-foreground hover:text-foreground hover:bg-muted/30",
 					)}
 				>
@@ -669,7 +669,7 @@ function IntegrationsTab() {
 			</div>
 
 			{modalType && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/60 backdrop-blur-sm">
 					<div className="glass rounded-xl p-6 w-full max-w-xl animate-slide-in-up">
 						<div className="flex items-center gap-3 mb-1">
 							{(() => {
@@ -840,7 +840,7 @@ function IntegrationsTab() {
 													!isEditingModal ||
 													editingIntegration?.status !== "active"
 												}
-												className="px-3 py-1.5 text-xs rounded-md bg-setra-600 hover:bg-setra-500 text-white transition-colors disabled:opacity-50"
+												className="px-3 py-1.5 text-xs rounded-md bg-setra-600 hover:bg-setra-500 text-[#2b2418] transition-colors disabled:opacity-50"
 											>
 												Test connection
 											</button>
@@ -923,7 +923,7 @@ function IntegrationsTab() {
 								type="button"
 								onClick={handleSubmit}
 								disabled={isSaving}
-								className="px-3 py-1.5 text-sm rounded-md bg-setra-600 hover:bg-setra-500 text-white transition-colors disabled:opacity-50"
+								className="px-3 py-1.5 text-sm rounded-md bg-setra-600 hover:bg-setra-500 text-[#2b2418] transition-colors disabled:opacity-50"
 							>
 								{isSaving
 									? isEditingModal
@@ -939,7 +939,7 @@ function IntegrationsTab() {
 			)}
 
 			{confirmDelete && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/60 backdrop-blur-sm">
 					<div className="glass rounded-xl p-6 w-full max-w-sm animate-slide-in-up">
 						<h3 className="text-sm font-semibold mb-2">Remove integration?</h3>
 						<p className="text-xs text-muted-foreground mb-5">
@@ -958,7 +958,7 @@ function IntegrationsTab() {
 								type="button"
 								onClick={() => deleteMutation.mutate(confirmDelete)}
 								disabled={deleteMutation.isPending}
-								className="px-3 py-1.5 text-sm rounded-md bg-destructive hover:bg-destructive/80 text-white transition-colors disabled:opacity-50"
+								className="px-3 py-1.5 text-sm rounded-md bg-destructive hover:bg-destructive/80 text-[#2b2418] transition-colors disabled:opacity-50"
 							>
 								{deleteMutation.isPending ? "Removing…" : "Remove"}
 							</button>
@@ -1072,7 +1072,7 @@ export function SecretsTab() {
 					<button
 						type="button"
 						onClick={openCreateModal}
-						className="flex items-center gap-1.5 rounded-md bg-setra-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-setra-500"
+						className="flex items-center gap-1.5 rounded-md bg-setra-600 px-3 py-1.5 text-xs text-[#2b2418] transition-colors hover:bg-setra-500"
 					>
 						<Plus className="h-3.5 w-3.5" /> Add Password
 					</button>
@@ -1136,7 +1136,7 @@ export function SecretsTab() {
 			</div>
 
 			{showModal && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/60 backdrop-blur-sm">
 					<div className="glass w-full max-w-md animate-slide-in-up rounded-xl p-6">
 						<h3 className="mb-4 text-sm font-semibold">
 							{isEditing ? "Update saved password" : "Add Password"}
@@ -1220,7 +1220,7 @@ export function SecretsTab() {
 										: addMutation.mutate({ name, description, value })
 								}
 								disabled={(!isEditing && !name) || !value || isSaving}
-								className="px-3 py-1.5 text-sm rounded-md bg-setra-600 hover:bg-setra-500 text-white transition-colors disabled:opacity-50"
+								className="px-3 py-1.5 text-sm rounded-md bg-setra-600 hover:bg-setra-500 text-[#2b2418] transition-colors disabled:opacity-50"
 							>
 								{isSaving
 									? "Saving…"
@@ -1235,7 +1235,7 @@ export function SecretsTab() {
 
 			{/* Delete confirmation */}
 			{confirmDelete && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/60 backdrop-blur-sm">
 					<div className="glass w-full max-w-sm animate-slide-in-up rounded-xl p-6">
 						<h3 className="mb-2 text-sm font-semibold">Delete password?</h3>
 						<p className="mb-5 text-xs text-muted-foreground">
@@ -1254,7 +1254,7 @@ export function SecretsTab() {
 								type="button"
 								onClick={() => deleteMutation.mutate(confirmDelete)}
 								disabled={deleteMutation.isPending}
-								className="px-3 py-1.5 text-sm rounded-md bg-destructive hover:bg-destructive/80 text-white transition-colors disabled:opacity-50"
+								className="px-3 py-1.5 text-sm rounded-md bg-destructive hover:bg-destructive/80 text-[#2b2418] transition-colors disabled:opacity-50"
 							>
 								{deleteMutation.isPending ? "Deleting…" : "Delete"}
 							</button>

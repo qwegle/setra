@@ -237,12 +237,12 @@ function SectionIntro({
 }) {
 	return (
 		<div className="flex items-start gap-3">
-			<div className="rounded-lg bg-blue-500/10 p-2 text-blue-300">
+			<div className="rounded-lg bg-[#7a5421]/10 p-2 text-[#7a5421]">
 				<Icon className="h-4 w-4" aria-hidden="true" />
 			</div>
 			<div className="space-y-1">
-				<h2 className="text-base font-semibold text-white">{title}</h2>
-				<p className="text-sm text-zinc-400">{description}</p>
+				<h2 className="text-base font-semibold text-[#2b2418]">{title}</h2>
+				<p className="text-sm text-[#6f6044]">{description}</p>
 			</div>
 		</div>
 	);
@@ -280,7 +280,7 @@ function PasswordField({
 				<button
 					type="button"
 					onClick={() => setShow((current) => !current)}
-					className="absolute right-3 top-[2.35rem] text-zinc-400 transition-colors hover:text-zinc-200"
+					className="absolute right-3 top-[2.35rem] text-[#6f6044] transition-colors hover:text-[#3b3224]"
 					aria-label={show ? `Hide ${label}` : `Show ${label}`}
 				>
 					{show ? (
@@ -314,12 +314,12 @@ function SettingToggle({
 	const descriptionId = `${id}-description`;
 
 	return (
-		<div className="flex items-start justify-between gap-4 rounded-lg border border-zinc-700/50 bg-zinc-900/30 p-4">
+		<div className="flex items-start justify-between gap-4 rounded-lg border border-[#d9c6a3]/50 bg-[#faf3e3]/30 p-4">
 			<div className="space-y-1">
-				<p id={labelId} className="text-sm font-medium text-white">
+				<p id={labelId} className="text-sm font-medium text-[#2b2418]">
 					{label}
 				</p>
-				<p id={descriptionId} className="text-sm text-zinc-400">
+				<p id={descriptionId} className="text-sm text-[#6f6044]">
 					{description}
 				</p>
 			</div>
@@ -333,8 +333,8 @@ function SettingToggle({
 				disabled={disabled}
 				onClick={() => onChange(!checked)}
 				className={cn(
-					"relative inline-flex h-6 w-11 shrink-0 rounded-full border border-transparent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:opacity-50",
-					checked ? "bg-blue-600" : "bg-zinc-700",
+					"relative inline-flex h-6 w-11 shrink-0 rounded-full border border-transparent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e2c787] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:opacity-50",
+					checked ? "bg-[#7a5421]" : "bg-[#f3e7cf]",
 				)}
 			>
 				<span
@@ -369,12 +369,12 @@ function ProviderToggle({
 	const descriptionId = `${provider.id}-provider-description`;
 
 	return (
-		<div className="flex items-start justify-between gap-4 rounded-lg border border-zinc-700/50 bg-zinc-900/30 p-4">
+		<div className="flex items-start justify-between gap-4 rounded-lg border border-[#d9c6a3]/50 bg-[#faf3e3]/30 p-4">
 			<div className="space-y-1">
-				<p id={labelId} className="text-sm font-medium text-white">
+				<p id={labelId} className="text-sm font-medium text-[#2b2418]">
 					{provider.label}
 				</p>
-				<p id={descriptionId} className="text-xs text-zinc-400">
+				<p id={descriptionId} className="text-xs text-[#6f6044]">
 					{description}
 				</p>
 			</div>
@@ -390,8 +390,8 @@ function ProviderToggle({
 					disabled={disabled}
 					onClick={onToggle}
 					className={cn(
-						"relative inline-flex h-6 w-11 shrink-0 rounded-full border border-transparent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:opacity-50",
-						enabled ? "bg-blue-600" : "bg-zinc-700",
+						"relative inline-flex h-6 w-11 shrink-0 rounded-full border border-transparent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e2c787] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:opacity-50",
+						enabled ? "bg-[#7a5421]" : "bg-[#f3e7cf]",
 					)}
 				>
 					<span
@@ -424,7 +424,7 @@ function ReadOnlyField({
 			helperText={helperText}
 			value={value}
 			readOnly
-			className="text-zinc-300"
+			className="text-[#4b3f2d]"
 		/>
 	);
 }
@@ -1134,12 +1134,12 @@ export function SettingsPage() {
 					title="Semantic Memory"
 					description="Vector memory allows agents to recall context from past runs. Download the embedding model to enable it."
 				/>
-				<div className="space-y-3 text-sm text-zinc-400">
+				<div className="space-y-3 text-sm text-[#6f6044]">
 					<p>
 						{memoryModelStatus?.message ??
 							"Download the local model when you want semantic memory enabled."}
 					</p>
-					<p className="font-mono text-xs text-zinc-500">
+					<p className="font-mono text-xs text-[#8a7a5c]">
 						{memoryModelStatus?.path ??
 							"~/.setra/models/Xenova/all-MiniLM-L6-v2"}
 					</p>
@@ -1186,7 +1186,7 @@ export function SettingsPage() {
 						description="Connect cloud models, manage offline Ollama access, and choose which providers are active for this workspace."
 					/>
 					{serverSettings?.isOfflineOnly && (
-						<div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4 text-sm text-blue-200">
+						<div className="rounded-lg border border-[#c9a25f]/30 bg-[#7a5421]/10 p-4 text-sm text-[#2b2418]">
 							Offline mode — only local Ollama models are available.
 						</div>
 					)}
@@ -1386,8 +1386,8 @@ export function SettingsPage() {
 										/>
 									)}
 									{provider.id === "ollama" && !ollamaAvailable && (
-										<div className="space-y-3 rounded-lg border border-zinc-700/50 bg-zinc-900/20 p-4">
-											<p className="text-sm text-zinc-300">
+										<div className="space-y-3 rounded-lg border border-[#d9c6a3]/50 bg-[#faf3e3]/20 p-4">
+											<p className="text-sm text-[#4b3f2d]">
 												Install Ollama to unlock local offline models on this
 												machine.
 											</p>
@@ -1427,7 +1427,7 @@ export function SettingsPage() {
 													href="https://ollama.com/download"
 													target="_blank"
 													rel="noreferrer"
-													className="text-xs font-medium px-4 py-2 rounded border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
+													className="text-xs font-medium px-4 py-2 rounded border border-[#d9c6a3] text-[#6f6044] hover:text-[#2b2418] hover:border-[#c9b687] transition-colors"
 												>
 													Download manually ↗
 												</a>
@@ -1441,10 +1441,10 @@ export function SettingsPage() {
 									)}
 									<div className="space-y-2">
 										<div className="flex items-center justify-between gap-3">
-											<p className="text-sm font-medium text-white">
+											<p className="text-sm font-medium text-[#2b2418]">
 												Available models
 											</p>
-											<p className="text-xs text-zinc-500">
+											<p className="text-xs text-[#8a7a5c]">
 												Click a model to make it the default.
 											</p>
 										</div>
@@ -1493,10 +1493,10 @@ export function SettingsPage() {
 														className={cn(
 															"rounded-full border px-3 py-1.5 text-xs transition-colors",
 															defaultModel === model.id && !looksDisabled
-																? "border-blue-500/50 bg-blue-500/15 text-blue-200"
+																? "border-[#c9a25f]/50 bg-[#7a5421]/15 text-[#2b2418]"
 																: looksDisabled
-																	? "border-zinc-800 bg-zinc-900/50 text-zinc-500"
-																	: "border-zinc-700 bg-zinc-900/40 text-zinc-200 hover:border-zinc-500 hover:text-white",
+																	? "border-[#e5d6b8] bg-[#faf3e3]/50 text-[#8a7a5c]"
+																	: "border-[#d9c6a3] bg-[#faf3e3]/40 text-[#3b3224] hover:border-[#c9b687] hover:text-[#2b2418]",
 														)}
 														title={model.disabledReason}
 														aria-disabled={looksDisabled}
@@ -1657,7 +1657,7 @@ export function SettingsPage() {
 							</p>
 						)}
 					{selectableModelOptions.length === 0 && (
-						<p className="text-sm text-zinc-400">
+						<p className="text-sm text-[#6f6044]">
 							No model is currently selectable. Add and save an API key above,
 							or use a local Ollama model.
 						</p>
@@ -1810,7 +1810,7 @@ export function SettingsPage() {
 						onChange={setAutoApprove}
 					/>
 					{!autoApprove && (
-						<div className="space-y-3 rounded-lg border border-zinc-800 p-4">
+						<div className="space-y-3 rounded-lg border border-[#e5d6b8] p-4">
 							<p className="text-xs font-medium text-muted-foreground">
 								Require approval for:
 							</p>
@@ -2052,7 +2052,7 @@ export function SettingsPage() {
 			>
 				<pre
 					style={{ fontSize: `${fontSize}px`, fontFamily }}
-					className="overflow-x-auto rounded-lg border border-zinc-700/50 bg-zinc-900/40 p-4 text-zinc-300"
+					className="overflow-x-auto rounded-lg border border-[#d9c6a3]/50 bg-[#faf3e3]/40 p-4 text-[#4b3f2d]"
 				>
 					{"const hello = () => {\n  console.log('Hello, setra!');\n};"}
 				</pre>
@@ -2094,7 +2094,7 @@ export function SettingsPage() {
 			<Card subtitle="A privacy-first AI clone trained on your style and observed work.">
 				<a
 					href="/clone"
-					className="inline-flex items-center gap-2 text-sm font-medium text-blue-300 transition-colors hover:text-blue-200"
+					className="inline-flex items-center gap-2 text-sm font-medium text-[#7a5421] transition-colors hover:text-[#2b2418]"
 				>
 					Open Build Your Clone
 					<ExternalLink className="h-4 w-4" aria-hidden="true" />
@@ -2128,7 +2128,7 @@ export function SettingsPage() {
 							href="https://github.com/qwegle/setra"
 							target="_blank"
 							rel="noreferrer"
-							className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-blue-300 transition-colors hover:text-blue-200"
+							className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-[#7a5421] transition-colors hover:text-[#2b2418]"
 						>
 							Open repository
 							<ExternalLink className="h-4 w-4" aria-hidden="true" />
@@ -2167,7 +2167,7 @@ export function SettingsPage() {
 
 	return (
 		<div className="flex h-full overflow-hidden">
-			<aside className="w-56 shrink-0 border-r border-zinc-800/80 px-4 py-6">
+			<aside className="w-56 shrink-0 border-r border-[#e5d6b8]/80 px-4 py-6">
 				<nav aria-label="Settings sections" className="space-y-2">
 					{tabs.map((tab) => {
 						const Icon = tab.icon;
@@ -2181,7 +2181,7 @@ export function SettingsPage() {
 								className={cn(
 									"w-full justify-start",
 									activeTab === tab.id &&
-										"border border-blue-500/30 bg-blue-500/10",
+										"border border-[#c9a25f]/30 bg-[#7a5421]/10",
 								)}
 								aria-pressed={activeTab === tab.id}
 								icon={<Icon className="h-4 w-4" aria-hidden="true" />}

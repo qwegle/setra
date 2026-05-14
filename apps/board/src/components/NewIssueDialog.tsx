@@ -162,7 +162,7 @@ export function NewIssueDialog({
 						onChange={(e) => setDescription(e.target.value)}
 						placeholder="Add context, acceptance criteria, links…"
 						rows={5}
-						className="w-full rounded-md border border-border/40 bg-ground-900/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent-blue/50"
+						className="w-full rounded-md border border-border/40 bg-[#fdfaf3]/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent-blue/50"
 					/>
 				</div>
 

@@ -485,7 +485,7 @@ export function RoutinesPage() {
 
 			<Dialog.Root open={dialogOpen} onOpenChange={setDialogOpen}>
 				<Dialog.Portal>
-					<Dialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" />
+					<Dialog.Overlay className="fixed inset-0 z-40 bg-[#fdfaf3]/60 backdrop-blur-sm" />
 					<Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-full max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-border/50 bg-card p-6 shadow-2xl">
 						<div className="mb-4 flex items-center justify-between">
 							<Dialog.Title className="text-sm font-semibold text-foreground">

@@ -114,14 +114,23 @@ function AppShellInner() {
 
 	useEffect(() => {
 		if (loading || loadError) return;
+		// If user has no company, send them to /onboarding/company (the new
+		// boxed setup page). We deliberately do NOT auto-open the legacy
+		// OnboardingWizard — model/API-key configuration is optional and
+		// available from Settings instead. CLIs are picked up automatically.
 		if (companies.length === 0) {
-			if (location.pathname !== "/onboarding") {
-				navigate("/onboarding", { replace: true });
+			if (
+				location.pathname !== "/onboarding/company" &&
+				location.pathname !== "/login"
+			) {
+				navigate("/onboarding/company", { replace: true });
 			}
-			if (!onboardingOpen) openOnboarding();
 			return;
 		}
-		if (location.pathname === "/onboarding") {
+		if (
+			location.pathname === "/onboarding" ||
+			location.pathname === "/onboarding/company"
+		) {
 			navigate("/overview", { replace: true });
 		}
 	}, [
@@ -130,8 +139,6 @@ function AppShellInner() {
 		loading,
 		location.pathname,
 		navigate,
-		onboardingOpen,
-		openOnboarding,
 	]);
 
 	function handleClose() {
@@ -173,7 +180,7 @@ function AppShellInner() {
 			<AnimatePresence>
 				{switchState.active && (
 					<motion.div
-						className="fixed inset-0 z-[60] flex items-center justify-center bg-ground-900/70 backdrop-blur-sm"
+						className="fixed inset-0 z-[60] flex items-center justify-center bg-[#fdfaf3]/70 backdrop-blur-sm"
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
@@ -182,7 +189,7 @@ function AppShellInner() {
 							initial={{ opacity: 0, y: 10, scale: 0.98 }}
 							animate={{ opacity: 1, y: 0, scale: 1 }}
 							exit={{ opacity: 0, y: 10, scale: 0.98 }}
-							className="w-[440px] max-w-[92vw] rounded-xl border border-border/40 bg-ground-900/95 p-5 shadow-2xl"
+							className="w-[440px] max-w-[92vw] rounded-xl border border-border/40 bg-[#fdfaf3]/95 p-5 shadow-2xl"
 						>
 							<p className="text-xs uppercase tracking-wider text-muted-foreground/70">
 								Switching workspace

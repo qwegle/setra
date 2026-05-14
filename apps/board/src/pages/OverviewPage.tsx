@@ -28,15 +28,15 @@ import { type Agent, api } from "../lib/api";
 import { cn, formatCost, formatTokens, timeAgo } from "../lib/utils";
 
 const STATUS_DOT: Partial<Record<Agent["status"], string>> = {
-	idle: "bg-zinc-500",
+	idle: "bg-[#a39074]",
 	running: "bg-green-400",
 	waiting_approval: "bg-yellow-400",
 	paused: "bg-yellow-500",
 	error: "bg-red-400",
 	done: "bg-blue-400",
 	completed: "bg-blue-400",
-	pending: "bg-zinc-400",
-	inactive: "bg-zinc-600",
+	pending: "bg-[#a39074]",
+	inactive: "bg-[#e6d5b0]",
 };
 
 const STATUS_LABEL: Partial<Record<Agent["status"], string>> = {
@@ -90,9 +90,9 @@ function KpiCard({
 		<Card className="h-full">
 			<div className="flex items-start justify-between gap-4">
 				<div>
-					<p className="text-sm text-zinc-400">{label}</p>
-					<p className="mt-2 text-2xl font-semibold text-white">{value}</p>
-					<p className="mt-2 text-sm text-zinc-400">{subtitle}</p>
+					<p className="text-sm text-[#6f6044]">{label}</p>
+					<p className="mt-2 text-2xl font-semibold text-[#2b2418]">{value}</p>
+					<p className="mt-2 text-sm text-[#6f6044]">{subtitle}</p>
 				</div>
 				<div className={cn("rounded-lg p-3", accent)}>
 					<Icon className="h-5 w-5" aria-hidden="true" />
@@ -106,7 +106,7 @@ function SectionLink({ to, label }: { to: string; label: string }) {
 	return (
 		<Link
 			to={to}
-			className="inline-flex items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-zinc-200"
+			className="inline-flex items-center gap-1 text-sm text-[#6f6044] transition-colors hover:text-[#3b3224]"
 		>
 			{label}
 			<ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -236,7 +236,7 @@ export function OverviewPage() {
 							value={projects.length}
 							icon={FolderKanban}
 							subtitle={`${projects.filter((project) => project.activeAgentCount > 0).length} active`}
-							accent="bg-blue-500/15 text-blue-300"
+							accent="bg-[#7a5421]/15 text-[#7a5421]"
 						/>
 						<KpiCard
 							label="Active agents"
@@ -257,7 +257,7 @@ export function OverviewPage() {
 							value={`${cacheHitPct}%`}
 							icon={Zap}
 							subtitle="Prompt cache efficiency"
-							accent="bg-blue-500/15 text-blue-300"
+							accent="bg-[#7a5421]/15 text-[#7a5421]"
 						/>
 						<KpiCard
 							label="Approvals"
@@ -269,7 +269,7 @@ export function OverviewPage() {
 							accent={
 								pendingApprovalCount > 0
 									? "bg-yellow-500/15 text-yellow-300"
-									: "bg-zinc-700/40 text-zinc-300"
+									: "bg-[#f3e7cf]/40 text-[#4b3f2d]"
 							}
 						/>
 					</div>
@@ -290,7 +290,7 @@ export function OverviewPage() {
 									{recentAgents.map((agent) => (
 										<div
 											key={agent.id}
-											className="flex items-center gap-3 rounded-lg border border-zinc-700/50 bg-zinc-900/40 px-3 py-3"
+											className="flex items-center gap-3 rounded-lg border border-[#d9c6a3]/50 bg-[#faf3e3]/40 px-3 py-3"
 										>
 											<span
 												className={cn(
@@ -301,7 +301,7 @@ export function OverviewPage() {
 											/>
 											<div className="min-w-0 flex-1">
 												<div className="flex items-center gap-2">
-													<p className="truncate text-sm font-medium text-white">
+													<p className="truncate text-sm font-medium text-[#2b2418]">
 														{agent.role}
 													</p>
 													<Badge
@@ -318,12 +318,12 @@ export function OverviewPage() {
 														{STATUS_LABEL[agent.status] ?? agent.status}
 													</Badge>
 												</div>
-												<p className="mt-1 truncate text-sm text-zinc-400">
+												<p className="mt-1 truncate text-sm text-[#6f6044]">
 													{agent.model ?? "No model assigned"}
 												</p>
 											</div>
-											<div className="text-right text-sm text-zinc-400">
-												<p className="font-medium text-white">
+											<div className="text-right text-sm text-[#6f6044]">
+												<p className="font-medium text-[#2b2418]">
 													{formatCost(agent.totalCostUsd ?? 0)}
 												</p>
 												<p>
@@ -356,12 +356,12 @@ export function OverviewPage() {
 										<Link
 											key={project.id}
 											to={`/projects/${project.id}`}
-											className="block rounded-lg border border-zinc-700/50 bg-zinc-900/40 px-3 py-3 transition-colors hover:border-zinc-600 hover:bg-zinc-900/60"
+											className="block rounded-lg border border-[#d9c6a3]/50 bg-[#faf3e3]/40 px-3 py-3 transition-colors hover:border-[#d9c6a3] hover:bg-[#faf3e3]/60"
 										>
 											<div className="flex items-start justify-between gap-3">
 												<div className="min-w-0">
 													<div className="flex flex-wrap items-center gap-2">
-														<p className="truncate text-sm font-medium text-white">
+														<p className="truncate text-sm font-medium text-[#2b2418]">
 															{project.name}
 														</p>
 														{project.activeAgentCount > 0 && (
@@ -371,13 +371,13 @@ export function OverviewPage() {
 														)}
 													</div>
 													{project.description && (
-														<p className="mt-1 truncate text-sm text-zinc-400">
+														<p className="mt-1 truncate text-sm text-[#6f6044]">
 															{project.description}
 														</p>
 													)}
 												</div>
-												<div className="text-right text-sm text-zinc-400">
-													<p className="text-white">
+												<div className="text-right text-sm text-[#6f6044]">
+													<p className="text-[#2b2418]">
 														{project.issueCount} issues
 													</p>
 													<p>{formatCost(project.totalCostUsd)}</p>
@@ -394,28 +394,28 @@ export function OverviewPage() {
 						<Card title="Token usage" subtitle="This month across all runs">
 							<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 								<div>
-									<p className="text-sm text-zinc-400">Input tokens</p>
-									<p className="mt-2 text-xl font-semibold text-white">
+									<p className="text-sm text-[#6f6044]">Input tokens</p>
+									<p className="mt-2 text-xl font-semibold text-[#2b2418]">
 										{formatTokens(budget.totalInputTokens)}
 									</p>
 								</div>
 								<div>
-									<p className="text-sm text-zinc-400">Output tokens</p>
-									<p className="mt-2 text-xl font-semibold text-white">
+									<p className="text-sm text-[#6f6044]">Output tokens</p>
+									<p className="mt-2 text-xl font-semibold text-[#2b2418]">
 										{formatTokens(budget.totalOutputTokens)}
 									</p>
 								</div>
 								<div>
-									<p className="text-sm text-zinc-400">Cache reads</p>
-									<p className="mt-2 text-xl font-semibold text-white">
+									<p className="text-sm text-[#6f6044]">Cache reads</p>
+									<p className="mt-2 text-xl font-semibold text-[#2b2418]">
 										{formatTokens(budget.totalCacheReadTokens)}
 									</p>
 								</div>
 							</div>
 							<div className="mt-4 space-y-2">
-								<div className="flex h-2 overflow-hidden rounded-full bg-zinc-900">
+								<div className="flex h-2 overflow-hidden rounded-full bg-[#faf3e3]">
 									<div
-										className="bg-blue-500"
+										className="bg-[#7a5421]"
 										style={{
 											width: `${(budget.totalInputTokens / (budget.totalInputTokens + budget.totalOutputTokens + budget.totalCacheReadTokens || 1)) * 100}%`,
 										}}
@@ -433,10 +433,10 @@ export function OverviewPage() {
 										}}
 									/>
 								</div>
-								<div className="flex flex-wrap gap-4 text-sm text-zinc-400">
+								<div className="flex flex-wrap gap-4 text-sm text-[#6f6044]">
 									<span className="flex items-center gap-2">
 										<span
-											className="h-2 w-2 rounded-full bg-blue-500"
+											className="h-2 w-2 rounded-full bg-[#7a5421]"
 											aria-hidden="true"
 										/>
 										Input

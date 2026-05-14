@@ -103,7 +103,7 @@ function initials(value: string): string {
 function avatarTone(value: string): string {
 	const palette = [
 		"bg-setra-600",
-		"bg-blue-500",
+		"bg-[#7a5421]",
 		"bg-emerald-500",
 		"bg-violet-500",
 		"bg-orange-500",
@@ -143,7 +143,7 @@ function ProjectMetric({
 	return (
 		<div className="glass rounded-xl px-4 py-3">
 			<div className="text-xs text-muted-foreground">{label}</div>
-			<div className="mt-1 text-2xl font-semibold text-white">{value}</div>
+			<div className="mt-1 text-2xl font-semibold text-[#2b2418]">{value}</div>
 			{subtitle ? (
 				<div className="mt-1 text-xs text-muted-foreground">{subtitle}</div>
 			) : null}
@@ -158,7 +158,7 @@ function AgentAvatar({
 		<div
 			title={`${agent.displayName} (@${agent.slug})`}
 			className={cn(
-				"flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold text-white ring-2 ring-zinc-950",
+				"flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold text-[#2b2418] ring-2 ring-zinc-950",
 				avatarTone(agent.slug),
 			)}
 		>
@@ -645,7 +645,7 @@ export function ProjectDetailPage() {
 			/>
 
 			{/* Tab bar */}
-			<div className="flex flex-wrap gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-2">
+			<div className="flex flex-wrap gap-1.5 rounded-xl border border-[#e5d6b8] bg-[#faf3e3]/70 p-2">
 				{TABS.map((tab) => (
 					<button
 						key={tab.id}
@@ -654,8 +654,8 @@ export function ProjectDetailPage() {
 						className={cn(
 							"inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm transition-colors",
 							activeTab === tab.id
-								? "bg-setra-600 text-white"
-								: "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100",
+								? "bg-setra-600 text-[#2b2418]"
+								: "text-[#6f6044] hover:bg-white hover:text-[#2b2418]",
 						)}
 					>
 						<tab.icon className="h-3.5 w-3.5" />
@@ -677,7 +677,7 @@ export function ProjectDetailPage() {
 						toastMessage.type === "error" &&
 							"border-red-500/30 bg-red-500/10 text-red-400",
 						toastMessage.type === "info" &&
-							"border-blue-500/30 bg-blue-500/10 text-blue-300",
+							"border-[#c9a25f]/30 bg-[#7a5421]/10 text-[#7a5421]",
 					)}
 				>
 					<span className="flex-1">{toastMessage.text}</span>
@@ -739,9 +739,9 @@ export function ProjectDetailPage() {
 					</div>
 					<div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
 						<Card title="Project overview">
-							<div className="space-y-3 text-sm text-zinc-300">
+							<div className="space-y-3 text-sm text-[#4b3f2d]">
 								<div>
-									<div className="text-xs uppercase tracking-wide text-zinc-500">
+									<div className="text-xs uppercase tracking-wide text-[#8a7a5c]">
 										Repository
 									</div>
 									<div className="mt-1 flex items-center gap-2 break-all">
@@ -756,7 +756,7 @@ export function ProjectDetailPage() {
 													}
 													target="_blank"
 													rel="noreferrer"
-													className="text-zinc-500 hover:text-zinc-300"
+													className="text-[#8a7a5c] hover:text-[#4b3f2d]"
 												>
 													<ExternalLink className="h-3.5 w-3.5" />
 												</a>
@@ -764,12 +764,12 @@ export function ProjectDetailPage() {
 										) : project.gitInitialized ? (
 											<Badge variant="info">Local git (no remote)</Badge>
 										) : (
-											<span className="text-zinc-500">Not linked yet</span>
+											<span className="text-[#8a7a5c]">Not linked yet</span>
 										)}
 									</div>
 								</div>
 								<div>
-									<div className="text-xs uppercase tracking-wide text-zinc-500">
+									<div className="text-xs uppercase tracking-wide text-[#8a7a5c]">
 										Workspace path
 									</div>
 									<div className="mt-1 break-all font-mono text-xs">
@@ -796,23 +796,23 @@ export function ProjectDetailPage() {
 								</div>
 								{sdlcQuery.data && (
 									<div className="grid gap-2 sm:grid-cols-3">
-										<div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2">
-											<div className="text-xs text-zinc-500">Cycle time</div>
-											<div className="mt-1 text-lg font-semibold text-white">
+										<div className="rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 px-3 py-2">
+											<div className="text-xs text-[#8a7a5c]">Cycle time</div>
+											<div className="mt-1 text-lg font-semibold text-[#2b2418]">
 												{sdlcQuery.data.cycle_time_median_hours == null
 													? "—"
 													: `${sdlcQuery.data.cycle_time_median_hours.toFixed(1)}h`}
 											</div>
 										</div>
-										<div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2">
-											<div className="text-xs text-zinc-500">24h activity</div>
-											<div className="mt-1 text-lg font-semibold text-white">
+										<div className="rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 px-3 py-2">
+											<div className="text-xs text-[#8a7a5c]">24h activity</div>
+											<div className="mt-1 text-lg font-semibold text-[#2b2418]">
 												{sdlcQuery.data.activity_last_24h}
 											</div>
 										</div>
-										<div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2">
-											<div className="text-xs text-zinc-500">Verified</div>
-											<div className="mt-1 text-lg font-semibold text-white">
+										<div className="rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 px-3 py-2">
+											<div className="text-xs text-[#8a7a5c]">Verified</div>
+											<div className="mt-1 text-lg font-semibold text-[#2b2418]">
 												{sdlcQuery.data.counts.verified}
 											</div>
 										</div>
@@ -835,13 +835,13 @@ export function ProjectDetailPage() {
 										{assignedAgents.map((a) => (
 											<div
 												key={a.id}
-												className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2"
+												className="flex items-center justify-between gap-3 rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 px-3 py-2"
 											>
 												<div className="min-w-0">
-													<div className="truncate font-medium text-white">
+													<div className="truncate font-medium text-[#2b2418]">
 														{a.displayName}
 													</div>
-													<div className="truncate text-xs text-zinc-400">
+													<div className="truncate text-xs text-[#6f6044]">
 														@{a.slug} · {a.agentRole}
 													</div>
 												</div>
@@ -910,16 +910,16 @@ export function ProjectDetailPage() {
 								return (
 									<div
 										key={agent.id}
-										className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4"
+										className="rounded-xl border border-[#e5d6b8] bg-[#faf3e3]/60 p-4"
 									>
 										<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 											<div className="flex min-w-0 items-center gap-3">
 												<AgentAvatar agent={agent} />
 												<div className="min-w-0">
-													<div className="truncate text-base font-semibold text-white">
+													<div className="truncate text-base font-semibold text-[#2b2418]">
 														{agent.displayName}
 													</div>
-													<div className="truncate text-sm text-zinc-400">
+													<div className="truncate text-sm text-[#6f6044]">
 														@{agent.slug} · {agent.adapterType && agent.adapterType !== "auto" ? agent.adapterType : "codex"} · {agent.modelId && agent.modelId !== "auto" ? agent.modelId : agent.adapterType === "claude" ? "claude (auto)" : "gpt-5.5 (auto)"}
 													</div>
 													<div className="mt-2 flex flex-wrap gap-2">
@@ -1016,7 +1016,7 @@ export function ProjectDetailPage() {
 						}
 					>
 						{gitStatusQuery.isLoading ? (
-							<div className="flex items-center gap-2 text-sm text-zinc-400">
+							<div className="flex items-center gap-2 text-sm text-[#6f6044]">
 								<Loader2 className="h-4 w-4 animate-spin" /> Loading…
 							</div>
 						) : (
@@ -1040,7 +1040,7 @@ export function ProjectDetailPage() {
 											href={remoteUrl.startsWith("http") ? remoteUrl : "#"}
 											target="_blank"
 											rel="noreferrer"
-											className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200"
+											className="inline-flex items-center gap-1 text-xs text-[#6f6044] hover:text-[#3b3224]"
 										>
 											<ExternalLink className="h-3 w-3" /> Remote
 										</a>
@@ -1050,9 +1050,9 @@ export function ProjectDetailPage() {
 									{gitStatusQuery.data?.files.map((f) => (
 										<div
 											key={f.path}
-											className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm"
+											className="flex items-center justify-between rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 px-3 py-2 text-sm"
 										>
-											<span className="truncate font-mono text-zinc-200">
+											<span className="truncate font-mono text-[#3b3224]">
 												{f.path}
 											</span>
 											<Badge variant={f.staged ? "info" : "default"}>
@@ -1073,38 +1073,38 @@ export function ProjectDetailPage() {
 					<Card title="Branches & recent commits">
 						<div className="grid gap-4 lg:grid-cols-[0.7fr_1.3fr]">
 							<div className="space-y-2">
-								<div className="text-xs uppercase tracking-wide text-zinc-500">
+								<div className="text-xs uppercase tracking-wide text-[#8a7a5c]">
 									Branches
 								</div>
 								{gitBranchesQuery.data?.branches.map((b) => (
 									<div
 										key={b.name}
-										className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-200"
+										className="flex items-center gap-2 rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 px-3 py-2 text-sm text-[#3b3224]"
 									>
-										<GitBranch className="h-4 w-4 text-zinc-500" />
+										<GitBranch className="h-4 w-4 text-[#8a7a5c]" />
 										<span className="truncate">{b.name}</span>
 										{b.current && <Badge variant="success">Current</Badge>}
 									</div>
 								))}
 							</div>
 							<div className="space-y-2">
-								<div className="text-xs uppercase tracking-wide text-zinc-500">
+								<div className="text-xs uppercase tracking-wide text-[#8a7a5c]">
 									Recent commits
 								</div>
 								{gitLogQuery.data?.commits.slice(0, 8).map((commit) => (
 									<div
 										key={commit.sha}
-										className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2"
+										className="rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 px-3 py-2"
 									>
 										<div className="flex items-start justify-between gap-2">
-											<div className="min-w-0 text-sm font-medium text-white truncate">
+											<div className="min-w-0 text-sm font-medium text-[#2b2418] truncate">
 												{commit.message}
 											</div>
-											<span className="shrink-0 font-mono text-xs text-zinc-500">
+											<span className="shrink-0 font-mono text-xs text-[#8a7a5c]">
 												{commit.shortSha}
 											</span>
 										</div>
-										<div className="mt-1 text-xs text-zinc-400">
+										<div className="mt-1 text-xs text-[#6f6044]">
 											{commit.author} · {timeAgo(commit.date)}
 										</div>
 									</div>
@@ -1123,7 +1123,7 @@ export function ProjectDetailPage() {
 						subtitle="Every commit is a checkpoint. Revert to any point in history."
 					>
 						{gitLogQuery.isLoading ? (
-							<div className="flex items-center gap-2 text-sm text-zinc-400">
+							<div className="flex items-center gap-2 text-sm text-[#6f6044]">
 								<Loader2 className="h-4 w-4 animate-spin" /> Loading
 								checkpoints…
 							</div>
@@ -1132,21 +1132,21 @@ export function ProjectDetailPage() {
 								{gitLogQuery.data?.commits.map((commit, i) => (
 									<div
 										key={commit.sha}
-										className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4"
+										className="rounded-xl border border-[#e5d6b8] bg-[#faf3e3]/60 p-4"
 									>
 										<div className="flex items-start justify-between gap-3">
 											<div className="flex items-start gap-3 min-w-0">
 												<div className="mt-1 flex flex-col items-center">
 													<GitCommit className="h-4 w-4 text-setra-400" />
 													{i < (gitLogQuery.data?.commits.length ?? 0) - 1 && (
-														<div className="mt-1 h-full w-px bg-zinc-800" />
+														<div className="mt-1 h-full w-px bg-white" />
 													)}
 												</div>
 												<div className="min-w-0">
-													<div className="font-medium text-white">
+													<div className="font-medium text-[#2b2418]">
 														{commit.message}
 													</div>
-													<div className="mt-1 text-xs text-zinc-400">
+													<div className="mt-1 text-xs text-[#6f6044]">
 														{commit.author} · {timeAgo(commit.date)} ·{" "}
 														<span className="font-mono">{commit.shortSha}</span>
 													</div>
@@ -1205,7 +1205,7 @@ export function ProjectDetailPage() {
 												href={runQuery.data.url}
 												target="_blank"
 												rel="noreferrer"
-												className="inline-flex items-center gap-1.5 rounded-lg bg-setra-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-setra-500"
+												className="inline-flex items-center gap-1.5 rounded-lg bg-setra-600 px-3 py-1.5 text-sm font-medium text-[#2b2418] hover:bg-setra-500"
 											>
 												<ExternalLink className="h-3.5 w-3.5" /> Preview
 											</a>
@@ -1233,17 +1233,17 @@ export function ProjectDetailPage() {
 									</Button>
 								)}
 								{runQuery.data?.startedAt && (
-									<span className="text-xs text-zinc-400">
+									<span className="text-xs text-[#6f6044]">
 										Started {timeAgo(runQuery.data.startedAt)}
 									</span>
 								)}
 							</div>
 							{runQuery.data?.lines && runQuery.data.lines.length > 0 && (
-								<div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
-									<div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+								<div className="rounded-lg border border-[#e5d6b8] bg-[#fdfaf3] p-4">
+									<div className="mb-2 text-xs font-medium uppercase tracking-wide text-[#8a7a5c]">
 										Output
 									</div>
-									<pre className="max-h-72 overflow-y-auto font-mono text-xs text-zinc-300 whitespace-pre-wrap">
+									<pre className="max-h-72 overflow-y-auto font-mono text-xs text-[#4b3f2d] whitespace-pre-wrap">
 										{runQuery.data.lines.join("\n")}
 									</pre>
 								</div>
@@ -1294,19 +1294,19 @@ export function ProjectDetailPage() {
 												>
 													{conn.status}
 												</Badge>
-												<span className="text-zinc-400">{conn.type}</span>
+												<span className="text-[#6f6044]">{conn.type}</span>
 											</div>
 											{conn.connectionString && (
-												<div className="font-mono text-xs text-zinc-500">
+												<div className="font-mono text-xs text-[#8a7a5c]">
 													{conn.connectionString}
 												</div>
 											)}
 											{conn.host && (
-												<div className="text-xs text-zinc-500">
+												<div className="text-xs text-[#8a7a5c]">
 													{conn.host}:{conn.port} / {conn.database}
 												</div>
 											)}
-											<div className="text-xs text-zinc-600">
+											<div className="text-xs text-[#9d8d6e]">
 												Added {timeAgo(conn.createdAt)}
 											</div>
 										</div>
@@ -1341,14 +1341,14 @@ export function ProjectDetailPage() {
 								value={secretKey}
 								onChange={(e) => setSecretKey(e.target.value)}
 								placeholder="API_KEY"
-								className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none"
+								className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3] px-3 py-2 text-sm text-[#2b2418] outline-none"
 							/>
 							<textarea
 								value={secretValue}
 								onChange={(e) => setSecretValue(e.target.value)}
 								rows={5}
 								placeholder="secret value"
-								className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none"
+								className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3] px-3 py-2 text-sm text-[#2b2418] outline-none"
 							/>
 							<Button
 								onClick={() => addSecretMutation.mutate()}
@@ -1364,11 +1364,11 @@ export function ProjectDetailPage() {
 							{secretsQuery.data?.map((s) => (
 								<div
 									key={s.id}
-									className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-3"
+									className="flex items-center justify-between gap-3 rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 px-3 py-3"
 								>
 									<div className="min-w-0">
-										<div className="font-medium text-white">{s.key}</div>
-										<div className="text-xs text-zinc-400">{s.maskedValue}</div>
+										<div className="font-medium text-[#2b2418]">{s.key}</div>
+										<div className="text-xs text-[#6f6044]">{s.maskedValue}</div>
 									</div>
 									<Button
 										variant="danger"
@@ -1411,7 +1411,7 @@ export function ProjectDetailPage() {
 						</div>
 					)}
 					<div className="flex items-center justify-between">
-						<div className="text-sm text-zinc-400">
+						<div className="text-sm text-[#6f6044]">
 							{productionQuery.data?.length
 								? `${productionQuery.data.filter((i) => i.status === "pass").length} / ${productionQuery.data.length} passed`
 								: "Generate a checklist to get started"}
@@ -1445,7 +1445,7 @@ export function ProjectDetailPage() {
 										{items.map((item) => (
 											<div
 												key={item.id}
-												className="flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-3"
+												className="flex items-start gap-3 rounded-lg border border-[#e5d6b8] bg-[#faf3e3]/60 px-3 py-3"
 											>
 												<button
 													type="button"
@@ -1463,14 +1463,14 @@ export function ProjectDetailPage() {
 													) : item.status === "fail" ? (
 														<XCircle className="h-5 w-5 text-red-400" />
 													) : (
-														<Circle className="h-5 w-5 text-zinc-600" />
+														<Circle className="h-5 w-5 text-[#9d8d6e]" />
 													)}
 												</button>
 												<div className="min-w-0 flex-1">
-													<div className="font-medium text-white">
+													<div className="font-medium text-[#2b2418]">
 														{item.title}
 													</div>
-													<div className="mt-0.5 text-xs text-zinc-400">
+													<div className="mt-0.5 text-xs text-[#6f6044]">
 														{item.description}
 													</div>
 												</div>
@@ -1488,7 +1488,7 @@ export function ProjectDetailPage() {
 															"rounded px-2 py-1 text-xs",
 															item.status === "pass"
 																? "bg-emerald-500/20 text-emerald-300"
-																: "text-zinc-500 hover:text-emerald-400",
+																: "text-[#8a7a5c] hover:text-emerald-400",
 														)}
 													>
 														Pass
@@ -1506,7 +1506,7 @@ export function ProjectDetailPage() {
 															"rounded px-2 py-1 text-xs",
 															item.status === "fail"
 																? "bg-red-500/20 text-red-300"
-																: "text-zinc-500 hover:text-red-400",
+																: "text-[#8a7a5c] hover:text-red-400",
 														)}
 													>
 														Fail
@@ -1536,9 +1536,9 @@ export function ProjectDetailPage() {
 					subtitle="Team channel — agents and humans collaborate here."
 				>
 					<div className="flex flex-col gap-4">
-						<div className="h-96 overflow-y-auto space-y-3 rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+						<div className="h-96 overflow-y-auto space-y-3 rounded-lg border border-[#e5d6b8] bg-[#fdfaf3] p-4">
 							{messagesQuery.isLoading && (
-								<div className="flex items-center justify-center py-8 text-zinc-500">
+								<div className="flex items-center justify-center py-8 text-[#8a7a5c]">
 									<Loader2 className="h-5 w-5 animate-spin" />
 								</div>
 							)}
@@ -1546,7 +1546,7 @@ export function ProjectDetailPage() {
 								<div key={msg.id} className="flex items-start gap-3">
 									<div
 										className={cn(
-											"flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white",
+											"flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-[#2b2418]",
 											avatarTone(msg.fromAgent),
 										)}
 									>
@@ -1554,21 +1554,21 @@ export function ProjectDetailPage() {
 									</div>
 									<div className="min-w-0 flex-1">
 										<div className="flex items-baseline gap-2">
-											<span className="text-sm font-semibold text-white">
+											<span className="text-sm font-semibold text-[#2b2418]">
 												{msg.fromAgent === "human" ? "You" : msg.fromAgent}
 											</span>
-											<span className="text-xs text-zinc-500">
+											<span className="text-xs text-[#8a7a5c]">
 												{timeAgo(msg.createdAt)}
 											</span>
 										</div>
-										<div className="mt-0.5 text-sm text-zinc-300 whitespace-pre-wrap">
+										<div className="mt-0.5 text-sm text-[#4b3f2d] whitespace-pre-wrap">
 											{msg.content}
 										</div>
 									</div>
 								</div>
 							))}
 							{messagesQuery.data?.length === 0 && !messagesQuery.isLoading && (
-								<div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+								<div className="flex flex-col items-center justify-center py-12 text-[#8a7a5c]">
 									<MessageSquare className="h-8 w-8 mb-2 opacity-40" />
 									<div className="text-sm">
 										No messages yet. Start the conversation!
@@ -1592,7 +1592,7 @@ export function ProjectDetailPage() {
 									}
 								}}
 								placeholder="Message the team… (Enter to send)"
-								className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-setra-500"
+								className="flex-1 rounded-lg border border-[#d9c6a3] bg-[#faf3e3] px-4 py-2 text-sm text-[#2b2418] placeholder:text-[#8a7a5c] outline-none focus:border-setra-500"
 							/>
 							<Button
 								onClick={() => sendMessageMutation.mutate()}
@@ -1618,9 +1618,9 @@ export function ProjectDetailPage() {
 							value={contextDraft}
 							onChange={(e) => setContextDraft(e.target.value)}
 							rows={18}
-							className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3 font-mono text-sm text-zinc-100 outline-none"
+							className="w-full rounded-lg border border-[#e5d6b8] bg-[#fdfaf3] px-4 py-3 font-mono text-sm text-[#2b2418] outline-none"
 						/>
-						<div className="flex items-center justify-between gap-3 text-xs text-zinc-400">
+						<div className="flex items-center justify-between gap-3 text-xs text-[#6f6044]">
 							<span>Last updated {timeAgo(contextQuery.data?.updatedAt)}</span>
 							<Button
 								onClick={() => saveContextMutation.mutate()}
@@ -1674,12 +1674,12 @@ export function ProjectDetailPage() {
 								"flex w-full items-center justify-between rounded-lg border px-3 py-3 text-left transition-colors",
 								selectedAgentId === a.agent_id
 									? "border-setra-500 bg-setra-500/10"
-									: "border-zinc-800 bg-zinc-900/60 hover:border-zinc-700",
+									: "border-[#e5d6b8] bg-[#faf3e3]/60 hover:border-[#d9c6a3]",
 							)}
 						>
 							<div>
-								<div className="font-medium text-white">{a.display_name}</div>
-								<div className="text-xs text-zinc-400">
+								<div className="font-medium text-[#2b2418]">{a.display_name}</div>
+								<div className="text-xs text-[#6f6044]">
 									{a.template_name} · {a.runtime_status ?? "idle"}
 								</div>
 							</div>
@@ -1736,10 +1736,10 @@ export function ProjectDetailPage() {
 								onChange={() => setRevertHard(false)}
 							/>
 							<div>
-								<div className="font-medium text-white">
+								<div className="font-medium text-[#2b2418]">
 									Safe revert (recommended)
 								</div>
-								<div className="text-xs text-zinc-400">
+								<div className="text-xs text-[#6f6044]">
 									Creates a new revert commit — history preserved, no data loss.
 								</div>
 							</div>
@@ -1752,7 +1752,7 @@ export function ProjectDetailPage() {
 							/>
 							<div>
 								<div className="font-medium text-red-300">Hard reset</div>
-								<div className="text-xs text-zinc-400">
+								<div className="text-xs text-[#6f6044]">
 									Discards all changes after this commit. This cannot be undone.
 								</div>
 							</div>
@@ -1791,8 +1791,8 @@ export function ProjectDetailPage() {
 							className={cn(
 								"flex-1 rounded-lg border px-3 py-2 text-sm",
 								dbMode === "string"
-									? "border-setra-500 bg-setra-500/10 text-white"
-									: "border-zinc-700 text-zinc-400 hover:border-zinc-600",
+									? "border-setra-500 bg-setra-500/10 text-[#2b2418]"
+									: "border-[#d9c6a3] text-[#6f6044] hover:border-[#d9c6a3]",
 							)}
 						>
 							Connection string
@@ -1803,8 +1803,8 @@ export function ProjectDetailPage() {
 							className={cn(
 								"flex-1 rounded-lg border px-3 py-2 text-sm",
 								dbMode === "manual"
-									? "border-setra-500 bg-setra-500/10 text-white"
-									: "border-zinc-700 text-zinc-400 hover:border-zinc-600",
+									? "border-setra-500 bg-setra-500/10 text-[#2b2418]"
+									: "border-[#d9c6a3] text-[#6f6044] hover:border-[#d9c6a3]",
 							)}
 						>
 							Manual
@@ -1813,18 +1813,18 @@ export function ProjectDetailPage() {
 					{dbMode === "string" ? (
 						<>
 							<div>
-								<label className="mb-1 block text-xs text-zinc-400">
+								<label className="mb-1 block text-xs text-[#6f6044]">
 									Display name (optional)
 								</label>
 								<input
 									value={dbName}
 									onChange={(e) => setDbName(e.target.value)}
 									placeholder="My NeonDB"
-									className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none"
+									className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3] px-3 py-2 text-sm text-[#2b2418] outline-none"
 								/>
 							</div>
 							<div>
-								<label className="mb-1 block text-xs text-zinc-400">
+								<label className="mb-1 block text-xs text-[#6f6044]">
 									Connection string
 								</label>
 								<textarea
@@ -1832,9 +1832,9 @@ export function ProjectDetailPage() {
 									onChange={(e) => setDbConnString(e.target.value)}
 									rows={3}
 									placeholder="postgres://user:pass@host/db  or  mongodb+srv://..."
-									className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-white outline-none"
+									className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3] px-3 py-2 font-mono text-sm text-[#2b2418] outline-none"
 								/>
-								<div className="mt-1 text-xs text-zinc-500">
+								<div className="mt-1 text-xs text-[#8a7a5c]">
 									Supports NeonDB, Supabase, PlanetScale, MongoDB Atlas, and any
 									standard connection string.
 								</div>
@@ -1846,9 +1846,9 @@ export function ProjectDetailPage() {
 								value={dbName}
 								onChange={(e) => setDbName(e.target.value)}
 								placeholder="Connection name"
-								className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none"
+								className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3] px-3 py-2 text-sm text-[#2b2418] outline-none"
 							/>
-							<div className="text-xs text-zinc-400">
+							<div className="text-xs text-[#6f6044]">
 								Manual connection details coming soon. Use connection string
 								mode for now.
 							</div>

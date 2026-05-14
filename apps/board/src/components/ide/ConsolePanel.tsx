@@ -42,7 +42,7 @@ export function ConsolePanel({
 				className="flex flex-wrap items-center gap-2 border-b px-4 py-3"
 				style={{ borderColor: REPLIT.border }}
 			>
-				<div className="flex items-center gap-2 text-sm text-white">
+				<div className="flex items-center gap-2 text-sm text-[#2b2418]">
 					<Terminal className="h-4 w-4 text-[#9DA2A6]" />
 					<span>Console</span>
 					<span
@@ -58,7 +58,7 @@ export function ConsolePanel({
 							key={name}
 							type="button"
 							onClick={() => onRunScript(name)}
-							className="rounded-md border px-2.5 py-1 text-xs text-[#9DA2A6] hover:text-white"
+							className="rounded-md border px-2.5 py-1 text-xs text-[#9DA2A6] hover:text-[#2b2418]"
 							style={{
 								borderColor: REPLIT.border,
 								backgroundColor: REPLIT.panel,
@@ -112,12 +112,12 @@ export function ConsolePanel({
 						onChange={(event) => onInputChange(event.target.value)}
 						onKeyDown={onInputKeyDown}
 						placeholder="Run a command…"
-						className="h-11 flex-1 bg-transparent font-mono text-xs text-white outline-none placeholder:text-[#5F6B7A]"
+						className="h-11 flex-1 bg-transparent font-mono text-xs text-[#2b2418] outline-none placeholder:text-[#5F6B7A]"
 					/>
 					<button
 						type="button"
 						onClick={isRunning ? onStop : onRun}
-						className="inline-flex h-8 items-center gap-2 rounded-md px-3 text-xs font-semibold text-white"
+						className="inline-flex h-8 items-center gap-2 rounded-md px-3 text-xs font-semibold text-[#2b2418]"
 						style={{
 							backgroundColor: isRunning ? REPLIT.danger : REPLIT.accent,
 						}}

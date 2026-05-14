@@ -310,7 +310,7 @@ export function IssueDetailPanel({ issueId, projectId, onClose }: Props) {
 			{/* Backdrop */}
 			<div
 				className={cn(
-					"fixed inset-0 z-30 bg-ground-950/60 backdrop-blur-sm transition-opacity duration-200",
+					"fixed inset-0 z-30 bg-[#fdfaf3]/60 backdrop-blur-sm transition-opacity duration-200",
 					open
 						? "opacity-100 pointer-events-auto"
 						: "opacity-0 pointer-events-none",
@@ -590,7 +590,7 @@ export function IssueDetailPanel({ issueId, projectId, onClose }: Props) {
 										</span>
 										<div className="mt-1">
 											{issue.testStatus === "running" ? (
-												<span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-400">
+												<span className="inline-flex items-center gap-1.5 rounded-full bg-[#7a5421]/10 px-2.5 py-1 text-xs font-medium text-[#7a5421]">
 													<Loader2 className="h-3.5 w-3.5 animate-spin" />
 													Testing...
 												</span>
@@ -703,7 +703,7 @@ export function IssueDetailPanel({ issueId, projectId, onClose }: Props) {
 													addComment.mutate(commentBody.trim());
 											}}
 											disabled={!commentBody.trim() || addComment.isPending}
-											className="px-3 py-1.5 text-xs bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-white rounded-md transition-colors"
+											className="px-3 py-1.5 text-xs bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-[#2b2418] rounded-md transition-colors"
 										>
 											Send
 										</button>

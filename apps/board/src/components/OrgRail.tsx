@@ -47,7 +47,7 @@ function UserAvatarMenu() {
 				onClick={() => setOpen((v) => !v)}
 				className={cn(
 					"flex items-center justify-center w-10 h-10 rounded-full",
-					"bg-gradient-to-br from-setra-600/80 to-setra-700/80 text-white text-xs font-bold",
+					"bg-gradient-to-br from-setra-600/80 to-setra-700/80 text-[#2b2418] text-xs font-bold",
 					"border-2 border-transparent hover:border-setra-400/50 transition-all",
 					"shadow-md shadow-setra-900/30",
 					open && "border-setra-400/50 ring-2 ring-setra-500/20",
@@ -84,7 +84,7 @@ function UserAvatarMenu() {
 										? menuRef.current.getBoundingClientRect().right + 8
 										: 64,
 								}}
-								className="z-[100] w-56 rounded-xl border border-border/50 bg-ground-900/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+								className="z-[100] w-56 rounded-xl border border-border/50 bg-[#fdfaf3]/95 backdrop-blur-xl shadow-2xl overflow-hidden"
 							>
 								{/* User info header */}
 								<div className="px-3 py-3 border-b border-border/30">
@@ -190,10 +190,10 @@ export function OrgRail() {
 
 	return (
 		<>
-			<aside className="hidden md:flex md:flex-col items-center w-[72px] shrink-0 border-r border-border/50 bg-ground-900/90 backdrop-blur-xl pt-10 pb-4 gap-1 overflow-y-auto no-scrollbar">
+			<aside className="hidden md:flex md:flex-col items-center w-[72px] shrink-0 border-r border-border/50 bg-[#fdfaf3]/90 backdrop-blur-xl pt-10 pb-4 gap-1 overflow-y-auto no-scrollbar">
 				{/* Setra logo mark */}
 				<div className="flex items-center justify-center w-10 h-10 rounded-xl bg-setra-600/90 shadow-lg shadow-setra-600/20 mb-3 shrink-0">
-					<Zap className="w-5 h-5 text-white" strokeWidth={2.5} />
+					<Zap className="w-5 h-5 text-[#2b2418]" strokeWidth={2.5} />
 				</div>
 
 				{/* Company list */}
@@ -243,7 +243,7 @@ export function OrgRail() {
 				<AnimatePresence>
 					{pendingCompany && (
 						<motion.div
-							className="fixed inset-0 z-[90] bg-ground-900/70 backdrop-blur-sm flex items-center justify-center"
+							className="fixed inset-0 z-[90] bg-[#fdfaf3]/70 backdrop-blur-sm flex items-center justify-center"
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
@@ -252,7 +252,7 @@ export function OrgRail() {
 								initial={{ opacity: 0, y: 8, scale: 0.98 }}
 								animate={{ opacity: 1, y: 0, scale: 1 }}
 								exit={{ opacity: 0, y: 8, scale: 0.98 }}
-								className="w-[420px] max-w-[92vw] rounded-xl border border-border/40 bg-ground-900/95 p-5 shadow-2xl"
+								className="w-[420px] max-w-[92vw] rounded-xl border border-border/40 bg-[#fdfaf3]/95 p-5 shadow-2xl"
 							>
 								<p className="text-xs uppercase tracking-wider text-muted-foreground/70">
 									Switch workspace
@@ -279,7 +279,7 @@ export function OrgRail() {
 									</button>
 									<button
 										type="button"
-										className="px-3 py-1.5 text-xs rounded-md bg-setra-600 text-white hover:bg-setra-500 transition-colors disabled:opacity-60"
+										className="px-3 py-1.5 text-xs rounded-md bg-setra-600 text-[#2b2418] hover:bg-setra-500 transition-colors disabled:opacity-60"
 										disabled={switching}
 										onClick={async () => {
 											setSwitching(true);

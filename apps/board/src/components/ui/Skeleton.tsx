@@ -31,7 +31,7 @@ export function Skeleton({
 			{Array.from({ length: count }).map((_, index) => (
 				<div
 					key={index}
-					className={cn("animate-pulse bg-zinc-800/80", baseClass, className)}
+					className={cn("animate-pulse bg-white/80", baseClass, className)}
 					style={style}
 				/>
 			))}

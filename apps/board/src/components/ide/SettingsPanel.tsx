@@ -78,7 +78,7 @@ export function SettingsPanel({
 								defaultBranch: defaultBranchDraft || null,
 							})
 						}
-						className="rounded-md px-3 py-1 text-xs text-white"
+						className="rounded-md px-3 py-1 text-xs text-[#2b2418]"
 						style={{ backgroundColor: REPLIT.accent }}
 					>
 						Save
@@ -93,7 +93,7 @@ export function SettingsPanel({
 							value={workspacePathDraft}
 							onChange={(event) => setWorkspacePathDraft(event.target.value)}
 							placeholder="/path/to/workspace"
-							className="h-10 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-white outline-none"
+							className="h-10 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-[#2b2418] outline-none"
 							style={{ borderColor: REPLIT.border }}
 						/>
 					</div>
@@ -105,7 +105,7 @@ export function SettingsPanel({
 							value={defaultBranchDraft}
 							onChange={(event) => setDefaultBranchDraft(event.target.value)}
 							placeholder="main"
-							className="h-10 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-white outline-none"
+							className="h-10 w-full rounded-md border bg-[#0E1525] px-3 font-mono text-sm text-[#2b2418] outline-none"
 							style={{ borderColor: REPLIT.border }}
 						/>
 					</div>

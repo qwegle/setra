@@ -86,7 +86,7 @@ function navLinkClass({ isActive }: { isActive: boolean }): string {
 function SectionLabel({ children }: { children: ReactNode }) {
 	return (
 		<div className="px-3 pb-1 pt-3">
-			<span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+			<span className="text-[10px] font-semibold uppercase tracking-wider text-[#8a7a5c]">
 				{children}
 			</span>
 		</div>
@@ -206,12 +206,12 @@ function SidebarContent({
 					onClick={() => setMoreOpen((v) => !v)}
 					className="flex w-full items-center gap-1 px-3 pb-1 pt-3 text-left"
 				>
-					<span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+					<span className="text-[10px] font-semibold uppercase tracking-wider text-[#8a7a5c]">
 						More
 					</span>
 					<ChevronDown
 						className={cn(
-							"h-3 w-3 text-zinc-500 transition-transform",
+							"h-3 w-3 text-[#8a7a5c] transition-transform",
 							moreOpen && "rotate-180",
 						)}
 					/>
@@ -239,7 +239,7 @@ export function Sidebar({
 
 	return (
 		<>
-			<aside className="fixed inset-y-0 left-[72px] z-30 hidden w-56 flex-col border-r border-border/50 bg-ground-900/80 backdrop-blur-xl md:flex">
+			<aside className="fixed inset-y-0 left-[72px] z-30 hidden w-56 flex-col border-r border-border/50 bg-[#fdfaf3]/80 backdrop-blur-xl md:flex">
 				<SidebarContent />
 			</aside>
 			<AnimatePresence>
@@ -247,7 +247,7 @@ export function Sidebar({
 					<>
 						<motion.button
 							type="button"
-							className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+							className="fixed inset-0 z-40 bg-[#fdfaf3]/60 backdrop-blur-sm md:hidden"
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
@@ -255,7 +255,7 @@ export function Sidebar({
 							aria-label="Close navigation menu"
 						/>
 						<motion.aside
-							className="fixed inset-y-0 left-0 z-50 flex w-full max-w-xs flex-col border-r border-border/50 bg-ground-900/95 shadow-2xl backdrop-blur-xl md:hidden"
+							className="fixed inset-y-0 left-0 z-50 flex w-full max-w-xs flex-col border-r border-border/50 bg-[#fdfaf3]/95 shadow-2xl backdrop-blur-xl md:hidden"
 							initial={{ x: "-100%" }}
 							animate={{ x: 0 }}
 							exit={{ x: "-100%" }}

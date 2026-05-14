@@ -96,7 +96,7 @@ function AgentAvatar({ name }: { name: string }) {
 	const initials = name.slice(0, 2).toUpperCase();
 	return (
 		<div className="w-[28px] h-[28px] rounded-full bg-setra-600 flex items-center justify-center shrink-0">
-			<span className="text-[10px] font-mono font-medium text-white">
+			<span className="text-[10px] font-mono font-medium text-[#2b2418]">
 				{initials}
 			</span>
 		</div>

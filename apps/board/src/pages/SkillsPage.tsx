@@ -279,7 +279,7 @@ export function SkillsPage() {
 								</div>
 
 								{/* Prompt preview */}
-								<pre className="text-[10px] font-mono text-muted-foreground/50 bg-ground-950/50 rounded p-2 line-clamp-2 whitespace-pre-wrap">
+								<pre className="text-[10px] font-mono text-muted-foreground/50 bg-[#fdfaf3]/50 rounded p-2 line-clamp-2 whitespace-pre-wrap">
 									{skill.prompt}
 								</pre>
 
@@ -341,7 +341,7 @@ export function SkillsPage() {
 								<button
 									type="button"
 									onClick={() => setShowNew(true)}
-									className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-setra-600 hover:bg-setra-500 text-white text-xs font-medium transition-colors"
+									className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-setra-600 hover:bg-setra-500 text-[#2b2418] text-xs font-medium transition-colors"
 								>
 									<Plus className="w-3.5 h-3.5" /> Create your first skill
 								</button>
@@ -405,7 +405,7 @@ export function SkillsPage() {
 
 			{/* New skill modal */}
 			{showNew && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-ground-950/80 backdrop-blur-sm">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fdfaf3]/80 backdrop-blur-sm">
 					<div className="glass rounded-xl border border-border/60 w-full max-w-lg p-6 flex flex-col gap-4">
 						<h2 className="text-base font-semibold text-foreground">
 							{editingSkillId ? "Edit Skill" : "New Skill"}
@@ -508,7 +508,7 @@ export function SkillsPage() {
 									createMut.isPending ||
 									updateMut.isPending
 								}
-								className="px-4 py-1.5 bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-white text-sm rounded-md transition-colors"
+								className="px-4 py-1.5 bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-[#2b2418] text-sm rounded-md transition-colors"
 							>
 								{editingSkillId
 									? updateMut.isPending

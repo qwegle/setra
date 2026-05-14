@@ -210,7 +210,7 @@ function KindBadge({ kind }: { kind: AdapterConfig["kind"] }) {
 		{ cls: string; label: string; desc: string }
 	> = {
 		cli: {
-			cls: "border-blue-500/60 text-blue-400 bg-blue-500/10",
+			cls: "border-[#c9a25f]/60 text-[#7a5421] bg-[#7a5421]/10",
 			label: "CLI",
 			desc: "Runs via installed CLI binary",
 		},
@@ -364,8 +364,8 @@ function AdapterCard({ adapter }: { adapter: AdapterConfig }) {
 				<div className="border-t border-border/30 p-4 space-y-4">
 					{/* CLI setup instructions */}
 					{cliSetup && (
-						<div className="bg-blue-500/5 border border-blue-500/20 rounded-md p-3 space-y-2">
-							<p className="text-xs font-semibold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+						<div className="bg-[#7a5421]/5 border border-[#c9a25f]/20 rounded-md p-3 space-y-2">
+							<p className="text-xs font-semibold text-[#7a5421] uppercase tracking-wider flex items-center gap-1.5">
 								<Terminal className="w-3.5 h-3.5" />
 								CLI Setup Required
 							</p>
@@ -374,7 +374,7 @@ function AdapterCard({ adapter }: { adapter: AdapterConfig }) {
 									<span className="text-[10px] text-muted-foreground/50 uppercase">
 										1. Install:
 									</span>
-									<code className="block text-xs font-mono text-zinc-300 bg-zinc-800/50 px-2 py-1 rounded mt-0.5 select-all">
+									<code className="block text-xs font-mono text-[#4b3f2d] bg-white/50 px-2 py-1 rounded mt-0.5 select-all">
 										{cliSetup.install}
 									</code>
 								</div>
@@ -382,7 +382,7 @@ function AdapterCard({ adapter }: { adapter: AdapterConfig }) {
 									<span className="text-[10px] text-muted-foreground/50 uppercase">
 										2. Authenticate:
 									</span>
-									<code className="block text-xs font-mono text-zinc-300 bg-zinc-800/50 px-2 py-1 rounded mt-0.5 select-all">
+									<code className="block text-xs font-mono text-[#4b3f2d] bg-white/50 px-2 py-1 rounded mt-0.5 select-all">
 										{cliSetup.auth}
 									</code>
 								</div>
@@ -390,19 +390,19 @@ function AdapterCard({ adapter }: { adapter: AdapterConfig }) {
 									<span className="text-[10px] text-muted-foreground/50 uppercase">
 										3. Verify:
 									</span>
-									<code className="block text-xs font-mono text-zinc-300 bg-zinc-800/50 px-2 py-1 rounded mt-0.5 select-all">
+									<code className="block text-xs font-mono text-[#4b3f2d] bg-white/50 px-2 py-1 rounded mt-0.5 select-all">
 										{cliSetup.verify}
 									</code>
 								</div>
 							</div>
 							{adapter.id === "claude" && (
-								<p className="text-[11px] text-blue-300/70 mt-1">
+								<p className="text-[11px] text-[#7a5421]/70 mt-1">
 									💡 Claude Code uses your Claude subscription — no API key
 									needed if you have a Max/Team plan.
 								</p>
 							)}
 							{adapter.id === "codex" && (
-								<p className="text-[11px] text-blue-300/70 mt-1">
+								<p className="text-[11px] text-[#7a5421]/70 mt-1">
 									💡 Codex uses your OpenAI API key or Codex Plus subscription.
 								</p>
 							)}
@@ -491,7 +491,7 @@ function AdapterCard({ adapter }: { adapter: AdapterConfig }) {
 							type="button"
 							onClick={() => saveMut.mutate()}
 							disabled={saveMut.isPending}
-							className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-setra-600 text-white rounded-md hover:bg-setra-500 transition-colors disabled:opacity-50"
+							className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-setra-600 text-[#2b2418] rounded-md hover:bg-setra-500 transition-colors disabled:opacity-50"
 						>
 							{saveMut.isPending ? (
 								<Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -685,7 +685,7 @@ function PluginRow({
 							type="button"
 							onClick={() => configureMut.mutate()}
 							disabled={configureMut.isPending}
-							className="flex items-center gap-1.5 mt-1 px-3 py-1.5 text-xs bg-setra-600 text-white rounded-md hover:bg-setra-500 transition-colors disabled:opacity-50"
+							className="flex items-center gap-1.5 mt-1 px-3 py-1.5 text-xs bg-setra-600 text-[#2b2418] rounded-md hover:bg-setra-500 transition-colors disabled:opacity-50"
 						>
 							{configureMut.isPending ? (
 								<Loader2 className="w-3.5 h-3.5 animate-spin" />

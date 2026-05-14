@@ -236,7 +236,7 @@ export function GitPanel({
 								if (event.target.value !== currentBranch)
 									checkoutMut.mutate(event.target.value);
 							}}
-							className="h-9 w-full rounded-md border bg-[#0E1525] px-3 text-sm text-white outline-none"
+							className="h-9 w-full rounded-md border bg-[#0E1525] px-3 text-sm text-[#2b2418] outline-none"
 							style={{ borderColor: REPLIT.border }}
 						>
 							{(branchesQuery.data?.branches ?? []).map((branch) => (
@@ -249,7 +249,7 @@ export function GitPanel({
 							<button
 								type="button"
 								onClick={() => pullMut.mutate()}
-								className="inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-white hover:bg-[#111827]"
+								className="inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-[#2b2418] hover:bg-[#111827]"
 								style={{
 									borderColor: REPLIT.border,
 									backgroundColor: REPLIT.background,
@@ -261,7 +261,7 @@ export function GitPanel({
 							<button
 								type="button"
 								onClick={() => pushMut.mutate()}
-								className="inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-white hover:bg-[#111827]"
+								className="inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-[#2b2418] hover:bg-[#111827]"
 								style={{
 									borderColor: REPLIT.border,
 									backgroundColor: REPLIT.background,
@@ -273,7 +273,7 @@ export function GitPanel({
 							<button
 								type="button"
 								onClick={() => stashSaveMut.mutate()}
-								className="rounded-md border px-3 py-2 text-white hover:bg-[#111827]"
+								className="rounded-md border px-3 py-2 text-[#2b2418] hover:bg-[#111827]"
 								style={{
 									borderColor: REPLIT.border,
 									backgroundColor: REPLIT.background,
@@ -284,7 +284,7 @@ export function GitPanel({
 							<button
 								type="button"
 								onClick={() => stashPopMut.mutate()}
-								className="rounded-md border px-3 py-2 text-white hover:bg-[#111827]"
+								className="rounded-md border px-3 py-2 text-[#2b2418] hover:bg-[#111827]"
 								style={{
 									borderColor: REPLIT.border,
 									backgroundColor: REPLIT.background,
@@ -319,7 +319,7 @@ export function GitPanel({
 								className={cn(
 									"rounded-md border px-2 py-2 text-xs",
 									diffFile === file.path && !selectedCommitSha
-										? "text-white"
+										? "text-[#2b2418]"
 										: "text-[#9DA2A6]",
 								)}
 								style={{
@@ -345,7 +345,7 @@ export function GitPanel({
 											"flex h-6 w-6 items-center justify-center rounded border",
 											file.staged
 												? "text-[#00E676]"
-												: "text-[#5F6B7A] hover:text-white",
+												: "text-[#5F6B7A] hover:text-[#2b2418]",
 										)}
 										style={{
 											borderColor: file.staged ? REPLIT.success : REPLIT.border,
@@ -392,14 +392,14 @@ export function GitPanel({
 							value={commitMessage}
 							onChange={(event) => setCommitMessage(event.target.value)}
 							placeholder="feat: improve IDE"
-							className="h-10 w-full rounded-md border bg-[#0E1525] px-3 text-sm text-white outline-none"
+							className="h-10 w-full rounded-md border bg-[#0E1525] px-3 text-sm text-[#2b2418] outline-none"
 							style={{ borderColor: REPLIT.border }}
 						/>
 						<button
 							type="button"
 							disabled={!commitMessage.trim() || !hasStagedFiles}
 							onClick={() => commitMut.mutate()}
-							className="w-full rounded-md px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+							className="w-full rounded-md px-3 py-2 text-sm font-semibold text-[#2b2418] disabled:cursor-not-allowed disabled:opacity-50"
 							style={{ backgroundColor: REPLIT.accent }}
 						>
 							Commit staged changes
@@ -458,7 +458,7 @@ export function GitPanel({
 											: REPLIT.panelAlt,
 								}}
 							>
-								<div className="flex items-center gap-2 text-xs text-white">
+								<div className="flex items-center gap-2 text-xs text-[#2b2418]">
 									<GitCommitHorizontal className="h-3.5 w-3.5 text-[#9DA2A6]" />
 									<span className="truncate">{commit.message}</span>
 								</div>

@@ -92,7 +92,7 @@ function ProjectFormFields({
 			/>
 			<div className="space-y-1.5">
 				<label
-					className="text-sm font-medium text-zinc-100"
+					className="text-sm font-medium text-[#2b2418]"
 					htmlFor="project-description"
 				>
 					Description
@@ -103,12 +103,12 @@ function ProjectFormFields({
 					onChange={(e) => onDescriptionChange(e.target.value)}
 					placeholder="What is this project about?"
 					rows={3}
-					className="w-full rounded-md border border-zinc-700 bg-zinc-900/70 px-3 py-2 text-sm text-white outline-none transition focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 placeholder:text-zinc-500"
+					className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3]/70 px-3 py-2 text-sm text-[#2b2418] outline-none transition focus-visible:border-[#c9a25f] focus-visible:ring-2 focus-visible:ring-[#e2c787] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 placeholder:text-[#8a7a5c]"
 				/>
 			</div>
 			<div className="space-y-1.5">
 				<label
-					className="text-sm font-medium text-zinc-100"
+					className="text-sm font-medium text-[#2b2418]"
 					htmlFor="project-requirements"
 				>
 					Requirements Document
@@ -119,16 +119,16 @@ function ProjectFormFields({
 					onChange={(e) => onRequirementsChange(e.target.value)}
 					placeholder="Describe what this project should accomplish..."
 					rows={6}
-					className="w-full rounded-md border border-zinc-700 bg-zinc-900/70 px-3 py-2 text-sm text-white outline-none transition focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 placeholder:text-zinc-500"
+					className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3]/70 px-3 py-2 text-sm text-[#2b2418] outline-none transition focus-visible:border-[#c9a25f] focus-visible:ring-2 focus-visible:ring-[#e2c787] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 placeholder:text-[#8a7a5c]"
 				/>
-				<p className="text-xs text-zinc-400">
+				<p className="text-xs text-[#6f6044]">
 					Describe what this project should accomplish. The CEO agent will read
 					this to create a plan and tasks.
 				</p>
 			</div>
 			<div className="space-y-1.5">
 				<label
-					className="text-sm font-medium text-zinc-100"
+					className="text-sm font-medium text-[#2b2418]"
 					htmlFor="project-workspace"
 				>
 					Workspace folder
@@ -164,7 +164,7 @@ function ProjectFormFields({
 						onChange={onFolderPicked}
 					/>
 				) : null}
-				<p className="text-xs text-zinc-400">
+				<p className="text-xs text-[#6f6044]">
 					When set, agents working on this project stay scoped to this folder.
 				</p>
 			</div>
@@ -175,18 +175,18 @@ function ProjectFormFields({
 				placeholder="https://github.com/org/repo"
 				className="font-mono"
 			/>
-			<p className="-mt-3 text-xs text-zinc-400">
+			<p className="-mt-3 text-xs text-[#6f6044]">
 				Optional. Auto-detected from workspace git remote if not set.
 			</p>
 			{/* Database */}
 			<div className="space-y-1.5">
-				<label className="text-sm font-medium text-zinc-100">
-					Database <span className="text-zinc-500">(optional)</span>
+				<label className="text-sm font-medium text-[#2b2418]">
+					Database <span className="text-[#8a7a5c]">(optional)</span>
 				</label>
 				<select
 					value={dbType}
 					onChange={(e) => onDbTypeChange(e.target.value)}
-					className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none"
+					className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3] px-3 py-2 text-sm text-[#2b2418] outline-none"
 				>
 					<option value="">No database yet</option>
 					<option value="postgres">PostgreSQL / NeonDB</option>
@@ -205,10 +205,10 @@ function ProjectFormFields({
 								? "mongodb+srv://user:pass@cluster.mongodb.net/db"
 								: "postgres://user:pass@host:5432/dbname"
 						}
-						className="w-full rounded-md border border-zinc-700 bg-zinc-900/70 px-3 py-2 font-mono text-sm text-white outline-none placeholder:text-zinc-500"
+						className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3]/70 px-3 py-2 font-mono text-sm text-[#2b2418] outline-none placeholder:text-[#8a7a5c]"
 					/>
 				)}
-				<p className="text-xs text-zinc-400">
+				<p className="text-xs text-[#6f6044]">
 					You can also connect a database later from the project's Database tab.
 				</p>
 			</div>
@@ -543,7 +543,7 @@ export function ProjectsPage() {
 								<div className="flex items-start justify-between gap-3">
 									<div className="min-w-0 flex-1">
 										<div className="flex flex-wrap items-center gap-2">
-											<h3 className="truncate text-base font-semibold text-white">
+											<h3 className="truncate text-base font-semibold text-[#2b2418]">
 												{project.name}
 											</h3>
 											{project.gitInitialized ? (
@@ -564,7 +564,7 @@ export function ProjectsPage() {
 												</Badge>
 											) : null}
 										</div>
-										<p className="text-xs text-zinc-500">{project.slug}</p>
+										<p className="text-xs text-[#8a7a5c]">{project.slug}</p>
 									</div>
 									<Button
 										type="button"
@@ -576,11 +576,11 @@ export function ProjectsPage() {
 									/>
 								</div>
 
-								<p className="text-sm text-zinc-400">
+								<p className="text-sm text-[#6f6044]">
 									{project.description || "No description provided yet."}
 								</p>
 
-								<div className="grid grid-cols-1 gap-2 text-sm text-zinc-400 md:grid-cols-2">
+								<div className="grid grid-cols-1 gap-2 text-sm text-[#6f6044] md:grid-cols-2">
 									<div className="flex items-center gap-2">
 										<FolderKanban className="h-4 w-4" aria-hidden="true" />
 										<span>{project.issueCount} issues</span>
@@ -618,7 +618,7 @@ export function ProjectsPage() {
 									{project.repoUrl && (
 										<div className="flex items-center gap-2 truncate md:col-span-2">
 											<Globe
-												className="h-4 w-4 text-zinc-500"
+												className="h-4 w-4 text-[#8a7a5c]"
 												aria-hidden="true"
 											/>
 											<a
@@ -634,7 +634,7 @@ export function ProjectsPage() {
 									{project.defaultBranch && (
 										<div className="flex items-center gap-2 truncate">
 											<GitBranch
-												className="h-4 w-4 text-zinc-500"
+												className="h-4 w-4 text-[#8a7a5c]"
 												aria-hidden="true"
 											/>
 											<span className="font-mono text-xs">
@@ -644,7 +644,7 @@ export function ProjectsPage() {
 									)}
 								</div>
 
-								<div className="mt-auto flex items-center justify-between border-t border-border/20 pt-3 text-xs text-zinc-500">
+								<div className="mt-auto flex items-center justify-between border-t border-border/20 pt-3 text-xs text-[#8a7a5c]">
 									<span>Created {timeAgo(project.createdAt)}</span>
 									<Link
 										to={`/projects/${project.id}`}
@@ -764,19 +764,19 @@ export function ProjectsPage() {
 					</p>
 				) : null}
 
-				<div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
-					<div className="flex flex-col gap-3 border-b border-zinc-800 pb-4 md:flex-row md:items-center md:justify-between">
+				<div className="rounded-lg border border-[#e5d6b8] bg-[#fdfaf3]/40 p-4">
+					<div className="flex flex-col gap-3 border-b border-[#e5d6b8] pb-4 md:flex-row md:items-center md:justify-between">
 						<div>
 							<div className="flex items-center gap-2">
 								<ScrollText
 									className="h-4 w-4 text-setra-300"
 									aria-hidden="true"
 								/>
-								<h3 className="text-sm font-semibold text-white">Rules</h3>
+								<h3 className="text-sm font-semibold text-[#2b2418]">Rules</h3>
 							</div>
-							<p className="mt-1 text-xs text-zinc-400">
+							<p className="mt-1 text-xs text-[#6f6044]">
 								Manage{" "}
-								<code className="rounded bg-zinc-900 px-1 py-0.5">
+								<code className="rounded bg-[#faf3e3] px-1 py-0.5">
 									.setra/rules/*.md
 								</code>{" "}
 								for this project.
@@ -813,7 +813,7 @@ export function ProjectsPage() {
 					{!hasWorkspace ? (
 						<p className="pt-4 text-sm text-accent-orange">
 							Save a workspace path on the project before creating rules in{" "}
-							<code className="rounded bg-zinc-900 px-1 py-0.5">
+							<code className="rounded bg-[#faf3e3] px-1 py-0.5">
 								.setra/rules
 							</code>
 							.
@@ -821,7 +821,7 @@ export function ProjectsPage() {
 					) : (
 						<div className="grid gap-4 pt-4 md:grid-cols-[220px,1fr]">
 							<div className="space-y-2">
-								<p className="text-xs uppercase tracking-wide text-zinc-500">
+								<p className="text-xs uppercase tracking-wide text-[#8a7a5c]">
 									Rule files
 								</p>
 								{isRulesLoading ? (
@@ -836,19 +836,19 @@ export function ProjectsPage() {
 												className={cn(
 													"w-full rounded-md border px-3 py-2 text-left text-sm transition-colors",
 													rule.name === ruleName
-														? "border-setra-500 bg-zinc-900 text-white"
-														: "border-zinc-800 bg-zinc-950/60 text-zinc-300 hover:border-zinc-700",
+														? "border-setra-500 bg-[#faf3e3] text-[#2b2418]"
+														: "border-[#e5d6b8] bg-[#fdfaf3]/60 text-[#4b3f2d] hover:border-[#d9c6a3]",
 												)}
 											>
 												<div className="truncate font-medium">{rule.name}</div>
-												<div className="truncate text-xs text-zinc-500">
+												<div className="truncate text-xs text-[#8a7a5c]">
 													{rule.glob ?? "Always applied"}
 												</div>
 											</button>
 										))}
 									</div>
 								) : (
-									<p className="text-sm text-zinc-500">
+									<p className="text-sm text-[#8a7a5c]">
 										No rules yet. Create global.md to start.
 									</p>
 								)}
@@ -864,7 +864,7 @@ export function ProjectsPage() {
 								/>
 								<div className="space-y-1.5">
 									<label
-										className="text-sm font-medium text-zinc-100"
+										className="text-sm font-medium text-[#2b2418]"
 										htmlFor="project-rule-content"
 									>
 										Rule content
@@ -874,7 +874,7 @@ export function ProjectsPage() {
 										value={ruleContent}
 										onChange={(e) => setRuleContent(e.target.value)}
 										rows={14}
-										className="w-full rounded-md border border-zinc-700 bg-zinc-900/70 px-3 py-2 font-mono text-xs text-white outline-none transition focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 placeholder:text-zinc-500"
+										className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3]/70 px-3 py-2 font-mono text-xs text-[#2b2418] outline-none transition focus-visible:border-[#c9a25f] focus-visible:ring-2 focus-visible:ring-[#e2c787] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 placeholder:text-[#8a7a5c]"
 									/>
 								</div>
 								<div className="flex flex-wrap items-center gap-2">

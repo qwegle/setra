@@ -32,7 +32,7 @@ export function Tooltip({ content, children }: TooltipProps) {
 				<span
 					id={tooltipId}
 					role="tooltip"
-					className="absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-zinc-950 px-2 py-1 text-xs text-zinc-100 shadow-lg"
+					className="absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-[#fdfaf3] px-2 py-1 text-xs text-[#2b2418] shadow-lg"
 				>
 					{content}
 				</span>

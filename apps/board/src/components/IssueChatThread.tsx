@@ -91,7 +91,7 @@ function Avatar({ name, isAgent }: { name: string; isAgent?: boolean }) {
 			<span
 				className={cn(
 					"text-[10px] font-mono font-medium",
-					isAgent ? "text-white" : "text-muted-foreground",
+					isAgent ? "text-[#2b2418]" : "text-muted-foreground",
 				)}
 			>
 				{initials(name)}
@@ -223,7 +223,7 @@ export function IssueChatThread({
 								</div>
 								<div
 									className={cn(
-										"rounded-xl px-3 py-2 text-sm leading-relaxed prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-1.5 prose-headings:text-sm prose-pre:bg-black/30 prose-code:text-xs max-w-none",
+										"rounded-xl px-3 py-2 text-sm leading-relaxed prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-1.5 prose-headings:text-sm prose-pre:bg-[#fdfaf3]/30 prose-code:text-xs max-w-none",
 										isMe
 											? "bg-setra-600/20 text-foreground"
 											: "bg-card border border-border/50 text-foreground",
@@ -267,7 +267,7 @@ export function IssueChatThread({
 						<button
 							onClick={handleSend}
 							disabled={!body.trim() || sending}
-							className="flex items-center gap-1 px-2.5 py-1 bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-white text-xs rounded-lg transition-colors"
+							className="flex items-center gap-1 px-2.5 py-1 bg-setra-600 hover:bg-setra-500 disabled:opacity-40 text-[#2b2418] text-xs rounded-lg transition-colors"
 						>
 							<Send className="w-3 h-3" />
 							Send

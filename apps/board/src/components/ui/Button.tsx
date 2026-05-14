@@ -10,11 +10,11 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses = {
-	primary: "bg-blue-600 text-white hover:bg-blue-700",
+	primary: "bg-[#2b2418] text-[#fbf6ec] hover:bg-[#3d3324] shadow-sm",
 	secondary:
-		"border border-zinc-700 bg-zinc-900/60 text-zinc-100 hover:bg-zinc-800/80",
-	ghost: "bg-transparent text-zinc-200 hover:bg-zinc-800/70",
-	danger: "bg-red-600 text-white hover:bg-red-700",
+		"border border-[#d9c6a3] bg-white text-[#2b2418] hover:bg-[#faf3e3]",
+	ghost: "bg-transparent text-[#3d3324] hover:bg-[#f3e7cf]",
+	danger: "bg-[#a8362b] text-[#2b2418] hover:bg-[#8e2f23]",
 };
 
 const sizeClasses = {
@@ -40,7 +40,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 		<button
 			ref={ref}
 			className={cn(
-				"inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:pointer-events-none disabled:opacity-50",
+				"inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e2c787] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fbf6ec] disabled:pointer-events-none disabled:opacity-50",
 				variantClasses[variant],
 				sizeClasses[size],
 				className,

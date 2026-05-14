@@ -19,7 +19,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 				{label && (
 					<label
 						htmlFor={inputId}
-						className="text-sm font-medium text-zinc-100"
+						className="text-sm font-medium text-[#2b2418]"
 					>
 						{label}
 					</label>
@@ -30,20 +30,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 					aria-invalid={Boolean(error)}
 					aria-describedby={error ? errorId : helperText ? helperId : undefined}
 					className={cn(
-						"w-full rounded-md border bg-zinc-900/70 px-3 py-2 text-sm text-white outline-none transition focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 placeholder:text-zinc-500",
+						"w-full rounded-md border bg-white px-3 py-2 text-sm text-[#2b2418] outline-none transition placeholder:text-[#a89a7a] focus-visible:border-[#7a5421] focus-visible:ring-2 focus-visible:ring-[#e2c787]/60",
 						error
-							? "border-red-500/60"
-							: "border-zinc-700 focus-visible:border-blue-500",
+							? "border-[#d97c6e]"
+							: "border-[#d9c6a3]",
 						className,
 					)}
 					{...props}
 				/>
 				{error ? (
-					<p id={errorId} className="text-sm text-red-400">
+					<p id={errorId} className="text-sm text-[#8e2f23]">
 						{error}
 					</p>
 				) : helperText ? (
-					<p id={helperId} className="text-sm text-zinc-400">
+					<p id={helperId} className="text-sm text-[#6f6044]">
 						{helperText}
 					</p>
 				) : null}

@@ -25,7 +25,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 				{label && (
 					<label
 						htmlFor={selectId}
-						className="text-sm font-medium text-zinc-100"
+						className="text-sm font-medium text-[#2b2418]"
 					>
 						{label}
 					</label>
@@ -36,10 +36,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 					aria-invalid={Boolean(error)}
 					aria-describedby={error ? errorId : helperText ? helperId : undefined}
 					className={cn(
-						"w-full rounded-md border bg-zinc-900/70 px-3 py-2 text-sm text-white outline-none transition focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
+						"w-full rounded-md border bg-[#faf3e3]/70 px-3 py-2 text-sm text-[#2b2418] outline-none transition focus-visible:ring-2 focus-visible:ring-[#e2c787] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
 						error
 							? "border-red-500/60"
-							: "border-zinc-700 focus-visible:border-blue-500",
+							: "border-[#d9c6a3] focus-visible:border-[#c9a25f]",
 						className,
 					)}
 					{...props}
@@ -51,7 +51,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 						{error}
 					</p>
 				) : helperText ? (
-					<p id={helperId} className="text-sm text-zinc-400">
+					<p id={helperId} className="text-sm text-[#6f6044]">
 						{helperText}
 					</p>
 				) : null}

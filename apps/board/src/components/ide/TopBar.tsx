@@ -75,7 +75,7 @@ export function TopBar({
 				<button
 					type="button"
 					onClick={onOpenSearch}
-					className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-[#9DA2A6] transition-colors hover:text-white"
+					className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-[#9DA2A6] transition-colors hover:text-[#2b2418]"
 					style={{ borderColor: REPLIT.border, backgroundColor: REPLIT.panel }}
 					aria-label="Open search"
 					title="Search"
@@ -85,7 +85,7 @@ export function TopBar({
 				<button
 					type="button"
 					onClick={onOpenDeploy}
-					className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold text-white transition-colors hover:bg-[#0A84FF]"
+					className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold text-[#2b2418] transition-colors hover:bg-[#0A84FF]"
 					style={{ backgroundColor: REPLIT.accent }}
 				>
 					<Rocket className="h-4 w-4" />

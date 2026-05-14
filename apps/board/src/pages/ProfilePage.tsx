@@ -140,8 +140,8 @@ export function ProfilePage() {
 						) : (
 							initials
 						)}
-						<div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-							<Camera className="h-5 w-5 text-white" />
+						<div className="absolute inset-0 flex items-center justify-center rounded-full bg-[#fdfaf3]/50 opacity-0 transition-opacity group-hover:opacity-100">
+							<Camera className="h-5 w-5 text-[#2b2418]" />
 						</div>
 					</button>
 					<input
@@ -190,7 +190,7 @@ export function ProfilePage() {
 						<label className="mb-1 block text-xs font-medium text-muted-foreground">
 							Email
 						</label>
-						<div className="flex items-center gap-2 rounded-md border border-border/50 bg-ground-800/50 px-3 py-2 text-sm text-muted-foreground">
+						<div className="flex items-center gap-2 rounded-md border border-border/50 bg-white/50 px-3 py-2 text-sm text-muted-foreground">
 							<Mail className="h-4 w-4" />
 							{email}
 						</div>
@@ -202,7 +202,7 @@ export function ProfilePage() {
 						<Button
 							type="submit"
 							disabled={updateProfile.isPending}
-							className="bg-accent-blue text-white hover:bg-accent-blue/80"
+							className="bg-accent-blue text-[#2b2418] hover:bg-accent-blue/80"
 						>
 							{updateProfile.isPending ? "Saving…" : "Save Changes"}
 						</Button>
@@ -257,7 +257,7 @@ export function ProfilePage() {
 						<Button
 							type="submit"
 							disabled={changePassword.isPending}
-							className="bg-accent-orange text-white hover:bg-accent-orange/80"
+							className="bg-accent-orange text-[#2b2418] hover:bg-accent-orange/80"
 						>
 							{changePassword.isPending ? "Changing…" : "Update Password"}
 						</Button>

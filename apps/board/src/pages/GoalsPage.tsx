@@ -109,7 +109,7 @@ export function GoalsPage() {
 
 	return (
 		<div className="flex h-full flex-col">
-			<div className="border-b border-zinc-800 px-6 py-6">
+			<div className="border-b border-[#e5d6b8] px-6 py-6">
 				<PageHeader
 					title="Goals"
 					subtitle="Track company goals and nested sub-goals in one place."
@@ -198,9 +198,9 @@ export function GoalsPage() {
 				}
 			>
 				{parentId && (
-					<p className="text-sm text-zinc-400" aria-live="polite">
+					<p className="text-sm text-[#6f6044]" aria-live="polite">
 						Adding under{" "}
-						<span className="font-medium text-zinc-200">
+						<span className="font-medium text-[#3b3224]">
 							{goals.find((goal) => goal.id === parentId)?.title}
 						</span>
 					</p>
@@ -217,7 +217,7 @@ export function GoalsPage() {
 				<div className="space-y-1.5">
 					<label
 						htmlFor={descriptionId}
-						className="text-sm font-medium text-zinc-100"
+						className="text-sm font-medium text-[#2b2418]"
 					>
 						Description
 					</label>
@@ -228,7 +228,7 @@ export function GoalsPage() {
 						placeholder="Optional description"
 						rows={3}
 						aria-describedby={formError ? descriptionErrorId : undefined}
-						className="w-full rounded-md border border-zinc-700 bg-zinc-900/70 px-3 py-2 text-sm text-white outline-none transition focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 placeholder:text-zinc-500"
+						className="w-full rounded-md border border-[#d9c6a3] bg-[#faf3e3]/70 px-3 py-2 text-sm text-[#2b2418] outline-none transition focus-visible:ring-2 focus-visible:ring-[#e2c787] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 placeholder:text-[#8a7a5c]"
 					/>
 				</div>
 				{!parentId && goals.length > 0 && (

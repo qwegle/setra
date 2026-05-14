@@ -74,7 +74,7 @@ export function SearchPanel({
 						value={query}
 						onChange={(event) => onQueryChange(event.target.value)}
 						placeholder="Search file contents (grep)..."
-						className="h-10 w-full rounded-md border bg-[#0E1525] pl-9 pr-3 text-sm text-white outline-none"
+						className="h-10 w-full rounded-md border bg-[#0E1525] pl-9 pr-3 text-sm text-[#2b2418] outline-none"
 						style={{ borderColor: REPLIT.border }}
 					/>
 				</div>
@@ -100,7 +100,7 @@ export function SearchPanel({
 									key={file.path}
 									type="button"
 									onClick={() => onOpenFile(file.path)}
-									className="block w-full rounded-md border px-3 py-2 text-left text-xs text-white hover:bg-[#0E1525]"
+									className="block w-full rounded-md border px-3 py-2 text-left text-xs text-[#2b2418] hover:bg-[#0E1525]"
 									style={{
 										borderColor: REPLIT.border,
 										backgroundColor: REPLIT.background,
