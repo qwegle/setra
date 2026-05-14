@@ -124,7 +124,7 @@ export function AnalyticsCards({ days = 14 }: { days?: number }) {
 				<ChartCard title={`Run activity (last ${days} days)`}>
 					<ResponsiveContainer width="100%" height={220}>
 						<AreaChart data={data.runActivity}>
-							<CartesianGrid stroke="rgba(255,255,255,0.06)" />
+							<CartesianGrid stroke={GRID_STROKE} />
 							<XAxis dataKey="date" stroke="#8b95a7" fontSize={10} tickFormatter={shortDate} />
 							<YAxis stroke="#8b95a7" fontSize={10} allowDecimals={false} />
 							<Tooltip
@@ -186,7 +186,7 @@ export function AnalyticsCards({ days = 14 }: { days?: number }) {
 					) : (
 						<ResponsiveContainer width="100%" height={220}>
 							<BarChart data={issuesByPrioritySorted}>
-								<CartesianGrid stroke="rgba(255,255,255,0.06)" />
+								<CartesianGrid stroke={GRID_STROKE} />
 								<XAxis dataKey="bucket" stroke="#8b95a7" fontSize={10} />
 								<YAxis stroke="#8b95a7" fontSize={10} allowDecimals={false} />
 								<Tooltip contentStyle={tooltipStyle} />
@@ -206,7 +206,7 @@ export function AnalyticsCards({ days = 14 }: { days?: number }) {
 				<ChartCard title="Success rate trend">
 					<ResponsiveContainer width="100%" height={220}>
 						<LineChart data={data.successRate}>
-							<CartesianGrid stroke="rgba(255,255,255,0.06)" />
+							<CartesianGrid stroke={GRID_STROKE} />
 							<XAxis dataKey="date" stroke="#8b95a7" fontSize={10} tickFormatter={shortDate} />
 							<YAxis
 								stroke="#8b95a7"
@@ -260,6 +260,11 @@ const tooltipStyle: React.CSSProperties = {
 	fontSize: 11,
 	color: "#e5e7eb",
 };
+
+/** Grid stroke that works on both dark and cream backgrounds: a low-alpha
+ *  warm neutral. Recharts doesn't expose CSS var hooks so we pick a value
+ *  that reads as faint on both surfaces. */
+const GRID_STROKE = "rgba(120, 110, 100, 0.18)";
 
 function shortDate(d: string): string {
 	return d.slice(5);
