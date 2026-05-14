@@ -42,13 +42,69 @@ authRoute.post("/register", async (c) => {
 	const password = typeof body?.password === "string" ? body.password : "";
 	const companyName =
 		typeof body?.companyName === "string" ? body.companyName.trim() : "";
-	const name = typeof body?.name === "string" ? body.name.trim() : null;
+	const firstName =
+		typeof body?.firstName === "string" ? body.firstName.trim() : "";
+	const lastName =
+		typeof body?.lastName === "string" ? body.lastName.trim() : "";
+	const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+	const securityQuestion =
+		typeof body?.securityQuestion === "string"
+			? body.securityQuestion.trim()
+			: "";
+	const securityAnswer =
+		typeof body?.securityAnswer === "string"
+			? body.securityAnswer.trim()
+			: "";
+	const acceptedTerms = body?.acceptedTerms === true;
+
+	// Back-compat: "name" is the legacy single-field form. New clients send
+	// firstName + lastName.
+	const legacyName =
+		typeof body?.name === "string" && body.name.trim().length > 0
+			? body.name.trim()
+			: null;
+	const composedName =
+		[firstName, lastName].filter(Boolean).join(" ").trim() || legacyName;
+
 	if (!email || !password) {
 		return c.json({ error: "email and password are required" }, 400);
 	}
 	if (password.length < 8) {
 		return c.json({ error: "Password must be at least 8 characters" }, 400);
 	}
+	// New shape: require firstName + acceptedTerms + securityQuestion/answer.
+	// Legacy shape (name + companyName) is still accepted but discouraged.
+	const isNewShape = firstName.length > 0 || lastName.length > 0;
+	if (isNewShape) {
+		if (!firstName || !lastName) {
+			return c.json(
+				{ error: "firstName and lastName are required" },
+				400,
+			);
+		}
+		if (!acceptedTerms) {
+			return c.json(
+				{ error: "You must accept the terms and conditions" },
+				400,
+			);
+		}
+		if (!securityQuestion || !securityAnswer) {
+			return c.json(
+				{
+					error:
+						"securityQuestion and securityAnswer are required (used for password recovery)",
+				},
+				400,
+			);
+		}
+		if (securityAnswer.length < 3) {
+			return c.json(
+				{ error: "Security answer must be at least 3 characters" },
+				400,
+			);
+		}
+	}
+
 	const db = getRawDb();
 	const existing = db
 		.prepare(`SELECT id FROM users WHERE email = ? LIMIT 1`)
@@ -73,10 +129,23 @@ authRoute.post("/register", async (c) => {
 		)
 		.get(email) as { id: string; company_id: string; role: string } | undefined;
 
-	// Without an invite every new account must create its own workspace,
-	// otherwise we silently dump them into the first company in the DB and
-	// leak its projects / agents / settings (CVE-class tenant break).
-	if (!invite && !companyName) {
+	// New flow: a user may register with no company at all. They will be
+	// directed to /onboarding/company to either create one or join one (LAN,
+	// Internet, or code). users.company_id stays empty until that flow runs.
+	const skipCompanyCreation = isNewShape && !companyName && !invite;
+
+	let targetCompany: { id: string } | null = null;
+	if (invite) {
+		targetCompany = { id: invite.company_id };
+	} else if (companyName) {
+		const created = await companiesRepo.createCompany({ name: companyName });
+		if (!created) {
+			return c.json({ error: "Failed to create company" }, 500);
+		}
+		targetCompany = { id: created.id };
+	} else if (!skipCompanyCreation) {
+		// Legacy shape without invite or companyName — preserve the old error
+		// so existing tests + clients see the same response.
 		return c.json(
 			{
 				error:
@@ -86,35 +155,34 @@ authRoute.post("/register", async (c) => {
 		);
 	}
 
-	let targetCompany: { id: string };
-	if (invite) {
-		targetCompany = { id: invite.company_id };
-	} else {
-		const created = await companiesRepo.createCompany({ name: companyName });
-		if (!created) {
-			return c.json({ error: "Failed to create company" }, 500);
-		}
-		targetCompany = { id: created.id };
-	}
 	const role = isFirstUser
 		? "owner"
 		: invite
 			? ((invite.role as "admin" | "member") ?? "member")
-			: "owner"; // a brand-new self-served workspace makes the registrant its owner
+			: "owner";
 
 	const passwordHash = await hashPassword(password);
+	const securityAnswerHash = securityAnswer
+		? await hashPassword(securityAnswer.toLowerCase())
+		: null;
 	const user = db
 		.prepare(
-			`INSERT INTO users (id, email, password_hash, name, company_id, role, created_at, updated_at)
-			 VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+			`INSERT INTO users (id, email, password_hash, name, first_name, last_name, phone, security_question, security_answer_hash, accepted_terms_at, company_id, role, created_at, updated_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 			 RETURNING id, email, name, company_id, role`,
 		)
 		.get(
 			crypto.randomUUID(),
 			email,
 			passwordHash,
-			name,
-			targetCompany.id,
+			composedName,
+			firstName || null,
+			lastName || null,
+			phone || null,
+			securityQuestion || null,
+			securityAnswerHash,
+			acceptedTerms ? new Date().toISOString() : null,
+			targetCompany?.id ?? "",
 			role,
 		) as {
 		id: string;
@@ -124,11 +192,26 @@ authRoute.post("/register", async (c) => {
 		role: "owner" | "admin" | "member";
 	};
 
-	// Create company_members row so user appears in the team
-	db.prepare(
-		`INSERT OR IGNORE INTO company_members (id, company_id, name, email, role, joined_at)
-		 VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
-	).run(user.id, targetCompany.id, name ?? email, email, role);
+	// Wire up the new join table whenever the user has a company at register
+	// time (invite or legacy path).
+	if (targetCompany) {
+		db.prepare(
+			`INSERT OR IGNORE INTO user_companies (user_id, company_id, role)
+			 VALUES (?, ?, ?)`,
+		).run(user.id, targetCompany.id, role);
+
+		// Create company_members row so user appears in the team
+		db.prepare(
+			`INSERT OR IGNORE INTO company_members (id, company_id, name, email, role, joined_at)
+			 VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
+		).run(
+			user.id,
+			targetCompany.id,
+			composedName ?? email,
+			email,
+			role,
+		);
+	}
 
 	// Mark invite as accepted
 	if (invite) {
@@ -143,7 +226,12 @@ authRoute.post("/register", async (c) => {
 		role: user.role,
 	});
 	return c.json(
-		{ token, user: sanitizeUser(user), company: targetCompany },
+		{
+			token,
+			user: sanitizeUser(user),
+			company: targetCompany,
+			needsCompany: skipCompanyCreation,
+		},
 		201,
 	);
 });
@@ -228,6 +316,76 @@ authRoute.get("/me", async (c) => {
 
 authRoute.use("/logout", requireAuth());
 authRoute.post("/logout", (c) => c.json({ ok: true }));
+
+// ── Forgot password (security-question flow) ────────────────────────────
+//
+// Step 1: client POSTs { email } → server returns { securityQuestion }
+// (or 404 if no user / no question set).
+// Step 2: client POSTs { email, answer, newPassword } → server verifies
+// the answer (case-insensitive bcrypt compare) and updates the password.
+//
+// Deliberately no rate-limit middleware here yet — this lives behind the
+// public auth surface and we'll add the limiter in the hardening pass.
+
+authRoute.post("/forgot-password/start", async (c) => {
+	const body = await c.req.json().catch(() => null);
+	const email =
+		typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+	if (!email) return c.json({ error: "email is required" }, 400);
+	const row = getRawDb()
+		.prepare(
+			`SELECT security_question FROM users WHERE email = ? LIMIT 1`,
+		)
+		.get(email) as { security_question: string | null } | undefined;
+	if (!row || !row.security_question) {
+		// Generic response — do not leak which step failed.
+		return c.json({ error: "No recovery available for this account" }, 404);
+	}
+	return c.json({ securityQuestion: row.security_question });
+});
+
+authRoute.post("/forgot-password/verify", async (c) => {
+	const body = await c.req.json().catch(() => null);
+	const email =
+		typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+	const answer = typeof body?.answer === "string" ? body.answer.trim() : "";
+	const newPassword =
+		typeof body?.newPassword === "string" ? body.newPassword : "";
+	if (!email || !answer || !newPassword) {
+		return c.json(
+			{ error: "email, answer, and newPassword are required" },
+			400,
+		);
+	}
+	if (newPassword.length < 8) {
+		return c.json(
+			{ error: "New password must be at least 8 characters" },
+			400,
+		);
+	}
+	const db = getRawDb();
+	const row = db
+		.prepare(
+			`SELECT id, security_answer_hash FROM users WHERE email = ? LIMIT 1`,
+		)
+		.get(email) as
+		| { id: string; security_answer_hash: string | null }
+		| undefined;
+	if (!row || !row.security_answer_hash) {
+		return c.json({ error: "Recovery failed" }, 401);
+	}
+	const valid = await comparePassword(
+		answer.toLowerCase(),
+		row.security_answer_hash,
+	);
+	if (!valid) return c.json({ error: "Recovery failed" }, 401);
+	const hash = await hashPassword(newPassword);
+	db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
+		hash,
+		row.id,
+	);
+	return c.json({ ok: true });
+});
 
 // ── Profile update ──────────────────────────────────────────────────────
 authRoute.use("/profile", requireAuth());

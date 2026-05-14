@@ -18,10 +18,24 @@ function createDb(): Database.Database {
 			email TEXT NOT NULL UNIQUE,
 			password_hash TEXT NOT NULL,
 			name TEXT,
-			company_id TEXT NOT NULL,
+			first_name TEXT,
+			last_name TEXT,
+			phone TEXT,
+			security_question TEXT,
+			security_answer_hash TEXT,
+			accepted_terms_at TEXT,
+			company_id TEXT NOT NULL DEFAULT '',
 			role TEXT NOT NULL,
 			created_at TEXT,
 			updated_at TEXT
+		);
+		CREATE TABLE user_companies (
+			user_id TEXT NOT NULL,
+			company_id TEXT NOT NULL,
+			role TEXT NOT NULL DEFAULT 'member',
+			designation TEXT,
+			joined_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+			PRIMARY KEY (user_id, company_id)
 		);
 		CREATE TABLE company_invites (
 			id TEXT PRIMARY KEY,
