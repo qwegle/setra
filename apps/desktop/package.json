@@ -55,6 +55,7 @@
 		"electron": "^33.3.1",
 		"electron-builder": "^25.1.8",
 		"electron-vite": "^3.0.0",
+		"node-abi": "^4.31.0",
 		"typescript": "^5.7.3",
 		"vite": "^6.0.7"
 	},

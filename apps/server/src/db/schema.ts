@@ -809,12 +809,41 @@ export function ensureTables(): void {
       email         TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       name          TEXT,
-      company_id    TEXT NOT NULL,
+      first_name    TEXT,
+      last_name     TEXT,
+      phone         TEXT,
+      security_question     TEXT,
+      security_answer_hash  TEXT,
+      accepted_terms_at     TEXT,
+      company_id    TEXT NOT NULL DEFAULT '',
       role          TEXT NOT NULL DEFAULT 'owner',
       created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       updated_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
     CREATE INDEX IF NOT EXISTS idx_users_company_id ON users(company_id);
+
+    CREATE TABLE IF NOT EXISTS user_companies (
+      user_id     TEXT NOT NULL,
+      company_id  TEXT NOT NULL,
+      role        TEXT NOT NULL DEFAULT 'member',
+      designation TEXT,
+      joined_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      PRIMARY KEY (user_id, company_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_companies_user ON user_companies(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_companies_company ON user_companies(company_id);
+
+    CREATE TABLE IF NOT EXISTS company_invite_codes (
+      code         TEXT PRIMARY KEY,
+      company_id   TEXT NOT NULL,
+      created_by   TEXT,
+      default_role TEXT NOT NULL DEFAULT 'member',
+      max_uses     INTEGER NOT NULL DEFAULT 0,
+      uses         INTEGER NOT NULL DEFAULT 0,
+      expires_at   TEXT,
+      created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_invite_codes_company ON company_invite_codes(company_id);
 
     CREATE TABLE IF NOT EXISTS jobs (
       id           TEXT PRIMARY KEY,

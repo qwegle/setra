@@ -88,6 +88,7 @@ import { healthRoute } from "./routes/health.js";
 import { inboxRoute } from "./routes/inbox.js";
 import { instanceRoute } from "./routes/instance.js";
 import { integrationsRoute } from "./routes/integrations.js";
+import { onboardingRoute } from "./routes/onboarding.js";
 import { issuesRoute } from "./routes/issues.js";
 import { lanRoute } from "./routes/lan.js";
 import { llmRoute } from "./routes/llm.js";
@@ -169,6 +170,7 @@ export async function createApp(
 	app.route("/api/events", sseRoute);
 	app.route("/api/auth", authRoute);
 	app.route("/api/companies", companiesRoute);
+	app.route("/api/onboarding", onboardingRoute);
 	app.route("/api/llm", llmRoute);
 	app.route("/api/runtime", runtimeRoute);
 	app.route("/api/instance", instanceRoute);
