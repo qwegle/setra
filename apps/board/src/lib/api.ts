@@ -813,6 +813,20 @@ export interface CliStatus {
 	checkedAt: number;
 }
 
+export interface AnalyticsDashboard {
+	days: number;
+	runActivity: Array<{
+		date: string;
+		count: number;
+		success: number;
+		fail: number;
+	}>;
+	successRate: Array<{ date: string; pct: number }>;
+	issuesByStatus: Array<{ bucket: string; n: number }>;
+	issuesByPriority: Array<{ bucket: string; n: number }>;
+	totals: { runs: number; successes: number; fails: number; issues: number };
+}
+
 export const api = {
 	auth: {
 		login: (body: { email: string; password: string }) =>
@@ -1784,6 +1798,10 @@ export const api = {
 			const suffix = qs.toString() ? `?${qs.toString()}` : "";
 			return request<{ adapters: CliStatus[] }>(`/cli-status${suffix}`);
 		},
+	},
+	analytics: {
+		dashboard: (days = 14) =>
+			request<AnalyticsDashboard>(`/analytics/dashboard?days=${days}`),
 	},
 	issueDetail: {
 		get: (id: string) =>

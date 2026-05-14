@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import type { ElementType } from "react";
 import { Link } from "react-router-dom";
 import { OnboardingWizard } from "../components/OnboardingWizard";
+import { AnalyticsCards } from "../components/AnalyticsCards";
 import {
 	Badge,
 	Button,
@@ -228,6 +229,7 @@ export function OverviewPage() {
 
 			{!isLoading && !isError && (
 				<>
+					<AnalyticsCards days={14} />
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
 						<KpiCard
 							label="Projects"

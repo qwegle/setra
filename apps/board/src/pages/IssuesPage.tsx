@@ -20,6 +20,7 @@ import { DeliveryWidget } from "../components/DeliveryWidget";
 import { FilterBar, type FilterState } from "../components/FilterBar";
 import { IssueDetailPanel } from "../components/IssueDetailPanel";
 import { KanbanBoard } from "../components/KanbanBoard";
+import { NewIssueDialog } from "../components/NewIssueDialog";
 import { Button, EmptyState } from "../components/ui";
 import {
 	type Issue,
@@ -47,6 +48,7 @@ const STATUS_PIPELINE: IssueStatus[] = [
 	"in_progress",
 	"in_review",
 	"done",
+	"cancelled",
 ];
 
 const STATUS_GROUP_ORDER: IssueStatus[] = [
@@ -55,6 +57,7 @@ const STATUS_GROUP_ORDER: IssueStatus[] = [
 	"backlog",
 	"in_review",
 	"done",
+	"cancelled",
 ];
 
 const PROJECT_SETTINGS_FALLBACKS = {
@@ -153,6 +156,8 @@ export function IssuesPage() {
 		Partial<Record<IssueStatus, boolean>>
 	>({});
 	const [showProjectSettings, setShowProjectSettings] = useState(false);
+	const [newIssueDialogStatus, setNewIssueDialogStatus] =
+		useState<IssueStatus | null>(null);
 	const [projectSettingsDraft, setProjectSettingsDraft] =
 		useState<ProjectSettings | null>(null);
 
@@ -405,8 +410,7 @@ export function IssuesPage() {
 	});
 
 	const openCreateIssue = (status: IssueStatus = filterStatus ?? "backlog") => {
-		setViewMode("list");
-		setCreating(status);
+		setNewIssueDialogStatus(status);
 	};
 
 	return (
@@ -994,6 +998,18 @@ export function IssuesPage() {
 						)}
 					</div>
 				</div>
+			)}
+			{newIssueDialogStatus !== null && projectId && (
+				<NewIssueDialog
+					open={true}
+					onClose={() => setNewIssueDialogStatus(null)}
+					projectId={projectId}
+					roster={roster}
+					defaultStatus={newIssueDialogStatus}
+					onCreated={() => {
+						qc.invalidateQueries({ queryKey: ["issues", projectId] });
+					}}
+				/>
 			)}
 		</div>
 	);
