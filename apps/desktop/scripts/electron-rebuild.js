@@ -31,8 +31,7 @@ console.log("  Saved Node.js ABI-115 binary as backup");
 async function main() {
 saveNodejsBackup();
 
-const rebuildPath = require.resolve("@electron/rebuild/lib/rebuild.js");
-const { rebuild } = require(rebuildPath);
+const { rebuild } = require("@electron/rebuild");
 const ELECTRON_VERSION = require("electron/package.json").version;
 const ELECTRON_ABI = Number.parseInt(
 require("node-abi").getAbi(ELECTRON_VERSION, "electron"),
@@ -42,7 +41,8 @@ require("node-abi").getAbi(ELECTRON_VERSION, "electron"),
 console.log(`  Rebuilding for Electron ${ELECTRON_VERSION} (ABI ${ELECTRON_ABI})`);
 
 await rebuild({
-buildPath: path.resolve(__dirname, "../../.."),
+buildPath: SQLITE_DIR,
+projectRootPath: path.resolve(__dirname, "../../.."),
 electronVersion: ELECTRON_VERSION,
 force: true,
 onlyModules: ["better-sqlite3", "node-pty"],
