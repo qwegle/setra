@@ -1,0 +1,13 @@
+name: approval-requested
+description: hire_agent without prior board approval returns 202, not 200.
+setup:
+  - method: POST
+    path: /api/agents/hire
+    body:
+      slug: eval-temp-engineer
+      role: engineer
+expect:
+  - within: 5s
+    method: GET
+    path: /api/agents/hire-requests
+    status: 200

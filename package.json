@@ -15,6 +15,7 @@
 		"build": "turbo build",
 		"test": "bash scripts/restore-node-native.sh && vitest run",
 		"test:ci": "vitest run",
+		"evals": "node evals/runner.mjs",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
 		"typecheck": "turbo typecheck",

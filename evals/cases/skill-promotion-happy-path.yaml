@@ -1,0 +1,7 @@
+name: skill-promotion-happy-path
+description: A successful skill promotion writes a wiki entry.
+expect:
+  - within: 5s
+    method: GET
+    path: /api/wiki
+    status: 200

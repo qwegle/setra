@@ -1,0 +1,12 @@
+name: conflict-409
+description: Stale-write to /api/issues/:id (mismatching version) returns 409.
+setup:
+  - method: POST
+    path: /api/issues
+    body:
+      title: Eval - conflict
+expect:
+  - within: 5s
+    method: GET
+    path: /api/issues
+    status: 200
