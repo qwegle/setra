@@ -11,10 +11,8 @@ import {
 	TrendingUp,
 	Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import type { ElementType } from "react";
 import { Link } from "react-router-dom";
-import { OnboardingWizard } from "../components/OnboardingWizard";
 import { AnalyticsCards } from "../components/AnalyticsCards";
 import {
 	Badge,
@@ -185,27 +183,6 @@ export function OverviewPage() {
 		.sort((a, b) => b.issueCount - a.issueCount)
 		.slice(0, 3);
 	const recentAgents = agents.slice(0, 8);
-	const [showProjectOnboarding, setShowProjectOnboarding] = useState(false);
-
-	useEffect(() => {
-		if (isLoading || isError) return;
-		if (projects.length === 0) {
-			try {
-				setShowProjectOnboarding(
-					localStorage.getItem(PROJECT_ONBOARDING_DISMISSED_KEY) !== "1",
-				);
-			} catch {
-				setShowProjectOnboarding(true);
-			}
-			return;
-		}
-		setShowProjectOnboarding(false);
-		try {
-			localStorage.removeItem(PROJECT_ONBOARDING_DISMISSED_KEY);
-		} catch {
-			// ignore storage failures
-		}
-	}, [isError, isLoading, projects.length]);
 
 	return (
 		<div className="space-y-6 px-6 py-6">
@@ -481,23 +458,6 @@ export function OverviewPage() {
 						/>
 						<QuickAction to="/agents" icon={Bot} label="Manage Agents" />
 					</div>
-					{showProjectOnboarding ? (
-						<OnboardingWizard
-							variant="project"
-							onClose={() => {
-								try {
-									localStorage.setItem(PROJECT_ONBOARDING_DISMISSED_KEY, "1");
-								} catch {
-									// ignore storage failures
-								}
-								setShowProjectOnboarding(false);
-							}}
-							onProjectCreated={() => {
-								setShowProjectOnboarding(false);
-								void projectsQuery.refetch();
-							}}
-						/>
-					) : null}
 				</>
 			)}
 		</div>
