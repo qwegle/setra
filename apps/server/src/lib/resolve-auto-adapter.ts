@@ -92,6 +92,11 @@ function canonicalAdapter(adapter: string): AdapterId {
 		normalized === "ollama"
 	)
 		return normalized;
+	// Map short CLI names to the canonical *_local AdapterId variants so
+	// downstream switches (cli runners, tier ladder) hit the right branch.
+	if (normalized === "codex") return "codex_local";
+	if (normalized === "claude") return "claude_local";
+	if (normalized === "gemini") return "gemini_local";
 	return adapter as AdapterId;
 }
 
