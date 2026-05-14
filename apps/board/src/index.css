@@ -139,6 +139,68 @@
 	}
 }
 
+/* ─── Form controls: browser autofill, placeholder, selection ──────────────── */
+/* Override the WebKit yellow autofill background and keep our cream palette.
+   `box-shadow: inset` is the trick — Chromium ignores `background-color` on
+   autofilled inputs but respects an inset shadow that paints over it. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+	-webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+	box-shadow: 0 0 0px 1000px #ffffff inset !important;
+	-webkit-text-fill-color: #2b2418 !important;
+	caret-color: #2b2418;
+	transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Placeholder colour for any bare input/textarea/select not using our
+   shared Input primitive. */
+input::placeholder,
+textarea::placeholder {
+	color: #a89a7a;
+	opacity: 1;
+}
+
+/* Native <select> styling — browsers default to white/grey controls that
+   clash with the cream theme on macOS especially. */
+select {
+	background-color: #ffffff;
+	color: #2b2418;
+	border: 1px solid #d9c6a3;
+	border-radius: 0.375rem;
+}
+select:focus-visible {
+	outline: none;
+	border-color: #7a5421;
+	box-shadow: 0 0 0 2px rgba(226, 199, 135, 0.6);
+}
+select option {
+	background-color: #ffffff;
+	color: #2b2418;
+}
+
+/* Text selection — warm tan highlight instead of OS default blue. */
+::selection {
+	background-color: rgba(226, 199, 135, 0.55);
+	color: #2b2418;
+}
+::-moz-selection {
+	background-color: rgba(226, 199, 135, 0.55);
+	color: #2b2418;
+}
+
+/* Number input spinners are off-theme; subtle them down. */
+input[type="number"] {
+	color: #2b2418;
+}
+
 /* ─── Light/cream mode: remap hardcoded zinc/gray/slate colours ─────────────── */
 /* These catch the hundreds of text-zinc-*, bg-zinc-*, border-zinc-*
    classes scattered across pages. In light mode we flip them so text
