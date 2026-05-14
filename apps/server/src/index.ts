@@ -96,6 +96,7 @@ import { mcpRoute } from "./routes/mcp.js";
 import orgRoute from "./routes/org.js";
 import parseGoalRoute from "./routes/parse-goal.js";
 import { plansRoute } from "./routes/plans.js";
+import { profileRoute } from "./routes/profile.js";
 import projectAgentsRoute from "./routes/project-agents.js";
 import { projectContextRoute } from "./routes/project-context.js";
 import { projectGitRoute } from "./routes/project-git.js";
@@ -285,6 +286,7 @@ export async function createApp(
 	app.route("/api/inbox", inboxRoute);
 	app.route("/api/activity", activityRoute);
 	app.route("/api/analytics", analyticsRoute);
+	app.route("/api/profile", profileRoute);
 	app.route("/api/costs", costsRoute);
 	app.route("/api/company", companyRoute);
 	app.route("/api/workspaces", workspacesRoute);

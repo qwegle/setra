@@ -13,6 +13,7 @@ import * as integrationsRepo from "../repositories/integrations.repo.js";
 import { getAgentExperience } from "./agent-reflection.js";
 import { getAgentScore } from "./credibility.js";
 import { ENTERPRISE_STANDARDS } from "./enterprise-standards.js";
+import { buildOperatorProfileSection } from "./profile.js";
 import { createLogger } from "./logger.js";
 import { getMatchingRules, loadProjectRules } from "./project-rules.js";
 import type { AgentRow, IssueRow } from "./types.js";
@@ -743,9 +744,11 @@ export async function buildSystemPrompt(
 
 	const rolePrompt = buildRoleSpecificPrompt(agent, issue, task);
 	const skillsSection = buildSkillsSection(agent, issue, task);
+	const operatorProfileSection = buildOperatorProfileSection();
 	return [
 		base,
 		ENTERPRISE_STANDARDS,
+		operatorProfileSection,
 		companyContext,
 		semanticMemorySection,
 		experienceSection,
