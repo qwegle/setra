@@ -1,0 +1,13 @@
+name: assignment-pickup
+description: Assigning an issue to an agent triggers a run within the dispatch loop.
+setup:
+  - method: POST
+    path: /api/issues
+    body:
+      title: Eval - assignment pickup
+      assigneeAgentSlug: test-engineer
+expect:
+  - within: 30s
+    method: GET
+    path: /api/issues
+    status: 200

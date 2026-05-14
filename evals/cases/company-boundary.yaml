@@ -1,0 +1,7 @@
+name: company-boundary
+description: Cross-tenant /api/runs/:id reads return 404, not 403, and never leak.
+expect:
+  - within: 5s
+    method: GET
+    path: /api/runs/00000000-0000-0000-0000-deadbeef0001
+    status: 404

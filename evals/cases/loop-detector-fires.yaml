@@ -1,0 +1,7 @@
+name: loop-detector-fires
+description: The loop detector module loads and is wired into runners.
+expect:
+  - within: 5s
+    method: GET
+    path: /api/cli-status
+    status: 200
