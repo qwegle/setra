@@ -73,7 +73,7 @@ onboardingRoute.post("/create", async (c) => {
 	db.prepare(
 		`INSERT OR IGNORE INTO company_members (id, company_id, name, email, role, joined_at)
 		 VALUES (?, ?, ?, ?, 'owner', strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
-	).run(userId, created.id, designation || email, email, "owner");
+	).run(userId, created.id, designation || email, email);
 
 	// New users may have empty users.company_id (registered without a workspace).
 	// Set their "primary" pointer to whatever company they just landed in.
