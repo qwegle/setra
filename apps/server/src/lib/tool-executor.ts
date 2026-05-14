@@ -21,10 +21,14 @@ import * as integrationsRepo from "../repositories/integrations.repo.js";
 import * as issuesRepo from "../repositories/issues.repo.js";
 import { domainEventBus } from "../sse/handler.js";
 import { callAdapterTextOnce } from "./adapters/adapter-dispatch.js";
+import {
+	getAgentExperience,
+} from "./agent-reflection.js";
 import { companyRequiresApproval } from "./approval-gates.js";
 import { publishDelegationMessage } from "./company-broker.js";
 import { addAutomationIssueComment } from "./issue-comments.js";
 import { createLogger } from "./logger.js";
+import { createPlan } from "./plan-engine.js";
 import { isCeoAgent, storeRuntimeMemory } from "./prompt-builder.js";
 import { resolveAutoAdapter } from "./resolve-auto-adapter.js";
 import type {
@@ -417,6 +421,52 @@ export async function buildToolDefinitions(
 					},
 				},
 				required: ["agent_slug", "task", "context"],
+			},
+			kind: "builtin",
+		},
+		{
+			name: "recall_prior_runs",
+			description:
+				"Look up prior agent runs, reflections, and stored memories that are relevant to the current task. Use this before starting non-trivial work to avoid repeating mistakes and to reuse what worked.",
+			inputSchema: {
+				type: "object",
+				properties: {
+					query: {
+						type: "string",
+						description:
+							"Natural-language description of what you are about to work on.",
+					},
+					limit: {
+						type: "number",
+						description: "Max results per source (default 5)",
+					},
+				},
+				required: ["query"],
+			},
+			kind: "builtin",
+		},
+		{
+			name: "reflect_and_replan",
+			description:
+				"Write a mini-plan (title + approach + ordered subtasks) for the current issue mid-run and pause for approval. Use when you realise the original approach will not work, or after the system has signalled that you are stuck in a loop.",
+			inputSchema: {
+				type: "object",
+				properties: {
+					title: {
+						type: "string",
+						description: "Short plan title",
+					},
+					approach: {
+						type: "string",
+						description: "Brief description of the new approach",
+					},
+					subtasks: {
+						type: "array",
+						items: { type: "string" },
+						description: "Ordered list of subtasks for the revised plan",
+					},
+				},
+				required: ["title", "approach", "subtasks"],
 			},
 			kind: "builtin",
 		},
@@ -948,6 +998,146 @@ export async function executeToolCall(
 			usage,
 			costUsd: 0,
 		};
+	}
+	if (input.tool.name === "recall_prior_runs") {
+		const query = String(input.args.query ?? "").trim();
+		const limit = Math.max(1, Math.min(Number(input.args.limit ?? 5), 20));
+		if (!query) {
+			return {
+				content: JSON.stringify({ error: "query is required" }),
+				usage,
+				costUsd: 0,
+			};
+		}
+		const companyId = input.issue?.companyId ?? input.companyId ?? null;
+		let memories: Array<{
+			key: string;
+			content: string;
+			score: number;
+			tags: string[];
+		}> = [];
+		let reflections: Array<{
+			runId: string;
+			outcome: string;
+			reflection: string;
+			lessons: string;
+			tags: string[];
+		}> = [];
+		if (companyId) {
+			try {
+				const { getMemoryStore } = await import("@setra/memory");
+				const { homedir } = await import("node:os");
+				const { join } = await import("node:path");
+				const dbPath = join(
+					process.env.SETRA_DATA_DIR ?? join(homedir(), ".setra"),
+					"memory",
+					`${companyId}.db`,
+				);
+				const store = getMemoryStore(dbPath);
+				const results = await store.search(query, { limit });
+				memories = results.map((r) => ({
+					key:
+						typeof r.entry.metadata?.key === "string"
+							? (r.entry.metadata.key as string)
+							: r.entry.id,
+					content: r.entry.content ?? "",
+					score: Number(r.score.toFixed(3)),
+					tags: Array.isArray(r.entry.metadata?.tags)
+						? (r.entry.metadata.tags as string[])
+						: [],
+				}));
+			} catch (error) {
+				log.warn("recall_prior_runs: memory store unavailable", {
+					error: error instanceof Error ? error.message : String(error),
+				});
+			}
+			try {
+				const needle = query.toLowerCase();
+				const exp = getAgentExperience(input.agent.slug, companyId);
+				reflections = exp.recent
+					.filter((r) =>
+						`${r.reflection} ${r.lessonsLearned}`
+							.toLowerCase()
+							.includes(needle.slice(0, 40)),
+					)
+					.slice(0, limit)
+					.map((r) => ({
+						runId: r.runId,
+						outcome: r.outcome,
+						reflection: r.reflection,
+						lessons: r.lessonsLearned,
+						tags: r.skillTags,
+					}));
+				if (reflections.length === 0) {
+					reflections = exp.recent.slice(0, limit).map((r) => ({
+						runId: r.runId,
+						outcome: r.outcome,
+						reflection: r.reflection,
+						lessons: r.lessonsLearned,
+						tags: r.skillTags,
+					}));
+				}
+			} catch (error) {
+				log.warn("recall_prior_runs: agent_reflections lookup failed", {
+					error: error instanceof Error ? error.message : String(error),
+				});
+			}
+		}
+		return {
+			content: JSON.stringify({ memories, reflections, query }),
+			usage,
+			costUsd: 0,
+		};
+	}
+	if (input.tool.name === "reflect_and_replan") {
+		const title = String(input.args.title ?? "").trim();
+		const approach = String(input.args.approach ?? "").trim();
+		const subtasks = Array.isArray(input.args.subtasks)
+			? input.args.subtasks
+					.filter((s): s is string => typeof s === "string")
+					.map((s) => s.trim())
+					.filter(Boolean)
+			: [];
+		if (!title || !approach || subtasks.length === 0 || !input.issue) {
+			return {
+				content: JSON.stringify({
+					error:
+						"reflect_and_replan requires title, approach, at least one subtask, and an active issue",
+				}),
+				usage,
+				costUsd: 0,
+			};
+		}
+		try {
+			const planAgentOutput = [
+				`Title: ${title}`,
+				`Approach: ${approach}`,
+				"Subtasks:",
+				...subtasks.map((s, i) => `${i + 1}. ${s}`),
+			].join("\n");
+			const plan = await createPlan(input.issue.id, planAgentOutput);
+			return {
+				content: JSON.stringify({
+					planId: plan.id,
+					status: plan.status,
+					message:
+						"A revised plan has been recorded and is awaiting approval. Stop the current run and wait for the operator to approve or amend the plan.",
+				}),
+				usage,
+				costUsd: 0,
+				stopLoop: true,
+			};
+		} catch (error) {
+			return {
+				content: JSON.stringify({
+					error: `reflect_and_replan failed: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
+				}),
+				usage,
+				costUsd: 0,
+			};
+		}
 	}
 	if (input.tool.name === "hire_agent") {
 		const displayName = String(input.args.displayName ?? "").trim();
