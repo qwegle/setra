@@ -4,30 +4,37 @@
 
 @layer base {
 	:root {
-		--background: 222 18% 7%;
-		--foreground: 210 20% 92%;
-		--card: 222 16% 10%;
-		--card-foreground: 210 20% 92%;
-		--muted: 222 14% 16%;
-		--muted-foreground: 215 12% 55%;
-		--primary: 213 76% 47%;
-		--primary-foreground: 0 0% 100%;
-		--secondary: 222 14% 16%;
-		--secondary-foreground: 210 20% 92%;
-		--border: 222 14% 18%;
-		--input: 222 14% 14%;
-		--ring: 213 76% 47%;
-		--radius: 0.5rem;
-	}
-
-	.light {
-		/* Cream / parchment palette — Beacons-style warm light theme.
-		   Background base: #faf6ef (warm off-white).
-		   Surfaces: pure white cards on cream ground for contrast.
-		   Text: deep slate-brown for readability without true black harshness. */
+		/* Cream / parchment palette is the SINGLE base theme. No dark fallback —
+		   Setra is a light-only enterprise UI. */
 		--background: 36 38% 96%;            /* #faf6ef cream */
 		--foreground: 30 18% 14%;            /* deep slate-brown */
 		--card: 36 50% 99%;                  /* near-white with warm tint */
+		--card-foreground: 30 18% 14%;
+		--popover: 36 50% 99%;
+		--popover-foreground: 30 18% 14%;
+		--muted: 36 28% 92%;                 /* sand */
+		--muted-foreground: 30 10% 42%;
+		--primary: 32 60% 30%;               /* warm tan-brown */
+		--primary-foreground: 36 50% 97%;
+		--secondary: 36 30% 90%;
+		--secondary-foreground: 30 18% 14%;
+		--accent: 36 30% 90%;
+		--accent-foreground: 30 18% 14%;
+		--destructive: 0 76% 52%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 36 22% 86%;                /* warm sand border */
+		--input: 36 22% 86%;
+		--ring: 32 60% 30%;
+		--radius: 0.5rem;
+		color-scheme: light;
+	}
+
+	.light {
+		/* Kept for backward compat with components that explicitly add .light.
+		   Values mirror :root above. */
+		--background: 36 38% 96%;
+		--foreground: 30 18% 14%;
+		--card: 36 50% 99%;
 		--card-foreground: 30 18% 14%;
 		--popover: 36 50% 99%;
 		--popover-foreground: 30 18% 14%;
@@ -52,7 +59,7 @@
 	}
 
 	html {
-		color-scheme: dark;
+		color-scheme: light;
 	}
 
 	html.light {
@@ -63,19 +70,18 @@
 		@apply bg-background text-foreground font-sans antialiased;
 		background-image: radial-gradient(
 				ellipse at 20% 0%,
-				rgba(26, 120, 212, 0.06) 0%,
-				transparent 60%
+				rgba(247, 215, 175, 0.55) 0%,
+				transparent 55%
 			),
 			radial-gradient(
 				ellipse at 80% 100%,
-				rgba(168, 85, 247, 0.04) 0%,
-				transparent 60%
+				rgba(232, 217, 246, 0.4) 0%,
+				transparent 55%
 			);
 		min-height: 100vh;
 	}
 
-	/* Cream body gradient — replaces the dark blue/purple radials with
-	   subtle warm peach + soft cream highlights for a Beacons-style feel. */
+	/* Backward-compat block for the legacy `.light` class. */
 	html.light body {
 		background-image: radial-gradient(
 				ellipse at 20% 0%,
