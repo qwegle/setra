@@ -9,26 +9,13 @@
     <link rel="preconnect" href="https://fonts.bunny.net" />
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|jetbrains-mono:400,500|poppins:400,500,600,700|plus-jakarta-sans:400,500,600,700|dm-sans:400,500,600,700|outfit:400,500,600,700|ibm-plex-sans:400,500,600,700|roboto:400,500,700|lato:400,700|nunito:400,600,700|geist-mono:400,500" rel="stylesheet" />
     <script>
-      // Apply saved theme before React mounts so the first paint matches the
-      // user's preference (and the new cream default for fresh installs).
-      // Mirrors SettingsPage's appearance:theme localStorage key.
+      // Setra is light-only. Force `.light` always, clear stale dark prefs.
       (function () {
         try {
-          var raw = localStorage.getItem("setra:appearance:theme");
-          var theme = raw ? JSON.parse(raw) : "light";
-          var root = document.documentElement;
-          if (theme === "system") {
-            var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-            root.classList.toggle("dark", prefersDark);
-            root.classList.toggle("light", !prefersDark);
-          } else if (theme === "dark") {
-            root.classList.add("dark");
-          } else {
-            root.classList.add("light");
-          }
-        } catch (_) {
-          document.documentElement.classList.add("light");
-        }
+          localStorage.setItem("setra:appearance:theme", '"light"');
+        } catch (_) {}
+        document.documentElement.classList.remove("dark");
+        document.documentElement.classList.add("light");
       })();
     </script>
   </head>

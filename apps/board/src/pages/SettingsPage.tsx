@@ -854,19 +854,9 @@ export function SettingsPage() {
 
 	useEffect(() => {
 		const root = document.documentElement;
-		const applyTheme = (prefersDark: boolean) => {
-			root.classList.toggle("dark", prefersDark);
-			root.classList.toggle("light", !prefersDark);
-		};
-		if (theme === "system") {
-			const mq = window.matchMedia("(prefers-color-scheme: dark)");
-			applyTheme(mq.matches);
-			const handler = (e: MediaQueryListEvent) => applyTheme(e.matches);
-			mq.addEventListener("change", handler);
-			return () => mq.removeEventListener("change", handler);
-		}
-		root.classList.toggle("dark", theme === "dark");
-		root.classList.toggle("light", theme === "light");
+		// Setra is light-only — ignore stored theme and force cream.
+		root.classList.remove("dark");
+		root.classList.add("light");
 		return undefined;
 	}, [theme]);
 

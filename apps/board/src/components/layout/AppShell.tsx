@@ -2,9 +2,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { CompanyProvider } from "../../context/CompanyContext";
-import { type Company, useCompany } from "../../context/CompanyContext";
+import { useCompany } from "../../context/CompanyContext";
 import { DialogProvider } from "../../context/DialogContext";
-import { useDialog } from "../../context/DialogContext";
 import { useEventStream } from "../../hooks/useEventStream";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { cn } from "../../lib/utils";
@@ -12,23 +11,15 @@ import { BudgetBanner } from "../BudgetBanner";
 import { CommandPalette } from "../CommandPalette";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { KeyboardShortcutsModal } from "../KeyboardShortcutsModal";
-import { OnboardingFlow } from "../OnboardingFlow";
-import { OnboardingWizard } from "../OnboardingWizard";
 import { OrgRail } from "../OrgRail";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 
-const ONBOARDING_DISMISSED_KEY = "setra:onboarding_dismissed";
-
 function AppShellInner() {
 	const sseStatus = useEventStream();
 	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-	const [useLegacyOnboarding, setUseLegacyOnboarding] = useState(false);
-	const { onboardingOpen, openOnboarding, closeOnboarding } = useDialog();
 	const {
 		companies,
-		addCompany,
-		setSelectedCompanyId,
 		switchState,
 		loading,
 		loadError,
@@ -141,13 +132,6 @@ function AppShellInner() {
 		navigate,
 	]);
 
-	function handleClose() {
-		localStorage.setItem(ONBOARDING_DISMISSED_KEY, "1");
-		closeOnboarding();
-		// After first onboarding, guide user to configure AI provider keys
-		navigate("/settings?tab=aiProviders");
-	}
-
 	return (
 		<div
 			className={cn(
@@ -213,66 +197,6 @@ function AppShellInner() {
 			</AnimatePresence>
 			<CommandPalette />
 			<KeyboardShortcutsModal />
-			{onboardingOpen && (() => {
-				const handleCompanyCreated = (company: {
-					id: string;
-					name: string;
-					issuePrefix: string;
-					brandColor?: string;
-					type?: string;
-					size?: string;
-				}) => {
-					const validTypes = [
-						"startup",
-						"agency",
-						"enterprise",
-						"government",
-						"personal",
-					] as const;
-					const validSizes = [
-						"0-10",
-						"10-50",
-						"50-200",
-						"200-1000",
-						"1000+",
-					] as const;
-					addCompany({
-						id: company.id,
-						name: company.name,
-						issuePrefix: company.issuePrefix,
-						...(company.brandColor !== undefined
-							? { brandColor: company.brandColor }
-							: {}),
-						...(validTypes.includes(
-							company.type as (typeof validTypes)[number],
-						)
-							? { type: company.type as Company["type"] }
-							: {}),
-						...(validSizes.includes(
-							company.size as (typeof validSizes)[number],
-						)
-							? { size: company.size as Company["size"] }
-							: {}),
-					} as Omit<Company, "order">);
-					setSelectedCompanyId(company.id);
-					localStorage.setItem("setra:show_ai_ceo", "true");
-					localStorage.setItem(ONBOARDING_DISMISSED_KEY, "1");
-					closeOnboarding();
-					navigate("/overview");
-				};
-				return useLegacyOnboarding ? (
-					<OnboardingWizard
-						onClose={handleClose}
-						onCompanyCreated={handleCompanyCreated}
-					/>
-				) : (
-					<OnboardingFlow
-						onClose={handleClose}
-						onCompanyCreated={handleCompanyCreated}
-						onUseLegacyWizard={() => setUseLegacyOnboarding(true)}
-					/>
-				);
-			})()}
 		</div>
 	);
 }

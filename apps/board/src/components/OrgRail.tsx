@@ -19,7 +19,6 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { type Company, useCompany } from "../context/CompanyContext";
-import { useDialogActions } from "../context/DialogContext";
 import { cn } from "../lib/utils";
 import { CompanyPatternIcon } from "./CompanyPatternIcon";
 
@@ -153,7 +152,6 @@ function UserAvatarMenu() {
 export function OrgRail() {
 	const { companies, selectedCompanyId, switchCompany, reorderCompanies } =
 		useCompany();
-	const { openOnboarding } = useDialogActions();
 	const { isAdmin } = useAuth();
 	const navigate = useNavigate();
 	const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null);
@@ -220,7 +218,7 @@ export function OrgRail() {
 				{isAdmin && (
 					<button
 						type="button"
-						onClick={() => openOnboarding()}
+						onClick={() => navigate("/onboarding/company")}
 						className={cn(
 							"flex items-center justify-center w-10 h-10 mt-1 rounded-[12px]",
 							"border border-dashed border-border/50 transition-all duration-150",
