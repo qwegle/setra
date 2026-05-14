@@ -727,6 +727,18 @@ export interface AgentTemplate {
 	updated_at: string;
 }
 
+/**
+ * Server returns this 202 payload when an agent_hire request is parked in the
+ * governance review queue. Discriminated by the `gated:true` flag.
+ */
+export interface HireGatedResponse {
+	ok: false;
+	gated: true;
+	approvalId: string;
+	approvalStatus: string;
+	message: string;
+}
+
 export interface RosterEntry {
 	id: string;
 	display_name: string;
@@ -1033,7 +1045,7 @@ export const api = {
 				continuousIntervalMs?: number;
 				idlePrompt?: string | null;
 			}) =>
-				request<RosterEntry>("/agents/roster", {
+				request<RosterEntry | HireGatedResponse>("/agents/roster", {
 					method: "POST",
 					body: JSON.stringify(body),
 				}),
@@ -2516,6 +2528,8 @@ export const companySettings = {
 			issuePrefix: string;
 			timezone: string;
 			envVars?: Record<string, string>;
+			preferredCli?: string | null;
+			legacyApiKeysEnabled?: boolean;
 		}>("/company/settings"),
 	update: (data: Record<string, unknown>) =>
 		request<void>("/company/settings", {

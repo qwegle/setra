@@ -7,7 +7,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
 	Badge,
 	Button,
@@ -23,6 +23,7 @@ import {
 	type Agent,
 	type AgentRunMode,
 	type AgentStatus,
+	type RosterEntry,
 	api,
 	request,
 } from "../lib/api";
@@ -510,10 +511,16 @@ function HireAgentModal({
 	onClose,
 }: { open: boolean; onClose: () => void }) {
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 	const [displayName, setDisplayName] = useState("");
 	const [templateId, setTemplateId] = useState("");
 	const [modelId, setModelId] = useState<string>("auto");
 	const [adapterType, setAdapterType] = useState<string>("auto");
+	const [feedback, setFeedback] = useState<
+		| { kind: "ok"; agentId: string; name: string }
+		| { kind: "gated"; approvalId: string; message: string }
+		| null
+	>(null);
 
 	// Pre-populate from global preferred adapter setting
 	const { data: globalSettings } = useQuery({
@@ -547,6 +554,7 @@ function HireAgentModal({
 
 	useEffect(() => {
 		if (!open) return;
+		setFeedback(null);
 		let cancelled = false;
 		setLoadingTemplates(true);
 		setTemplatesError(null);
@@ -617,9 +625,27 @@ function HireAgentModal({
 				modelId: modelId === "auto" ? null : modelId,
 				adapterType: adapterType === "auto" ? undefined : adapterType,
 			}),
-		onSuccess: () => {
+		onSuccess: (data) => {
 			void queryClient.invalidateQueries({ queryKey: ["agents"] });
-			onClose();
+			if (data && "gated" in data && data.gated === true) {
+				// Server returned 202: hire is parked in the governance review queue.
+				// Surface the pending-approval state inline so the user knows what happened
+				// and can navigate to /approvals to confirm or dispute.
+				setFeedback({
+					kind: "gated",
+					approvalId: data.approvalId,
+					message: data.message,
+				});
+				return;
+			}
+			// Created successfully — surface a one-shot success notice with a link
+			// to the new agent detail page, then close on the user's next action.
+			const created = data as RosterEntry;
+			setFeedback({
+				kind: "ok",
+				agentId: created.agent_id ?? created.id,
+				name: created.display_name,
+			});
 		},
 	});
 
@@ -634,14 +660,14 @@ function HireAgentModal({
 			title="Add an Agent"
 			actions={
 				<>
-					<Button type="button" variant="secondary" onClick={onClose}>
-						Cancel
+					<Button type="button" variant="secondary" onClick={() => { setFeedback(null); onClose(); }}>
+						{feedback ? "Close" : "Cancel"}
 					</Button>
 					<Button
 						type="button"
 						onClick={() => hireMutation.mutate()}
 						loading={hireMutation.isPending}
-						disabled={!templateId}
+						disabled={!templateId || feedback !== null}
 					>
 						{hireMutation.isPending ? "Adding…" : "Add Agent"}
 					</Button>
@@ -649,6 +675,31 @@ function HireAgentModal({
 			}
 		>
 			<div className="space-y-4">
+				{feedback?.kind === "ok" && (
+					<div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-200">
+						<p className="font-medium">Agent added: {feedback.name}</p>
+						<button
+							type="button"
+							onClick={() => { setFeedback(null); onClose(); navigate(`/agents/${feedback.agentId}`); }}
+							className="mt-1 text-emerald-100 underline hover:no-underline"
+						>
+							Open agent details
+						</button>
+					</div>
+				)}
+				{feedback?.kind === "gated" && (
+					<div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-sm text-amber-200">
+						<p className="font-medium">Awaiting board approval</p>
+						<p className="mt-1 text-amber-100/80">{feedback.message}</p>
+						<button
+							type="button"
+							onClick={() => { setFeedback(null); onClose(); navigate(`/approvals?focus=${feedback.approvalId}`); }}
+							className="mt-2 text-amber-100 underline hover:no-underline"
+						>
+							Review in Approvals
+						</button>
+					</div>
+				)}
 				<p className="flex items-center gap-2 text-sm text-zinc-400">
 					<Sparkles className="h-4 w-4 text-blue-300" aria-hidden="true" />
 					Choose a role template and model for your next agent.
