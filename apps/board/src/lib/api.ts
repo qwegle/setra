@@ -790,6 +790,17 @@ const listActivity = ((page?: number, pageSize = 50, filter?: string) => {
 	): Promise<PaginatedActivityEntries>;
 };
 
+export interface CliStatus {
+	id: string;
+	label: string;
+	bin: string;
+	installed: boolean;
+	version: string | null;
+	installCommand: string;
+	docUrl: string;
+	checkedAt: number;
+}
+
 export const api = {
 	auth: {
 		login: (body: { email: string; password: string }) =>
@@ -1752,6 +1763,15 @@ export const api = {
 			}),
 		delete: (id: string) =>
 			request<{ ok: true }>(`/companies/${id}`, { method: "DELETE" }),
+	},
+	cliStatus: {
+		list: (opts?: { force?: boolean; only?: readonly string[] }) => {
+			const qs = new URLSearchParams();
+			if (opts?.force) qs.set("force", "1");
+			if (opts?.only?.length) qs.set("only", opts.only.join(","));
+			const suffix = qs.toString() ? `?${qs.toString()}` : "";
+			return request<{ adapters: CliStatus[] }>(`/cli-status${suffix}`);
+		},
 	},
 	issueDetail: {
 		get: (id: string) =>

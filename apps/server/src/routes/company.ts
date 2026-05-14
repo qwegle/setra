@@ -92,6 +92,10 @@ companyRoute.patch(
 			updates.isOfflineOnly = body.isOfflineOnly;
 		if (body.brandColor !== undefined) updates.brandColor = body.brandColor;
 		if (body.logoUrl !== undefined) updates.logoUrl = body.logoUrl;
+		if (body.preferredCli !== undefined)
+			updates.preferredCli = body.preferredCli;
+		if (body.legacyApiKeysEnabled !== undefined)
+			updates.legacyApiKeysEnabled = body.legacyApiKeysEnabled;
 
 		const result = await companyRepo.updateSettings(cid, updates);
 		return c.json({ ...result, envVars: readEnvVars(cid) });
