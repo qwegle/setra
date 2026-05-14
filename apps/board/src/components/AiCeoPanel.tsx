@@ -340,9 +340,9 @@ QUICK_ACTIONS: [{"label": "Create first issue", "route": "/projects"}, {"label":
 					className="fixed bottom-4 right-4 z-50 w-[380px] max-h-[560px] flex flex-col rounded-xl border border-border/50 bg-background shadow-2xl shadow-black/20"
 				>
 					{/* Header */}
-					<div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-setra-600/10 rounded-t-xl shrink-0">
-						<div className="flex items-center justify-center w-8 h-8 rounded-lg bg-setra-600/20">
-							<Zap className="w-4 h-4 text-setra-400" />
+					<div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-[#7a5421]/10 rounded-t-xl shrink-0">
+						<div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#7a5421]/15">
+							<Zap className="w-4 h-4 text-[#7a5421]" />
 						</div>
 						<div className="flex-1 min-w-0">
 							<p className="text-sm font-semibold text-foreground truncate">
@@ -372,8 +372,8 @@ QUICK_ACTIONS: [{"label": "Create first issue", "route": "/projects"}, {"label":
 								)}
 							>
 								{msg.role === "assistant" && (
-									<div className="flex items-center justify-center w-7 h-7 rounded-full bg-setra-600/20 shrink-0 mt-0.5">
-										<Bot className="w-3.5 h-3.5 text-setra-400" />
+									<div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#7a5421]/15 shrink-0 mt-0.5">
+										<Bot className="w-3.5 h-3.5 text-[#7a5421]" />
 									</div>
 								)}
 								<div className={cn("flex flex-col gap-2 max-w-[85%]")}>
@@ -382,7 +382,7 @@ QUICK_ACTIONS: [{"label": "Create first issue", "route": "/projects"}, {"label":
 											"rounded-xl px-3 py-2 text-sm leading-relaxed",
 											msg.role === "assistant"
 												? "bg-muted/50 text-foreground"
-												: "bg-setra-600 text-[#2b2418] ml-auto",
+												: "bg-[#7a5421] text-white ml-auto",
 										)}
 									>
 										{msg.content}
@@ -400,7 +400,7 @@ QUICK_ACTIONS: [{"label": "Create first issue", "route": "/projects"}, {"label":
 															label: action.label,
 														})
 													}
-													className="text-xs px-2.5 py-1 rounded-full border border-setra-500/40 text-setra-400 hover:bg-setra-600/10 hover:border-setra-500 transition-all"
+													className="text-xs px-2.5 py-1 rounded-full border border-[#7a5421]/40 bg-white text-[#7a5421] hover:bg-[#7a5421] hover:text-white hover:border-[#7a5421] transition-all"
 												>
 													{action.label}
 												</button>
@@ -412,8 +412,8 @@ QUICK_ACTIONS: [{"label": "Create first issue", "route": "/projects"}, {"label":
 						))}
 						{loading && (
 							<div className="flex gap-3">
-								<div className="flex items-center justify-center w-7 h-7 rounded-full bg-setra-600/20 shrink-0">
-									<Bot className="w-3.5 h-3.5 text-setra-400" />
+								<div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#7a5421]/15 shrink-0">
+									<Bot className="w-3.5 h-3.5 text-[#7a5421]" />
 								</div>
 								<div className="bg-muted/50 rounded-xl px-3 py-2">
 									<Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -433,13 +433,13 @@ QUICK_ACTIONS: [{"label": "Create first issue", "route": "/projects"}, {"label":
 								onChange={(e) => setInput(e.target.value)}
 								onKeyDown={handleKeyDown}
 								placeholder="Ask your Assistant anything..."
-								className="flex-1 bg-muted/40 border border-border/50 rounded-lg px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-setra-500/50"
+								className="flex-1 bg-muted/40 border border-border/50 rounded-lg px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[#7a5421]/50"
 							/>
 							<button
 								type="button"
 								onClick={() => sendMessage(input)}
 								disabled={!input.trim() || loading}
-								className="flex items-center justify-center w-9 h-9 rounded-lg bg-setra-600 text-[#2b2418] disabled:opacity-40 hover:bg-setra-500 transition-colors shrink-0"
+								className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#7a5421] text-white disabled:opacity-40 hover:bg-[#5e3f17] transition-colors shrink-0"
 							>
 								<Send className="w-3.5 h-3.5" />
 							</button>
