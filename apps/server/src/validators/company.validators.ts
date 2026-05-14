@@ -9,6 +9,12 @@ export const UpdateCompanySettingsSchema = z.object({
 	isOfflineOnly: z.boolean().optional(),
 	brandColor: z.string().optional(),
 	logoUrl: z.string().optional(),
+	// Tier 0.5 (CLI-only adapter pivot).
+	preferredCli: z
+		.enum(["claude", "codex", "gemini", "opencode", "cursor"])
+		.nullable()
+		.optional(),
+	legacyApiKeysEnabled: z.boolean().optional(),
 	env_vars: z.record(z.string()).optional(),
 	envVars: z.record(z.string()).optional(),
 });
