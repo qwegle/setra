@@ -170,6 +170,15 @@ export const companySettings = sqliteTable("company_settings", {
 		.default(false),
 	brandColor: text("brand_color"),
 	logoUrl: text("logo_url"),
+	// Tier 0.5 (CLI-only pivot): when 1, legacy API-key panels remain visible.
+	// Existing installs migrate to 1 (no behavior change). Fresh installs that
+	// complete the new CLI-onboarding set this to 0.
+	legacyApiKeysEnabled: integer("legacy_api_keys_enabled", { mode: "boolean" })
+		.notNull()
+		.default(true),
+	// Operator-chosen first-class CLI adapter id (claude|codex|gemini|opencode|cursor).
+	// Surfaced in the top bar AdapterStatusPill; null = not yet picked.
+	preferredCli: text("preferred_cli"),
 	updatedAt: text("updated_at").notNull().default(nowText),
 });
 
@@ -457,6 +466,8 @@ export function ensureTables(): void {
       is_offline_only INTEGER NOT NULL DEFAULT 0,
       brand_color TEXT,
       logo_url TEXT,
+      legacy_api_keys_enabled INTEGER NOT NULL DEFAULT 1,
+      preferred_cli TEXT,
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
 
@@ -701,6 +712,11 @@ export function ensureTables(): void {
 		`ALTER TABLE runs ADD COLUMN tool_calls_count INTEGER DEFAULT 0`,
 		`ALTER TABLE runs ADD COLUMN files_touched_count INTEGER DEFAULT 0`,
 		`ALTER TABLE chunks ADD COLUMN tool_name TEXT`,
+		// Tier 0.5 (CLI-only pivot): legacy API-key UI gating + preferred CLI.
+		// Default 1 on existing installs preserves today's behaviour; the new
+		// onboarding flow flips it to 0 once a fresh install picks a CLI.
+		`ALTER TABLE company_settings ADD COLUMN legacy_api_keys_enabled INTEGER NOT NULL DEFAULT 1`,
+		`ALTER TABLE company_settings ADD COLUMN preferred_cli TEXT`,
 	]) {
 		try {
 			rawSqlite.exec(stmt);
