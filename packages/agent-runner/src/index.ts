@@ -275,6 +275,9 @@ export {
 	snakeGameProPipelineConfig,
 	snakeGameProTemplate,
 	triageIssuesPipelineConfig,
+	LoopDetector,
+	type LoopDetectorOptions,
+	type LoopSignal,
 } from "./pipeline/index.js";
 
 // ─── Auto-registration ────────────────────────────────────────────────────────

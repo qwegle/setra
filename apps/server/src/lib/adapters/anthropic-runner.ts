@@ -1,4 +1,4 @@
-import { estimateCost } from "@setra/agent-runner";
+import { LoopDetector, estimateCost } from "@setra/agent-runner";
 import {
 	buildToolDefinitions,
 	emptyUsage,
@@ -92,6 +92,7 @@ export async function callAnthropicWithTools(
 	}));
 	const usage = emptyUsage();
 	const assistantTexts: string[] = [];
+	const loopDetector = new LoopDetector();
 	for (let step = 0; step < 10; step++) {
 		const resp = await fetch(endpoint, {
 			method: "POST",
@@ -166,6 +167,27 @@ export async function callAnthropicWithTools(
 				runtimeKeys: input.runtimeKeys,
 			});
 			mergeUsage(usage, toolResult.usage);
+			let toolResultParsedError: string | null = null;
+			try {
+				const parsed = JSON.parse(toolResult.content) as Record<
+					string,
+					unknown
+				>;
+				if (
+					parsed &&
+					typeof parsed === "object" &&
+					typeof parsed.error === "string"
+				) {
+					toolResultParsedError = parsed.error;
+				}
+			} catch {
+				/* non-JSON tool result */
+			}
+			const loopSignal = loopDetector.record(
+				block.name ?? "",
+				block.input ?? {},
+				toolResultParsedError,
+			);
 			messages.push({
 				role: "user",
 				content: [
@@ -177,6 +199,13 @@ export async function callAnthropicWithTools(
 				],
 			});
 			if (toolResult.stopLoop) shouldStop = true;
+			if (loopSignal.shouldReplan) {
+				messages.push({
+					role: "user",
+					content: [{ type: "text", text: `[system] ${loopSignal.reason}` }],
+				});
+				loopDetector.reset();
+			}
 		}
 		if (shouldStop) break;
 	}

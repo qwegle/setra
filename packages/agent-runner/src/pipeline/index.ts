@@ -46,3 +46,8 @@ export {
 	snakeGameProTemplate,
 	triageIssuesPipelineConfig,
 } from "./templates/index.js";
+export {
+	LoopDetector,
+	type LoopDetectorOptions,
+	type LoopSignal,
+} from "./loop-detector.js";

@@ -73,18 +73,19 @@ export function loadProfile(): SetraProfile {
 	try {
 		const raw = readFileSync(PROFILE_PATH, "utf-8");
 		const parsed = JSON.parse(raw) as Partial<SetraProfile>;
-		return {
+		const out: SetraProfile = {
 			version: 1,
-			displayName: parsed.displayName,
-			tone: parsed.tone,
-			timezone: parsed.timezone,
-			workingHours: parsed.workingHours,
-			preferredCli: parsed.preferredCli,
 			preferences: Array.isArray(parsed.preferences) ? parsed.preferences : [],
 			style: Array.isArray(parsed.style) ? parsed.style : [],
 			context: Array.isArray(parsed.context) ? parsed.context : [],
 			updatedAt: parsed.updatedAt ?? new Date().toISOString(),
 		};
+		if (parsed.displayName) out.displayName = parsed.displayName;
+		if (parsed.tone) out.tone = parsed.tone;
+		if (parsed.timezone) out.timezone = parsed.timezone;
+		if (parsed.workingHours) out.workingHours = parsed.workingHours;
+		if (parsed.preferredCli) out.preferredCli = parsed.preferredCli;
+		return out;
 	} catch {
 		return emptyProfile();
 	}
